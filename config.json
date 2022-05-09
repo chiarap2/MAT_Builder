@@ -1,0 +1,107 @@
+{
+      "preprocessing1": [
+        {
+          "Input": {
+            "id": "path",
+            "type": "text",
+            "placeholder": "path"
+          }
+        },
+        {
+          "Input": {
+            "id": "kmh",
+            "type": "number",
+            "placeholder": "km/h"
+          }
+        },
+        {
+          "Input": {
+            "id": "n_point",
+            "type": "number",
+            "placeholder": "n point"
+          }
+        }
+      ],
+      "preprocessing2": [
+        {
+          "Input": {
+            "id": "path",
+            "type": "text",
+            "placeholder": "path"
+          }
+        },
+        {
+          "Input": {
+            "id": "kmh",
+            "type": "number",
+            "placeholder": "km/h"
+          }
+        }
+      ],
+      "stops_and_moves": [
+        {
+          "Input": {
+            "id": "minutes",
+            "type": "number",
+            "placeholder": "Minutes"
+          }
+        },
+        {
+          "Input": {
+            "id": "radius",
+            "type": "number",
+            "placeholder": "Search radius"
+          }
+        }
+      ],
+      "stop_move_enrichment": [
+        {
+          "Input": {
+            "id": "north",
+            "type": "number",
+            "placeholder": "North"
+          }
+        },
+        {
+          "Input": {
+            "id": "east",
+            "type": "number",
+            "placeholder": "East"
+          }
+        },
+        {
+          "Input": {
+            "id": "south",
+            "type": "number",
+            "placeholder": "South"
+          }
+        },
+        {
+          "Input": {
+            "id": "west",
+            "type": "number",
+            "placeholder": "West"
+          }
+        },
+        {
+          "Input": {
+            "id": "granularity",
+            "type": "number",
+            "placeholder": "Semantic Granularity"
+          }
+        },
+        {
+          "Input": {
+            "id": "upload_semantic",
+            "type": "number",
+            "placeholder": "Upload your file(s)"
+          }
+        },
+        {
+          "Checklist": {
+            "id": "enrich_move",
+            "options": [{"label": "Do you want to enrich moves?", "value": "yes"}]
+          }
+        }
+      ]
+}
