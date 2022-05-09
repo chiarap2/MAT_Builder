@@ -383,7 +383,7 @@ class stop_move_enrichment(Enrichment):
         sp['frequency'] = systematic_sp['frequency']
         sp.reset_index(inplace=True)
         systematic_stops = sp[sp['frequency']>2]
-        print(systematic_stops)
+        #print(systematic_stops)
         
         systematic_stops['start_time'] = systematic_stops['datetime'].dt.hour
         systematic_stops['end_time'] = systematic_stops['leaving_datetime'].dt.hour
@@ -400,20 +400,21 @@ class stop_move_enrichment(Enrichment):
             end_col = x[-1]
             
             start_raw = freq[(freq['uid']==x[0])&(freq['location']==x[1])].first_valid_index()
-            end_raw = start_raw+1
-            
-            if start_col<end_col:
+            if start_raw != None:
+                end_raw = start_raw+1
                 
-                freq.loc[start_raw:end_raw,start_col:end_col] += 1
-            
-            elif start_col==end_col:
+                if start_col<end_col:
+                    
+                    freq.loc[start_raw:end_raw,start_col:end_col] += 1
                 
-                freq.loc[start_raw:end_raw,start_col] += 1
-                
-            else:
-                
-                freq.loc[start_raw:end_raw,start_col:23] += 1
-                freq.loc[start_raw:end_raw,0:end_col] += 1
+                elif start_col==end_col:
+                    
+                    freq.loc[start_raw:end_raw,start_col] += 1
+                    
+                else:
+                    
+                    freq.loc[start_raw:end_raw,start_col:23] += 1
+                    freq.loc[start_raw:end_raw,0:end_col] += 1
 
         systematic_stops.apply(lambda x: update_hour(x),raw=True,axis=1)
         hours = [i for i in range(0,24)]
@@ -424,10 +425,10 @@ class stop_move_enrichment(Enrichment):
         freq.set_index(['uid','location'],inplace=True)
         freq.drop(columns=['sum','tot'],inplace=True)
 
-        freq['night'] = df[[23,0,1,2,3,4,5]].sum(axis=1)
-        freq['morning'] = df[[6,7,8,9,10,11,12]].sum(axis=1)
-        freq['afternoon'] = df[[13,14,15,16,17,18]].sum(axis=1)
-        freq['evening'] = df[[19,20,21,22]].sum(axis=1)
+        freq['night'] = freq[[23,0,1,2,3,4,5]].sum(axis=1)
+        freq['morning'] = freq[[6,7,8,9,10,11,12]].sum(axis=1)
+        freq['afternoon'] = freq[[13,14,15,16,17,18]].sum(axis=1)
+        freq['evening'] = freq[[19,20,21,22]].sum(axis=1)
 
         largest = pd.DataFrame(freq.groupby('uid')['importance'].nlargest(2))
         largest.index = largest.index.droplevel(0)
@@ -442,5 +443,3 @@ class stop_move_enrichment(Enrichment):
         freq['p_work'] = (freq[['night','morning','afternoon','evening']].loc[largest.index] * w_work).sum(axis=1)
         freq['home'] = freq['p_home'] / freq[['p_home','p_work']].sum(axis=1)
         freq['work'] = freq['p_work'] / freq[['p_home','p_work']].sum(axis=1)
-
-        print(freq.head())
