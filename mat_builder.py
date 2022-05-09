@@ -138,8 +138,8 @@ def show_output(radio,inputs,tab,click):
     options = []
     display = {'display':'none'}
 
-    print(dash.callback_context.triggered)
-    print()
+    #print(dash.callback_context.triggered)
+    #print()
 
 
     if click is None:
@@ -183,6 +183,15 @@ def show_output(radio,inputs,tab,click):
 
         display = {'display':'inline'}
         options=[{'label': i, 'value': i} for i in users]
+
+    elif tab == 'Enrichment':
+
+        name_class = radio[2]
+        global class_e
+        class_ = globals()[name_class]
+        print(inputs)
+        class_e = class_(inputs)   
+        class_e.core()
 
     return None,outputs,display,options
 
