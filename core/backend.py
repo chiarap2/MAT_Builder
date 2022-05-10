@@ -1,4 +1,3 @@
-from multiprocessing.dummy import active_children
 import geopandas as gpd
 import shapely
 import pandas as pd
@@ -12,8 +11,6 @@ from ptrail.features.kinematic_features import KinematicFeatures as spatial
 import pickle
 from sklearn.preprocessing import StandardScaler
 import geohash2
-
-
 
 shapely.speedups.disable()
 
@@ -251,8 +248,11 @@ class stops_and_moves(Segmentation):
         starts_ = [traj_ids.get_loc(e).start - 1 for e in incomplete_end]
         ends_ = [traj_ids.get_loc(s).start + 1 for s in incomplete_start]
 
-        start_idx = start_idx + starts_
-        end_idx = end_idx + ends_
+        if starts_ != []:
+            start_idx = start_idx + starts_
+    
+        if ends_ != []:
+            end_idx = end_idx + ends_
 
         trajs['move_id'] = np.nan
         
@@ -387,13 +387,14 @@ class stop_move_enrichment(Enrichment):
         
         systematic_stops['start_time'] = systematic_stops['datetime'].dt.hour
         systematic_stops['end_time'] = systematic_stops['leaving_datetime'].dt.hour
+        systematic_stops.reset_index(inplace=True)
 
         #global freq
         freq = pd.DataFrame(np.zeros((len(systematic_stops),24)))
         freq['uid'] = systematic_stops['uid']
         freq['location'] = systematic_stops['pos_hashed']
         freq.drop_duplicates(['uid','location'],inplace=True)
-                
+
         def update_hour(x):
             
             start_col = x[-2]
@@ -417,6 +418,7 @@ class stop_move_enrichment(Enrichment):
                     freq.loc[start_raw:end_raw,0:end_col] += 1
 
         systematic_stops.apply(lambda x: update_hour(x),raw=True,axis=1)
+
         hours = [i for i in range(0,24)]
         freq['sum'] = freq[hours].sum(axis=1)
         freq['tot'] = freq.groupby('uid')['sum'].sum()
@@ -431,15 +433,31 @@ class stop_move_enrichment(Enrichment):
         freq['evening'] = freq[[19,20,21,22]].sum(axis=1)
 
         largest = pd.DataFrame(freq.groupby('uid')['importance'].nlargest(2))
-        largest.index = largest.index.droplevel(0)
+        largest_index = largest.index.droplevel(0)
         freq['home'] = 0
         freq['work'] = 0
         freq['other'] = 0
 
         w_home = [0.6,0.1,0.1,0.4]
         w_work = [0.1,0.6,0.4,0.1]
-
-        freq['p_home'] = (freq[['night','morning','afternoon','evening']].loc[largest.index] * w_home).sum(axis=1)
-        freq['p_work'] = (freq[['night','morning','afternoon','evening']].loc[largest.index] * w_work).sum(axis=1)
+    
+        freq['p_home'] = (freq[['night','morning','afternoon','evening']].loc[largest_index] * w_home).sum(axis=1)
+        freq['p_work'] = (freq[['night','morning','afternoon','evening']].loc[largest_index] * w_work).sum(axis=1)
         freq['home'] = freq['p_home'] / freq[['p_home','p_work']].sum(axis=1)
         freq['work'] = freq['p_work'] / freq[['p_home','p_work']].sum(axis=1)
+        freq['other'].loc[~freq.index.isin(largest_index)] = 1
+        freq['home'].fillna(0,inplace=True)
+        freq['work'].fillna(0,inplace=True)
+
+        systematic_stops.set_index(['uid','pos_hashed'],inplace=True)
+        systematic_stops['home'] = 0
+        systematic_stops['work'] = 0
+        systematic_stops['other'] = 0
+        systematic_stops['home'].loc[systematic_stops.index.isin(freq.index)] = freq['home'].loc[freq.index.isin(systematic_stops.index)]
+        systematic_stops['work'].loc[systematic_stops.index.isin(freq.index)] = freq['work'].loc[freq.index.isin(systematic_stops.index)]
+        systematic_stops['other'].loc[systematic_stops.index.isin(freq.index)] = freq['other'].loc[freq.index.isin(systematic_stops.index)]
+        
+        
+        ############################################
+        ### ---- SYSTEMATIC STOP ENRICHMENT ---- ###
+        ############################################
