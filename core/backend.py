@@ -1,3 +1,4 @@
+from tracemalloc import stop
 import geopandas as gpd
 import shapely
 import pandas as pd
@@ -11,6 +12,9 @@ from ptrail.features.kinematic_features import KinematicFeatures as spatial
 import pickle
 from sklearn.preprocessing import StandardScaler
 import geohash2
+import osmnx as ox
+import os
+import glob
 
 shapely.speedups.disable()
 
@@ -214,8 +218,6 @@ class stops_and_moves(Segmentation):
         # remove stops which aren't into tdf
         start_df = start_df[(start_df['is_in_traj']!=False)|(start_df['is_in_traj_end']!=False)]
 
-        
-
         # save index of incomplete stops and convert them into MultiIndex
         incomplete_end = start_df['end'][(start_df['is_in_traj']==False)&(start_df['is_in_traj_end']==True)] 
         incomplete_start = start_df['start'][(start_df['is_in_traj']==True)&(start_df['is_in_traj_end']==False)]
@@ -298,13 +300,16 @@ class stop_move_enrichment(Enrichment):
     def __init__(self,list_):
         
         self.moves = pd.read_parquet('data/temp_dataset/moves.parquet')
-
+        self.north = list_[0]
+        self.east = list_[1]
+        self.south = list_[2]
+        self.west = list_[3]
+        self.semantic_granularity = list_[4]
         if list_[6] == ['yes']:
             self.enrich_moves = True
         else:
             self.enrich_moves = False
 
-    global df
     def core(self):
 
         #################################
@@ -370,6 +375,8 @@ class stop_move_enrichment(Enrichment):
         self.stops = pd.read_parquet('data/temp_dataset/stops.parquet')
 
         stops = self.stops.copy()
+        stops.reset_index(inplace=True)
+        stops.rename(columns={'index':'stop_id'},inplace=True)
         stops['pos_hashed'] = stops[['lat','lng']].apply(lambda x: geohash2.encode(x[0],x[1],7),raw=True,axis=1)
         stops['frequency'] = 0
 
@@ -387,7 +394,7 @@ class stop_move_enrichment(Enrichment):
         
         systematic_stops['start_time'] = systematic_stops['datetime'].dt.hour
         systematic_stops['end_time'] = systematic_stops['leaving_datetime'].dt.hour
-        systematic_stops.reset_index(inplace=True)
+        systematic_stops.reset_index(inplace=True,drop=True)
 
         #global freq
         freq = pd.DataFrame(np.zeros((len(systematic_stops),24)))
@@ -457,7 +464,131 @@ class stop_move_enrichment(Enrichment):
         systematic_stops['work'].loc[systematic_stops.index.isin(freq.index)] = freq['work'].loc[freq.index.isin(systematic_stops.index)]
         systematic_stops['other'].loc[systematic_stops.index.isin(freq.index)] = freq['other'].loc[freq.index.isin(systematic_stops.index)]
         
+        ############################################
+        ### ---- OCCASIONAL STOP ENRICHMENT ---- ###
+        ############################################ 
+
+        occasional_stops = stops[~stops['stop_id'].isin(systematic_stops['stop_id'])]
+
+        # Download PoIs from OpenStreetMap #
+
+        # list of tags
+
+        tags = {}
+        tags['amenity'] = True
+        tags['aeroway'] = True
+        tags['building'] = True
+        tags['historic'] = True
+        tags['healthcare'] = True
+        tags['highway'] = True
+        tags['landuse'] = True
+        tags['office'] = True
+        tags['public_transport'] = True
+        #tags['bus'] = 'yes'
+        #tags['train'] = 'yes'
+        #tags['railway'] = 'stop'
+        tags['shop'] = True
+        tags['tourism'] = True
+
+        # set bounding box 
+        NORTH = self.north
+        SOUTH = self.south
+        EAST = self.east
+        WEST = self.west
+
+        '''for key,value in tags.items():
+
+            # downloading POI
+            poi = ox.geometries_from_bbox(north=NORTH,south=SOUTH,east=EAST,west=WEST,tags={key:value})
+
+            # convert list into string in order to save poi into parquet
+            if 'nodes' in poi.columns:
+
+                poi['nodes'] = poi['nodes'].astype(str)
+
+            if 'ways' in poi.columns:
+
+                poi['ways'] = poi['ways'].astype(str)
+
+            # save poi into parquet
+            poi.to_parquet('data/poi/'+key+'.parquet')'''
+
         
-        ############################################
-        ### ---- SYSTEMATIC STOP ENRICHMENT ---- ###
-        ############################################
+        def select_columns(gdf,threshold=80.0):
+            """
+            A function to select columns of a GeoDataFrame that have a percentage of null values
+            lower than a given threshold.
+            Returns a GeoDataFrame
+
+            -----------------------------
+            gdf: a GeoDataFrame
+
+            threshold: default 80.0
+                a float representing the maxium percentage of null values in a column
+
+
+            """
+            # list of columns
+            cols = gdf.columns
+            # list of columns to delete
+            del_cols = []
+
+            for c in cols:
+
+                # check if column contains only null value
+                if(gdf[c].isnull().all()):
+                    # save the empty column
+                    del_cols.append(c)
+                    continue
+
+                # control only columns with at least one null value
+                if(gdf[c].isnull().any()):
+
+                    # compute number of null values
+                    null_vals = gdf[c].isnull().value_counts()[1]
+                    # compute percentage w.r.t. total number of sample
+                    perc = null_vals/len(gdf[c])*100
+
+                    # save only columns that have a perc of null values lower than the given threshold
+                    if(threshold<=perc):
+                        del_cols.append(c)
+
+            gdf = gdf.drop(columns=del_cols)
+
+            return gdf
+
+        # clean poi files #
+
+        path = 'data/poi/'
+
+        for filename in glob.glob(os.path.join(path, '*.parquet')):
+
+            fname = filename.replace(path,'')
+            fname = fname[0:-8]
+            path_save = 'data/poi_cleaned/'
+
+            gdf = gpd.read_parquet(filename)
+
+            if gdf.crs is None:
+                gdf.set_crs('epsg:4326',inplace=True)
+                gdf.to_crs('epsg:3857',inplace=True)
+            else:
+                gdf.to_crs('epsg:3857',inplace=True)
+
+            gdf_ = select_columns(gdf, self.semantic_granularity)
+            gdf_.reset_index(inplace=True)
+            gdf_.to_parquet(path_save+fname+'.parquet')
+
+        ### TODO: 
+        # apri file; 
+        # seleziona colonne osmnxid e geom; 
+        # sjoin; 
+        # filter by rules;
+        # output 
+
+
+
+
+
+            
+
