@@ -480,13 +480,9 @@ class stop_move_enrichment(Enrichment):
         tags['building'] = True
         tags['historic'] = True
         tags['healthcare'] = True
-        tags['highway'] = True
         tags['landuse'] = True
         tags['office'] = True
         tags['public_transport'] = True
-        #tags['bus'] = 'yes'
-        #tags['train'] = 'yes'
-        #tags['railway'] = 'stop'
         tags['shop'] = True
         tags['tourism'] = True
 
@@ -496,24 +492,6 @@ class stop_move_enrichment(Enrichment):
         EAST = self.east
         WEST = self.west
 
-        '''for key,value in tags.items():
-
-            # downloading POI
-            poi = ox.geometries_from_bbox(north=NORTH,south=SOUTH,east=EAST,west=WEST,tags={key:value})
-
-            # convert list into string in order to save poi into parquet
-            if 'nodes' in poi.columns:
-
-                poi['nodes'] = poi['nodes'].astype(str)
-
-            if 'ways' in poi.columns:
-
-                poi['ways'] = poi['ways'].astype(str)
-
-            # save poi into parquet
-            poi.to_parquet('data/poi/'+key+'.parquet')'''
-
-        
         def select_columns(gdf,threshold=80.0):
             """
             A function to select columns of a GeoDataFrame that have a percentage of null values
@@ -557,38 +535,75 @@ class stop_move_enrichment(Enrichment):
 
             return gdf
 
-        # clean poi files #
+        def preparing_stops(stop,max_distance):
+    
+            # buffer stop points -> convert their geometries from points into polygon 
+            # (we set the radius of polygon = to the radius of sjoin) 
+            stops = gpd.GeoDataFrame(stop, geometry=gpd.points_from_xy(stop.lng, stop.lat))
+            stops.set_crs('epsg:4326',inplace=True)
+            stops.to_crs('epsg:3857',inplace=True)
+            stops['geometry_stop'] = stops['geometry']
+            stops['geometry'] = stops['geometry_stop'].buffer(max_distance)
 
-        path = 'data/poi/'
+            return stops
 
-        for filename in glob.glob(os.path.join(path, '*.parquet')):
+        def semantic_enrichment(stop,semantic_df,suffix):
+            
+            # duplicate geometry column because we loose it during the sjoin_nearest
+            s_df = semantic_df.copy()
+            s_df['geometry_'+suffix] = s_df['geometry']
+            # now we can use sjoin_nearest obtaining the results we want
+            mats = stop.sjoin_nearest(s_df,max_distance=0.00001,how='left',rsuffix=suffix)
+            # compute the distance between the stop point and the POI geometry
+            mats['distance_'+suffix] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
+            # sort by distance
+            mats = mats.sort_values(['stop_id','distance_'+suffix])
+            
+            return mats
 
-            fname = filename.replace(path,'')
-            fname = fname[0:-8]
-            path_save = 'data/poi_cleaned/'
+        for key,value in tags.items():
 
-            gdf = gpd.read_parquet(filename)
+            # downloading POI
+            poi = ox.geometries_from_bbox(north=NORTH,south=SOUTH,east=EAST,west=WEST,tags={key:value})
 
-            if gdf.crs is None:
-                gdf.set_crs('epsg:4326',inplace=True)
-                gdf.to_crs('epsg:3857',inplace=True)
+            # convert list into string in order to save poi into parquet
+            if 'nodes' in poi.columns:
+
+                poi['nodes'] = poi['nodes'].astype(str)
+
+            if 'ways' in poi.columns:
+
+                poi['ways'] = poi['ways'].astype(str)
+
+            poi.reset_index(inplace=True)
+            poi.rename(columns={key:'category'}, inplace=True)
+            print(poi['geometry'])
+
+            if poi.crs is None:
+                poi.set_crs('epsg:4326',inplace=True)
+                poi.to_crs('epsg:3857',inplace=True)
             else:
-                gdf.to_crs('epsg:3857',inplace=True)
+                poi.to_crs('epsg:3857',inplace=True)
 
-            gdf_ = select_columns(gdf, self.semantic_granularity)
-            gdf_.reset_index(inplace=True)
-            gdf_.to_parquet(path_save+fname+'.parquet')
+            gdf_ = select_columns(poi, self.semantic_granularity)
+            globals()[key] = gdf_
+            
+            #poi.to_parquet('data/poi/'+key+'.parquet')
+
+        o_stops = preparing_stops(occasional_stops,50)
+        pois = list(tags.keys())
+        mat = semantic_enrichment(o_stops,globals()[pois[0]][['osmid','geometry']],pois[0])
+
+        for i in range(1,len(pois)):
+            #controllo se df non è vuoto sjoin con df['id','geometry']
+
+            if len(globals()[pois[i]]) != 0:
+                mat = semantic_enrichment(mat,globals()[pois[i]][['osmid','geometry']],pois[i])
 
         ### TODO: 
-        # apri file; 
-        # seleziona colonne osmnxid e geom; 
-        # sjoin; 
+        
         # filter by rules;
-        # output 
-
-
-
-
-
-            
-
+        # output
+        # upload your file
+        # insert max distance in input
+        # change yes of categories into the name of category

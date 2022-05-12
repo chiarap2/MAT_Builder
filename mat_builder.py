@@ -111,6 +111,12 @@ def show_input(tab,radio):
 
                     inputs.append(dcc.Checklist(id={'type':'input','index':c},options=p[elem]['options']))
 
+                elif elem == 'Dropdown':
+
+                    inputs.append(dcc.Dropdown(id={'type':'input','index':c},options=p[elem]['options'],multi=True))                    
+                    inputs.append(html.Hr())
+
+
             c +=1
 
         inputs.append(html.Button(id='run',children='RUN'))

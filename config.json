@@ -57,30 +57,24 @@
       "stop_move_enrichment": [
         {
           "Input": {
-            "id": "north",
-            "type": "number",
-            "placeholder": "North"
+            "id": "place",
+            "type": "text",
+            "placeholder": "City"
           }
         },
         {
-          "Input": {
-            "id": "east",
-            "type": "number",
-            "placeholder": "East"
-          }
-        },
-        {
-          "Input": {
-            "id": "south",
-            "type": "number",
-            "placeholder": "South"
-          }
-        },
-        {
-          "Input": {
-            "id": "west",
-            "type": "number",
-            "placeholder": "West"
+          "Dropdown": {
+            "id": "list_poi",
+            "options": [{"label": "amenity", "value": "amenity"},
+              {"label": "aeroway", "value": "aeroway"},
+              {"label": "building", "value": "building"},
+              {"label": "historic", "value": "historic"},
+              {"label": "healthcare", "value": "healthcare"},
+              {"label": "landuse", "value": "landuse"},
+              {"label": "office", "value": "office"},
+              {"label": "public_transport", "value": "public_transport"},
+              {"label": "shop", "value": "shop"},
+              {"label": "tourism", "value": "tourism"}]
           }
         },
         {
