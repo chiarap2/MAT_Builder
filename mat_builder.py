@@ -67,6 +67,12 @@ app.layout = html.Div([
         ],style={'display':'none'}),
         html.Hr(),
         html.Div(id='outputs2'),
+        html.Div(id='users_',children=[html.P(children='Users:'),
+            dcc.Dropdown(id='user_list_')
+        ],style={'display':'none'}),
+        html.Hr(),
+        html.Div(id='outputs3'),
+
     ]),
     
 ])
@@ -128,6 +134,8 @@ def show_input(tab,radio):
     Output(component_id='outputs', component_property='children'), 
     Output(component_id='users', component_property='style'),  
     Output(component_id='user_list',component_property='options'),
+    Output(component_id='users_', component_property='style'),
+    Output(component_id='user_list_',component_property='options'),
     State(component_id={'type':'radio_items','index':ALL}, component_property='value'),
     State(component_id={'type':'input','index':ALL}, component_property='value'),
     State(component_id='tabs-inline', component_property='value'),
@@ -142,14 +150,16 @@ def show_output(radio,inputs,tab,click):
     #print(radio, inputs, tab)
     outputs = []
     options = []
+    options2 = []
     display = {'display':'none'}
+    display2 = {'display':'none'}
 
     #print(dash.callback_context.triggered)
     #print()
 
 
     if click is None:
-        return None,outputs,display,options
+        return None,outputs,display,options,display2,options2
 
     is_empty = False
 
@@ -198,8 +208,13 @@ def show_output(radio,inputs,tab,click):
         print(inputs)
         class_e = class_(inputs)   
         class_e.core()
+        users = class_e.get_users()
 
-    return None,outputs,display,options
+        display2 = {'display':'inline'}
+        options2=[{'label': i, 'value': i} for i in users]
+
+
+    return None,outputs,display,options,display2,options2
 
 @app.callback(
     Output(component_id='outputs2', component_property='children'),   
@@ -215,11 +230,33 @@ def info_stops(user):
         return outputs
 
     num_trajs = class_s.get_trajectories(user)
-    print(num_trajs)
     outputs.append(html.Div(children='N. trajectories: {}'.format(num_trajs)))
+    num_stops = class_s.get_stops(user)
+    outputs.append(html.Div(children='N. stops: {}'.format(num_stops)))
+    mean_duration = class_s.get_duration(user)
+    outputs.append(html.Div(children='Stop average duration: {} minutes'.format(mean_duration)))
 
     return outputs
 
+@app.callback(
+    Output(component_id='outputs3', component_property='children'),   
+    Input(component_id='user_list_',component_property='value')
+)
+
+def info_enrichment(user):
+
+    outputs = []
+
+    if user is None:
+
+        return outputs
+
+    num_systematic = class_e.get_systematic(user)
+    outputs.append(html.Div(children='N. systematic stops: {}'.format(num_systematic)))
+    num_occasional = class_e.get_occasional(user)
+    outputs.append(html.Div(children='N. occasional stops: {}'.format(num_occasional)))
+
+    return outputs
 
 if __name__ == '__main__':
     app.run_server(debug=True)

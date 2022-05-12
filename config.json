@@ -85,10 +85,18 @@
           }
         },
         {
-          "Input": {
+          "Dropdown": {
             "id": "upload_semantic",
+            "options": [{"label": "PoI", "value": "poi"},
+              {"label": "Weather", "value": "weather"},
+              {"label": "Social media posts", "value": "post"}]
+          }
+        },
+        {
+          "Input": {
+            "id": "max_distance",
             "type": "number",
-            "placeholder": "Upload your file(s)"
+            "placeholder": "Max distance from PoIs"
           }
         },
         {

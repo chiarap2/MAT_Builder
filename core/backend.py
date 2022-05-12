@@ -58,8 +58,6 @@ class preprocessing1(Preprocessing):
     pass
 
     df = gpd.GeoDataFrame()
-    origins = gpd.GeoDataFrame()
-    destinations = gpd.GeoDataFrame()
 
     def __init__(self, list_):
 
@@ -68,9 +66,13 @@ class preprocessing1(Preprocessing):
         self.kmh = list_[1]
 
     def core(self):
-
-        #gdf = pd.read_csv(self.path)
-        gdf = pd.read_parquet(self.path)
+                
+        if self.path[-3:] == 'csv':
+            gdf = pd.read_csv(self.path)
+        elif self.path[-7:] == 'parquet':
+            gdf = pd.read_parquet(self.path)
+        else:
+            return 'Fail in uploading file'
 
         # ## PREPROCESSING
 
@@ -86,21 +88,6 @@ class preprocessing1(Preprocessing):
         ftdf = filtering.filter(tdf, max_speed_kmh=self.kmh)
         ctdf = compression.compress(ftdf, spatial_radius_km=0.2)
 
-        #gdf = gpd.GeoDataFrame(ctdf)
-
-        #gb = gdf.groupby(['tid'], as_index=False)
-        #origins = gb.first()
-        #destinations = gb.last()
-
-        #self.origins = origins
-        #self.destinations = destinations
-
-        #if gdf.crs is None:
-        #    gdf.set_crs('epsg:4326',inplace=True)
-        #    gdf.to_crs('epsg:3857',inplace=True)
-        #else:
-        #    gdf.to_crs('epsg:3857',inplace=True)
-
         self.df = ctdf
 
     def get_num_users(self):
@@ -114,8 +101,6 @@ class preprocessing1(Preprocessing):
     def output(self):
 
         self.df.to_parquet('data/temp_dataset/traj_cleaned.parquet')
-
-    #def graphic_interface(self):
 
 class preprocessing2(Preprocessing):
     '''
@@ -134,7 +119,12 @@ class preprocessing2(Preprocessing):
 
     def core(self):
 
-        df = pd.read_csv(self.path)
+        if self.path[-3:] == 'csv':
+            df = pd.read_csv(self.path)
+        elif self.path[-7:] == 'parquet':
+            df = pd.read_parquet(self.path)
+        else:
+            return 'Fail in uploading file'
 
         # ## PREPROCESSING
 
@@ -282,6 +272,17 @@ class stops_and_moves(Segmentation):
 
         return len(self.moves[self.moves['uid']==uid]['tid'].unique())
 
+    def get_stops(self, uid):
+
+        return len(self.stops[self.stops['uid']==uid])
+
+    def get_duration(self, uid):
+
+        s = self.stops[self.stops['uid']==uid]
+        s['duration'] = (s['leaving_datetime'] - s['datetime']).astype('timedelta64[m]')
+
+        return round(s['duration'].mean(),2)
+
 class stop_move_enrichment(Enrichment):
 
     '''
@@ -300,12 +301,12 @@ class stop_move_enrichment(Enrichment):
     def __init__(self,list_):
         
         self.moves = pd.read_parquet('data/temp_dataset/moves.parquet')
-        self.north = list_[0]
-        self.east = list_[1]
-        self.south = list_[2]
-        self.west = list_[3]
-        self.semantic_granularity = list_[4]
-        if list_[6] == ['yes']:
+        self.place = list_[0]
+        self.list_pois = list_[1]
+        self.semantic_granularity = list_[2]
+        self.max_distance = list_[4]
+        #### qui file personali #####
+        if list_[-1] == ['yes']:
             self.enrich_moves = True
         else:
             self.enrich_moves = False
@@ -390,7 +391,6 @@ class stop_move_enrichment(Enrichment):
         sp['frequency'] = systematic_sp['frequency']
         sp.reset_index(inplace=True)
         systematic_stops = sp[sp['frequency']>2]
-        #print(systematic_stops)
         
         systematic_stops['start_time'] = systematic_stops['datetime'].dt.hour
         systematic_stops['end_time'] = systematic_stops['leaving_datetime'].dt.hour
@@ -463,34 +463,18 @@ class stop_move_enrichment(Enrichment):
         systematic_stops['home'].loc[systematic_stops.index.isin(freq.index)] = freq['home'].loc[freq.index.isin(systematic_stops.index)]
         systematic_stops['work'].loc[systematic_stops.index.isin(freq.index)] = freq['work'].loc[freq.index.isin(systematic_stops.index)]
         systematic_stops['other'].loc[systematic_stops.index.isin(freq.index)] = freq['other'].loc[freq.index.isin(systematic_stops.index)]
-        
+        systematic_stops.reset_index(inplace=True)
+        self.systematic = systematic_stops
+
         ############################################
         ### ---- OCCASIONAL STOP ENRICHMENT ---- ###
         ############################################ 
 
         occasional_stops = stops[~stops['stop_id'].isin(systematic_stops['stop_id'])]
 
+        self.occasional = occasional_stops
+
         # Download PoIs from OpenStreetMap #
-
-        # list of tags
-
-        tags = {}
-        tags['amenity'] = True
-        tags['aeroway'] = True
-        tags['building'] = True
-        tags['historic'] = True
-        tags['healthcare'] = True
-        tags['landuse'] = True
-        tags['office'] = True
-        tags['public_transport'] = True
-        tags['shop'] = True
-        tags['tourism'] = True
-
-        # set bounding box 
-        NORTH = self.north
-        SOUTH = self.south
-        EAST = self.east
-        WEST = self.west
 
         def select_columns(gdf,threshold=80.0):
             """
@@ -561,11 +545,11 @@ class stop_move_enrichment(Enrichment):
             
             return mats
 
-        for key,value in tags.items():
+        for key in self.list_pois:
 
             # downloading POI
-            poi = ox.geometries_from_bbox(north=NORTH,south=SOUTH,east=EAST,west=WEST,tags={key:value})
-
+            '''poi = ox.geometries_from_place(self.place,tags={key:True})
+            
             # convert list into string in order to save poi into parquet
             if 'nodes' in poi.columns:
 
@@ -577,28 +561,39 @@ class stop_move_enrichment(Enrichment):
 
             poi.reset_index(inplace=True)
             poi.rename(columns={key:'category'}, inplace=True)
-            print(poi['geometry'])
 
             if poi.crs is None:
                 poi.set_crs('epsg:4326',inplace=True)
                 poi.to_crs('epsg:3857',inplace=True)
             else:
-                poi.to_crs('epsg:3857',inplace=True)
-
+                poi.to_crs('epsg:3857',inplace=True)'''
+            poi = gpd.read_parquet('data/poi/'+key+'.parquet')
             gdf_ = select_columns(poi, self.semantic_granularity)
             globals()[key] = gdf_
             
-            #poi.to_parquet('data/poi/'+key+'.parquet')
+            poi.to_parquet('data/poi/'+key+'.parquet')
 
-        o_stops = preparing_stops(occasional_stops,50)
-        pois = list(tags.keys())
-        mat = semantic_enrichment(o_stops,globals()[pois[0]][['osmid','geometry']],pois[0])
+        o_stops = preparing_stops(occasional_stops,self.max_distance)
+        
+        mat = semantic_enrichment(o_stops,globals()[self.list_pois[0]][['osmid','geometry']],self.list_pois[0])
 
-        for i in range(1,len(pois)):
-            #controllo se df non è vuoto sjoin con df['id','geometry']
+        for i in range(1,len(self.list_pois)):
 
-            if len(globals()[pois[i]]) != 0:
-                mat = semantic_enrichment(mat,globals()[pois[i]][['osmid','geometry']],pois[i])
+            if len(globals()[self.list_pois[i]]) != 0:
+                mat = semantic_enrichment(mat,globals()[self.list_pois[i]][['osmid','geometry']],self.list_pois[i])
+
+    def get_users(self):
+        
+        return self.moves['uid'].unique()
+
+    def get_systematic(self,uid):
+        #print(self.systematic.columns)
+        return len(self.systematic[self.systematic['uid']==uid])
+
+    def get_occasional(self,uid):
+
+        return len(self.occasional[self.occasional['uid']==uid])
+
 
         ### TODO: 
         
@@ -607,3 +602,6 @@ class stop_move_enrichment(Enrichment):
         # upload your file
         # insert max distance in input
         # change yes of categories into the name of category
+        # dropdown per scegliere se scaricare o mettere i propri POI
+        # aggiungere dropdown con entità da arricchire (tipo traiettoria intera con meteo, utente con post, ecc.)
+        # 
