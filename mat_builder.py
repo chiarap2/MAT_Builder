@@ -70,9 +70,12 @@ app.layout = html.Div([
         html.Div(id='users_',children=[html.P(children='Users:'),
             dcc.Dropdown(id='user_list_')
         ],style={'display':'none'}),
+        html.Div(id='trajs',children=[html.P(children='Trajectories:'),
+            dcc.Dropdown(id='trajs_list')
+        ],style={'display':'none'}),
         html.Hr(),
         html.Div(id='outputs3'),
-
+        html.Div(id='output-maps'),
     ]),
     
 ])
@@ -205,7 +208,7 @@ def show_output(radio,inputs,tab,click):
         name_class = radio[2]
         global class_e
         class_ = globals()[name_class]
-        print(inputs)
+        #print(inputs)
         class_e = class_(inputs)   
         class_e.core()
         users = class_e.get_users()
@@ -239,24 +242,60 @@ def info_stops(user):
     return outputs
 
 @app.callback(
-    Output(component_id='outputs3', component_property='children'),   
-    Input(component_id='user_list_',component_property='value')
+    Output(component_id='trajs', component_property='style'),   
+    Output(component_id='trajs_list',component_property='options'),
+    Input(component_id='user_list_',component_property='value'),
 )
 
-def info_enrichment(user):
+def trajectories(user):
+
+    display = {'display':'none'}
+    options = []
+
+    if user is None:
+        return display, options
+
+    display = {'display':'inline'}
+    trajs = class_e.get_trajectories(user)
+    options=[{'label': i, 'value': i} for i in trajs]
+
+    return display,options
+
+@app.callback(
+    Output(component_id='outputs3', component_property='children'),   
+    Output('output-maps','children'),
+    State(component_id='user_list_',component_property='value'),
+    Input(component_id='trajs_list',component_property='value')
+)
+
+def info_enrichment(user,traj):
 
     outputs = []
 
-    if user is None:
+    if user is None or traj is None:
 
-        return outputs
+        return None, None
 
     num_systematic = class_e.get_systematic(user)
     outputs.append(html.Div(children='N. systematic stops: {}'.format(num_systematic)))
     num_occasional = class_e.get_occasional(user)
     outputs.append(html.Div(children='N. occasional stops: {}'.format(num_occasional)))
 
-    return outputs
+    mats_moves, mats_stops = class_e.get_mats(user,traj)
+
+    fig = px.line_mapbox(mats_moves, lat="lat", lon="lng", color="tid")
+    print(mats_stops.head())
+    fig.add_trace(go.Scattermapbox(mode = "markers",
+                                   lon = mats_stops.lng,
+                                   lat = mats_stops.lat,
+                                   text = ['amenity'],
+                                   marker = {'size': 10}))
+    
+    fig.update_layout(mapbox_style="stamen-terrain", mapbox_zoom=10,
+                      margin={"r":0,"t":0,"l":0,"b":0})
+
+    return outputs,dcc.Graph(figure=fig)   
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)

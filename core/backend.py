@@ -259,7 +259,7 @@ class stops_and_moves(Segmentation):
         trajs['move_id'][(trajs['start_stop']==1)|(trajs['end_stop']==1)] = -1
 
         moves = trajs[trajs['move_id']!=-1]
-        self.moves = moves
+        self.moves = moves.copy()
         moves.to_parquet('data/temp_dataset/moves.parquet')
 
         del end_df, start_df, traj_df
@@ -297,6 +297,7 @@ class stop_move_enrichment(Enrichment):
 
     stops = pd.DataFrame()
     moves = pd.DataFrame()
+    mats = gpd.GeoDataFrame()
 
     def __init__(self,list_):
         
@@ -582,18 +583,28 @@ class stop_move_enrichment(Enrichment):
             if len(globals()[self.list_pois[i]]) != 0:
                 mat = semantic_enrichment(mat,globals()[self.list_pois[i]][['osmid','geometry']],self.list_pois[i])
 
-    def get_users(self):
+        self.mats = mat.copy()
+
         
+
+    def get_users(self):
+        self.moves.reset_index(inplace=True)
         return self.moves['uid'].unique()
 
+    def get_trajectories(self,uid):
+
+        return self.moves[self.moves['uid']==uid]['tid'].unique()
+
     def get_systematic(self,uid):
-        #print(self.systematic.columns)
         return len(self.systematic[self.systematic['uid']==uid])
 
     def get_occasional(self,uid):
 
         return len(self.occasional[self.occasional['uid']==uid])
 
+    def get_mats(self,uid,traj_id):
+        #print(self.mats[self.mats['tid']==traj_id])
+        return self.moves[(self.moves['uid']==uid)&(self.moves['tid']==traj_id)], self.mats[(self.mats['uid']==uid)&(self.mats['tid']==traj_id)]
 
         ### TODO: 
         
