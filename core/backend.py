@@ -1,4 +1,3 @@
-from tracemalloc import stop
 import geopandas as gpd
 import shapely
 import pandas as pd
@@ -302,15 +301,46 @@ class stop_move_enrichment(Enrichment):
     def __init__(self,list_):
         
         self.moves = pd.read_parquet('data/temp_dataset/moves.parquet')
-        self.place = list_[0]
-        self.list_pois = list_[1]
-        self.semantic_granularity = list_[2]
-        self.max_distance = list_[4]
-        #### qui file personali #####
-        if list_[-1] == ['yes']:
+        
+        if list_[0] == ['yes']:
             self.enrich_moves = True
         else:
             self.enrich_moves = False
+
+        self.place = list_[1]
+
+        if list_[2] == ['no']:
+            self.list_pois = []
+        else:
+            self.list_pois = list_[2]
+
+        if list_[3] == ['no']:
+            self.upload_stops = 'no'
+        else:
+            self.upload_stops = list_[3]
+
+        self.semantic_granularity = list_[4]
+        self.max_distance = list_[5]
+
+        if list_[6] == ['no']:
+            self.list_users = []
+        else:
+            self.list_users = list_[6]
+
+        if list_[7] == ['no']:
+            self.upload_users = 'no'
+        else:
+            self.upload_users = list_[7]
+
+        if list_[8] == ['no']:
+            self.list_traj = []
+        else:
+            self.list_traj = list_[6]
+
+        if list_[8] == ['no']:
+            self.upload_trajs = 'no'
+        else:
+            self.upload_trajs = list_[7]
 
     def core(self):
 
@@ -540,48 +570,70 @@ class stop_move_enrichment(Enrichment):
             # now we can use sjoin_nearest obtaining the results we want
             mats = stop.sjoin_nearest(s_df,max_distance=0.00001,how='left',rsuffix=suffix)
             # compute the distance between the stop point and the POI geometry
-            mats['distance_'+suffix] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
+            #mats['distance_'+suffix] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
+            mats['distance'] = round(mats['geometry_stop'].distance(mats['geometry_'+suffix]),2)
             # sort by distance
-            mats = mats.sort_values(['stop_id','distance_'+suffix])
-            
+            #mats = mats.sort_values(['stop_id','distance_'+suffix])
+            mats = mats.sort_values(['tid','stop_id','distance'])
             return mats
 
-        for key in self.list_pois:
-
-            # downloading POI
-            '''poi = ox.geometries_from_place(self.place,tags={key:True})
-            
-            # convert list into string in order to save poi into parquet
-            if 'nodes' in poi.columns:
-
-                poi['nodes'] = poi['nodes'].astype(str)
-
-            if 'ways' in poi.columns:
-
-                poi['ways'] = poi['ways'].astype(str)
-
-            poi.reset_index(inplace=True)
-            poi.rename(columns={key:'category'}, inplace=True)
-
-            if poi.crs is None:
-                poi.set_crs('epsg:4326',inplace=True)
-                poi.to_crs('epsg:3857',inplace=True)
-            else:
-                poi.to_crs('epsg:3857',inplace=True)'''
-            poi = gpd.read_parquet('data/poi/'+key+'.parquet')
-            gdf_ = select_columns(poi, self.semantic_granularity)
-            globals()[key] = gdf_
-            
-            poi.to_parquet('data/poi/'+key+'.parquet')
-
-        o_stops = preparing_stops(occasional_stops,self.max_distance)
+        gdf_ = gpd.GeoDataFrame()
         
-        mat = semantic_enrichment(o_stops,globals()[self.list_pois[0]][['osmid','geometry']],self.list_pois[0])
 
-        for i in range(1,len(self.list_pois)):
+        if self.list_pois != []:
 
-            if len(globals()[self.list_pois[i]]) != 0:
-                mat = semantic_enrichment(mat,globals()[self.list_pois[i]][['osmid','geometry']],self.list_pois[i])
+            for key in self.list_pois:
+
+                # downloading POI
+                poi = ox.geometries_from_place(self.place,tags={key:True})
+                
+                # convert list into string in order to save poi into parquet
+                if 'nodes' in poi.columns:
+
+                    poi['nodes'] = poi['nodes'].astype(str)
+
+                if 'ways' in poi.columns:
+
+                    poi['ways'] = poi['ways'].astype(str)
+
+                poi.reset_index(inplace=True)
+                poi.rename(columns={key:'category'}, inplace=True)
+                poi['category'].replace({'yes':key}, inplace=True)
+
+                if poi.crs is None:
+                    poi.set_crs('epsg:4326',inplace=True)
+                    poi.to_crs('epsg:3857',inplace=True)
+                else:
+                    poi.to_crs('epsg:3857',inplace=True)
+                
+                poi.to_parquet('data/poi/'+key+'.parquet')
+                
+                #poi = gpd.read_parquet('data/poi/'+key+'.parquet')
+
+
+                gdf_ = select_columns(poi, self.semantic_granularity)
+                gdf_ = pd.concat([gdf_,poi])
+                #globals()[key] = gdf_
+        
+            gdf_.to_parquet('data/poi/pois.parquet')
+
+
+        if self.upload_stops != 'no':
+            
+            gdf_ = gpd.read_parquet(self.upload_stops)
+
+            if gdf_.crs is None:
+                gdf_.set_crs('epsg:4326',inplace=True)
+                gdf_.to_crs('epsg:3857',inplace=True)
+            else:
+                gdf_.to_crs('epsg:3857',inplace=True)
+
+        o_stops = preparing_stops(occasional_stops,self.max_distance)    
+
+        mat = semantic_enrichment(o_stops,gdf_[['osmid','geometry','category']],'poi')
+
+        ######## PROVA ###########
+        #mat.set_index(['stop_id','lat','lng'],inplace=True)
 
         self.mats = mat.copy()
 
@@ -604,7 +656,8 @@ class stop_move_enrichment(Enrichment):
 
     def get_mats(self,uid,traj_id):
         #print(self.mats[self.mats['tid']==traj_id])
-        return self.moves[(self.moves['uid']==uid)&(self.moves['tid']==traj_id)], self.mats[(self.mats['uid']==uid)&(self.mats['tid']==traj_id)]
+
+        return self.moves[(self.moves['uid']==uid)&(self.moves['tid']==traj_id)], self.mats[(self.mats['uid']==uid)&(self.mats['tid']==traj_id)], self.systematic[(self.systematic['uid']==uid)&(self.systematic['tid']==traj_id)]
 
         ### TODO: 
         
