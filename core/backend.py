@@ -571,11 +571,7 @@ class stop_move_enrichment(Enrichment):
             mats = stop.sjoin_nearest(s_df,max_distance=0.00001,how='left',rsuffix=suffix)
             # compute the distance between the stop point and the POI geometry
             #mats['distance_'+suffix] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
-<<<<<<< HEAD
             mats['distance'] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
-=======
-            mats['distance'] = round(mats['geometry_stop'].distance(mats['geometry_'+suffix]),2)
->>>>>>> 2645e756723083592ae69bc2bcd0bc6f649929ed
             # sort by distance
             #mats = mats.sort_values(['stop_id','distance_'+suffix])
             mats = mats.sort_values(['tid','stop_id','distance'])
