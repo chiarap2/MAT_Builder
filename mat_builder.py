@@ -350,9 +350,43 @@ def info_enrichment(user,traj):
 
         return None, None
 
+<<<<<<< HEAD
     mats_moves, mats_stops, mats_systematic = class_e.get_mats(user,traj)
 
     fig = px.line_mapbox(mats_moves, lat="lat", lon="lng", color="tid", hover_name="label")
+=======
+    num_systematic = class_e.get_systematic(user)
+    outputs.append(html.Div(children='N. systematic stops: {}'.format(num_systematic)))
+    num_occasional = class_e.get_occasional(user)
+    outputs.append(html.Div(children='N. occasional stops: {}'.format(num_occasional)))
+
+    mats_moves, mats_stops, mats_systematic = class_e.get_mats(user,traj)
+
+    fig = px.line_mapbox(mats_moves, lat="lat", lon="lng", color="tid", hover_name="label")
+
+    #stopid = mats_stops['stop_id'].unique()
+    mats_stops['distance'] = mats_stops['distance'].astype(str)
+    categories = mats_stops.groupby('stop_id')['category'].agg(" ".join)
+    distances = mats_stops.groupby('stop_id')['distance'].agg(" ".join)
+    mats_stops['description'] = mats_stops['category'] + ' ' + mats_stops['distance']
+
+    matched_pois = list(mats_stops.groupby('stop_id')['description'].agg("</br>".join))
+
+    fig.add_trace(go.Scattermapbox(mode = "markers", name = 'occasional stops',
+                                   lon = mats_stops.lng.unique(),
+                                   lat = mats_stops.lat.unique(),
+                                   text = matched_pois,
+                                   #text = [a+' '+b+'</br>' for a,b in zip(list(categories),list(distances))],
+                                   #meta = list(distances),
+                                   #hovertemplate = 'Distance: %{meta[0]}',
+                                   hoverinfo = 'text',
+                                   marker = {'size': 10}))
+    '''fig.add_trace(go.Scattermapbox(mode = "markers",
+                                   lon = mats_systematic.lng,
+                                   lat = mats_systematic.lat,
+                                   #hovertext= mats_systematic.category,
+                                   marker = {'size': 10}))'''
+>>>>>>> 2645e756723083592ae69bc2bcd0bc6f649929ed
     
     mats_stops['distance'] = mats_stops['distance'].astype(str)
     mats_stops['description'] = mats_stops['category'] + ' ' + mats_stops['distance']
