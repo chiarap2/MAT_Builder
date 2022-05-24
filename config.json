@@ -56,6 +56,27 @@
       ],
       "stop_move_enrichment": [
         {
+          "H5": {
+            "children": "Move enrichment: "
+          }
+        },
+        {
+          "Dropdown": {
+            "id": "enrich_move",
+            "options": [{"label": "yes", "value": "yes"},{"label":"no","value":"no"}]
+          }
+        },
+        {
+          "H5": {
+            "children": "Stop enrichment: "
+          }
+        },
+        {
+          "Span": {
+            "children": "Insert the name of the city (to download PoIs from OpenStreetMap): "
+          }
+        },
+        {
           "Input": {
             "id": "place",
             "type": "text",
@@ -74,7 +95,25 @@
               {"label": "office", "value": "office"},
               {"label": "public_transport", "value": "public_transport"},
               {"label": "shop", "value": "shop"},
-              {"label": "tourism", "value": "tourism"}]
+              {"label": "tourism", "value": "tourism"},
+              {"label":"no enrichment","value":"no"}]
+          }
+        },
+        {
+          "Span": {
+            "children": "... or upload your file (write 'no' if no file is uploaded): "
+          }
+        },
+        {
+          "Input": {
+            "id": "place",
+            "type": "text",
+            "placeholder": "path/to/your/file"
+          }
+        },
+        {
+          "Span": {
+            "children": "Choose semantic granularity (%): "
           }
         },
         {
@@ -85,11 +124,8 @@
           }
         },
         {
-          "Dropdown": {
-            "id": "upload_semantic",
-            "options": [{"label": "PoI", "value": "poi"},
-              {"label": "Weather", "value": "weather"},
-              {"label": "Social media posts", "value": "post"}]
+          "Span": {
+            "children": "Max distance from stops: "
           }
         },
         {
@@ -100,9 +136,51 @@
           }
         },
         {
-          "Checklist": {
-            "id": "enrich_move",
-            "options": [{"label": "Do you want to enrich moves?", "value": "yes"}]
+          "H5": {
+            "children": "User enrichment: "
+          }
+        },
+        {
+          "Dropdown": {
+            "id": "user_enrich",
+            "options": [{"label": "Social media posts", "value": "post"},
+                        {"label":"no enrichment","value":"no"}]
+          }
+        },
+        {
+          "Span": {
+            "children": "... or upload your file (write 'no' if no file is uploaded): "
+          }
+        },
+        {
+          "Input": {
+            "id": "place",
+            "type": "text",
+            "placeholder": "path/to/your/file"
+          }
+        },
+        {
+          "H5": {
+            "children": "Trajectory enrichment: "
+          }
+        },
+        {
+          "Dropdown": {
+            "id": "traj_enrich",
+            "options": [{"label": "Social media posts", "value": "post"},
+                        {"label":"no enrichment","value":"no"}]
+          }
+        },
+        {
+          "Span": {
+            "children": "... or upload your file (write 'no' if no file is uploaded): "
+          }
+        },
+        {
+          "Input": {
+            "id": "place",
+            "type": "text",
+            "placeholder": "path/to/your/file"
           }
         }
       ]
