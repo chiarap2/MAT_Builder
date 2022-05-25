@@ -128,21 +128,20 @@ class preprocessing2(Preprocessing):
         # ## PREPROCESSING
 
         # create a TrajDataFrame from the pandas DataFrame
-        tdf = skmob.TrajDataFrame(df, latitude='lat', longitude='lon', datetime='time', user_id='track_fid',
+        tdf = skmob.TrajDataFrame(df, latitude='lat', longitude='lon', datetime='time', user_id='user',
                                   trajectory_id='traj_id')
         ftdf = filtering.filter(tdf, max_speed_kmh=self.kmh)
         ctdf = compression.compress(ftdf, spatial_radius_km=0.2)
 
+        self.df = ctdf
 
-        gdf = gpd.GeoDataFrame(ctdf)
+    def get_num_users(self):
 
-        if gdf.crs is None:
-            gdf.set_crs('epsg:4326',inplace=True)
-            gdf.to_crs('epsg:3857',inplace=True)
-        else:
-            gdf.to_crs('epsg:3857',inplace=True)
+        return str(len(self.df.uid.unique()))
 
-        self.df = gdf
+    def get_num_trajs(self):
+
+        return str(len(self.df.tid.unique()))
 
     def output(self):
 

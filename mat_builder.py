@@ -80,19 +80,16 @@ app.layout = html.Div([
         style={'float':'left','width':'40%'}),
 
     html.Div(style={'float':'right','width':'50%'}, children=[
-        dcc.Loading(id="loading-1",
-                    children=[html.Div([html.Div(id="loading-output")])],
-        type="circle"),
+        dcc.Loading(id="loading-1",children=[html.Div([html.Div(id="loading-output")])],type="circle"),
         html.Div(id='outputs'),
-        html.Div(id='users',children=[html.P(children='Users:'),
-            dcc.Dropdown(id='user_list')
-        ],style={'display':'none'}),
-        html.Br(),
-        html.Br(),
-        html.Div(id='outputs2'),
-        html.Div(id='users_',children=[html.P(children='Users:'),
-            dcc.Dropdown(id='user_list_')
-        ],style={'display':'none'}),
+        html.Div(id='output_sm',children=[
+            html.Div(id='users',children=[html.P(children='Users:'),
+            dcc.Dropdown(id='user_list')],style={'display':'none'}),
+            html.Br(),
+            html.Br(),
+            html.Div(id='outputs2',style={'display':'none'})],style={'display':'none'}),
+        
+        html.Div(id='users_',children=[html.P(children='Users:'),dcc.Dropdown(id='user_list_')],style={'display':'none'}),
         html.Br(),
         html.Br(),
         html.Div(id='outputs3'),
@@ -183,6 +180,7 @@ def show_input(tab,radio):
     Output(component_id='0', component_property='disabled'),
     Output(component_id='1', component_property='disabled'),
     Output(component_id='2', component_property='disabled'),
+    Output(component_id='output_sm', component_property='style'),
     State(component_id={'type':'radio_items','index':ALL}, component_property='value'),
     State(component_id={'type':'input','index':ALL}, component_property='value'),
     State(component_id='tabs-inline', component_property='value'),
@@ -194,6 +192,7 @@ def show_output(radio,inputs,tab,click):
     #
     # try to use current triggered in order to raise error (state null value)
 
+    disable0 = False
     disable1 = True
     disable2 = True
     outputs = []
@@ -201,18 +200,15 @@ def show_output(radio,inputs,tab,click):
     options2 = []
     display = {'display':'none'}
     display2 = {'display':'none'}
-
-    if radio!=[]:
-
-        disable0 = True
-
+    display_sm = {'display':'none'}
+    
     if click is None:
-        disable0 = False
-        return None,outputs,display,options,display2,options2,disable0,disable1,disable2
+        if tab != 'Preprocessing' and tab != 'tab-1':
+            disable0 = True
+
+        return None,outputs,display,options,display2,options2,disable0,disable1,disable2,None
 
     is_empty = False
-
-    len(inputs)
 
     for input in inputs:
 
@@ -221,7 +217,7 @@ def show_output(radio,inputs,tab,click):
             is_empty = True
 
     if is_empty:
-        return None,html.H5(children='Please, insert input values!',style={'color':'red'})
+        return None,html.H5(children='Please, insert input values!',style={'color':'red'}),None,None,None,None,None,None,None,None
 
     if tab == 'Preprocessing':
 
@@ -242,7 +238,7 @@ def show_output(radio,inputs,tab,click):
         disable1 = False
 
     elif tab == 'Segmentation':
-
+        display_sm = {'display':'inline'}
         name_class = radio[1]
         global class_s
         class_ = globals()[name_class]
@@ -258,6 +254,7 @@ def show_output(radio,inputs,tab,click):
 
     elif tab == 'Enrichment':
 
+        display_sm = {'display':'none'}
         name_class = radio[2]
         global class_e
         class_ = globals()[name_class]
@@ -265,27 +262,30 @@ def show_output(radio,inputs,tab,click):
         class_e = class_(inputs)   
         class_e.core()
         users = class_e.get_users()
-
-        display2 = {'display':'inline'}
+        display = {'display':'none'}
+        #display2 = {'display':'inline'}
         options2=[{'label': i, 'value': i} for i in users]
+        
 
         disable0 = True
         disable1 = True
 
-    return None,outputs,display,options,display2,options2,disable0,disable1,disable2
+    return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
 @app.callback(
     Output(component_id='outputs2', component_property='children'),   
+    Output('outputs2','style'),
     Input(component_id='user_list',component_property='value')
 )
 
 def info_stops(user):
 
     outputs = []
+    display_sm = {'display':'iniline'}
 
     if user is None:
 
-        return outputs
+        return outputs,None
 
     num_trajs = class_s.get_trajectories(user)
     outputs.append(html.Div(children='N. trajectories: {}'.format(num_trajs)))
@@ -294,7 +294,7 @@ def info_stops(user):
     mean_duration = class_s.get_duration(user)
     outputs.append(html.Div(children='Stop average duration: {} minutes'.format(mean_duration)))
 
-    return outputs
+    return outputs,display_sm
 
 @app.callback(
     Output(component_id='trajs', component_property='style'),   
@@ -309,7 +309,7 @@ def trajectories(user):
 
     if user is None:
         return display, options
-
+    
     display = {'display':'inline'}
     trajs = class_e.get_trajectories(user)
     options=[{'label': i, 'value': i} for i in trajs]
@@ -330,9 +330,9 @@ def info_trajs(users):
         return None
 
     num_systematic = class_e.get_systematic(users)
-    outputs.append(html.Div(children='N. systematic stops: {}'.format(num_systematic)))
+    outputs.append(html.P(children='N. systematic stops: {}'.format(num_systematic)))
     num_occasional = class_e.get_occasional(users)
-    outputs.append(html.Div(children='N. occasional stops: {}'.format(num_occasional)))
+    outputs.append(html.P(children='N. occasional stops: {}'.format(num_occasional)))
 
     return outputs
 
@@ -344,11 +344,9 @@ def info_trajs(users):
 
 def info_enrichment(user,traj):
 
-    outputs = []
-
     if user is None or traj is None:
 
-        return None, None
+        return None
 
     mats_moves, mats_stops, mats_systematic = class_e.get_mats(user,traj)
 
@@ -371,7 +369,7 @@ def info_enrichment(user,traj):
     mats_systematic['other'] = round((mats_systematic['other']*100),2).astype(str)
     mats_systematic['frequency'] = mats_systematic['frequency'].astype(str)
 
-    mats_systematic['description'] = '<b> Home </b>: ' + mats_systematic['home'] + '% </br> <b> Work </b>: ' + mats_systematic['work'] + '% </br> <b> Other </b>: ' + mats_systematic['other'] + '% </br> <b> Frequency </b>: ' + mats_systematic['frequency']
+    mats_systematic['description'] = '<b> Home </b>: ' + mats_systematic['home'] + '% </br></br> <b> Work </b>: ' + mats_systematic['work'] + '% </br> <b> Other </b>: ' + mats_systematic['other'] + '% </br> <b> Frequency </b>: ' + mats_systematic['frequency']
     systematic_desc = list(mats_systematic['description'])
 
     fig.add_trace(go.Scattermapbox(mode = "markers", name = 'systematic stops',
@@ -386,7 +384,7 @@ def info_enrichment(user,traj):
 
     fig.update_traces(line=dict(color='#3392FF',width=2))
 
-    return dcc.Graph(figure=fig)   
+    return dcc.Graph(figure=fig)
 
 
 if __name__ == '__main__':
