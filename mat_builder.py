@@ -87,7 +87,7 @@ app.layout = html.Div([
             dcc.Dropdown(id='user_list')],style={'display':'none'}),
             html.Br(),
             html.Br(),
-            html.Div(id='outputs2',style={'display':'none'})],style={'display':'none'}),
+            html.Div(id='outputs2')],style={'display':'none'}),
         
         html.Div(id='users_',children=[html.P(children='Users:'),dcc.Dropdown(id='user_list_')],style={'display':'none'}),
         html.Br(),
@@ -154,7 +154,6 @@ def show_input(tab,radio):
 
                 elif elem == 'Dropdown':
                     if p[elem]['id'] == 'list_poi':
-                        print('hello')
                         inputs.append(dcc.Dropdown(id={'type':'input','index':c},options=p[elem]['options'],multi=True,style={'color':'#333'}))                    
                         inputs.append(html.Br())
                         inputs.append(html.Br())
@@ -193,8 +192,10 @@ def show_output(radio,inputs,tab,click):
     # try to use current triggered in order to raise error (state null value)
 
     disable0 = False
-    disable1 = True
-    disable2 = True
+    #disable1 = True
+    #disable2 = True
+    disable1 = False
+    disable2 = False
     outputs = []
     options = []
     options2 = []
@@ -206,7 +207,7 @@ def show_output(radio,inputs,tab,click):
         if tab != 'Preprocessing' and tab != 'tab-1':
             disable0 = True
 
-        return None,outputs,display,options,display2,options2,disable0,disable1,disable2,None
+        return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
     is_empty = False
 
@@ -234,67 +235,63 @@ def show_output(radio,inputs,tab,click):
         outputs.append(dcc.Graph(figure=px.histogram(class_pp.df.datetime,x='datetime')))
 
         class_pp.output()
-        disable0 = True
-        disable1 = False
+        #disable0 = True
+        #disable1 = False
 
     elif tab == 'Segmentation':
+
         display_sm = {'display':'inline'}
+        display = {'display':'inline'}
         name_class = radio[1]
         global class_s
         class_ = globals()[name_class]
         class_s = class_(inputs)   
         class_s.core()
         users = class_s.get_users()
-
-        display = {'display':'inline'}
         options=[{'label': i, 'value': i} for i in users]
 
-        disable0 = True
-        disable2 = False
+        #disable0 = True
+        #disable2 = False
 
     elif tab == 'Enrichment':
 
-        display_sm = {'display':'none'}
         name_class = radio[2]
         global class_e
         class_ = globals()[name_class]
-        #print(inputs)
         class_e = class_(inputs)   
         class_e.core()
         users = class_e.get_users()
+        display_sm = {'display':'none'}
         display = {'display':'none'}
-        #display2 = {'display':'inline'}
+        display2 = {'display':'inline'}
         options2=[{'label': i, 'value': i} for i in users]
         
-
-        disable0 = True
-        disable1 = True
+        #disable0 = True
+        #disable1 = True
 
     return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
 @app.callback(
     Output(component_id='outputs2', component_property='children'),   
-    Output('outputs2','style'),
     Input(component_id='user_list',component_property='value')
 )
 
 def info_stops(user):
 
     outputs = []
-    display_sm = {'display':'iniline'}
 
     if user is None:
 
-        return outputs,None
+        return outputs
 
     num_trajs = class_s.get_trajectories(user)
-    outputs.append(html.Div(children='N. trajectories: {}'.format(num_trajs)))
+    outputs.append(html.P(children='N. trajectories: {}'.format(num_trajs)))
     num_stops = class_s.get_stops(user)
-    outputs.append(html.Div(children='N. stops: {}'.format(num_stops)))
+    outputs.append(html.P(children='N. stops: {}'.format(num_stops)))
     mean_duration = class_s.get_duration(user)
-    outputs.append(html.Div(children='Stop average duration: {} minutes'.format(mean_duration)))
+    outputs.append(html.P(children='Stop average duration: {} minutes'.format(mean_duration)))
 
-    return outputs,display_sm
+    return outputs
 
 @app.callback(
     Output(component_id='trajs', component_property='style'),   
@@ -344,11 +341,23 @@ def info_trajs(users):
 
 def info_enrichment(user,traj):
 
+    transport = { 
+        0: 'walk',
+        1: 'bike',
+        2: 'bus',
+        3: 'car',
+        4: 'subway',
+        5: 'train',
+        6: 'taxi'}
+
     if user is None or traj is None:
 
         return None
 
     mats_moves, mats_stops, mats_systematic = class_e.get_mats(user,traj)
+    #print(mats_moves['label'].unique())
+    mats_moves['label'] = mats_moves['label'].map(transport)
+    #print(mats_moves['label'].unique())
 
     fig = px.line_mapbox(mats_moves, lat="lat", lon="lng", color="tid", hover_name="label")
     
@@ -379,7 +388,7 @@ def info_enrichment(user,traj):
                                    hoverinfo = 'text',
                                    marker = {'size': 10,'color': '#74C869'}))
     
-    fig.update_layout(mapbox_style="stamen-terrain", mapbox_zoom=12,
+    fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=12,
                       margin={"r":0,"t":0,"l":0,"b":0})
 
     fig.update_traces(line=dict(color='#3392FF',width=2))

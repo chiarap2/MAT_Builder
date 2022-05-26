@@ -300,8 +300,8 @@ class stop_move_enrichment(Enrichment):
     def __init__(self,list_):
         
         self.moves = pd.read_parquet('data/temp_dataset/moves.parquet')
-        
-        if list_[0] == ['yes']:
+
+        if list_[0] == 'yes':
             self.enrich_moves = True
         else:
             self.enrich_moves = False
@@ -313,7 +313,7 @@ class stop_move_enrichment(Enrichment):
         else:
             self.list_pois = list_[2]
 
-        if list_[3] == ['no']:
+        if list_[3] == 'no':
             self.upload_stops = 'no'
         else:
             self.upload_stops = list_[3]
@@ -321,25 +321,25 @@ class stop_move_enrichment(Enrichment):
         self.semantic_granularity = list_[4]
         self.max_distance = list_[5]
 
-        if list_[6] == ['no']:
-            self.list_users = []
+        if list_[6] == 'no':
+            self.tweet_user = []
         else:
-            self.list_users = list_[6]
+            self.tweet_user = list_[6]
 
-        if list_[7] == ['no']:
+        if list_[7] == 'no':
             self.upload_users = 'no'
         else:
             self.upload_users = list_[7]
 
-        if list_[8] == ['no']:
-            self.list_traj = []
+        if list_[8] == 'no':
+            self.weather = []
         else:
-            self.list_traj = list_[6]
+            self.weather = list_[8]
 
-        if list_[8] == ['no']:
+        if list_[9] == 'no':
             self.upload_trajs = 'no'
         else:
-            self.upload_trajs = list_[7]
+            self.upload_trajs = list_[9]
 
     def core(self):
 
@@ -397,7 +397,8 @@ class stop_move_enrichment(Enrichment):
             moves_index = moves.index
             acceleration_index = acceleration.index
             moves.loc[moves_index.isin(acceleration_index),'label'] = acceleration.loc[acceleration_index.isin(moves_index),'label']
-
+            
+            print(moves['label'].unique())
         
         ############################################
         ### ---- SYSTEMATIC STOP ENRICHMENT ---- ###
