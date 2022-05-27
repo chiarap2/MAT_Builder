@@ -61,10 +61,10 @@ for module in modules:
     methods = [ {'label':cls.__name__,'value':cls.__name__} for cls in module.__subclasses__()]
     if index == 0:
         children_tabs.append(dcc.Tab(id=str(index),label=module.__name__,value=module.__name__,style=tab_style,selected_style=tab_selected_style,disabled_style=disabled_style,
-                                 children=[dcc.RadioItems(id={'type':'radio_items','index':index}, options=methods),html.Button(id={'type':'button','index':index}, children='Submit')]))
+                                 children=[html.P('Choose a method:'),dcc.RadioItems(id={'type':'radio_items','index':index}, options=methods)]))
     else:
         children_tabs.append(dcc.Tab(id=str(index),label=module.__name__,value=module.__name__,style=tab_style,selected_style=tab_selected_style,disabled=True, disabled_style=disabled_style,
-                                 children=[dcc.RadioItems(id={'type':'radio_items','index':index}, options=methods),html.Button(id={'type':'button','index':index}, children='Submit')]))
+                                 children=[html.P('Choose a method:'),dcc.RadioItems(id={'type':'radio_items','index':index}, options=methods)]))
     index += 1
 
 app.layout = html.Div([
@@ -84,20 +84,21 @@ app.layout = html.Div([
         html.Div(id='outputs'),
         html.Div(id='output_sm',children=[
             html.Div(id='users',children=[html.P(children='Users:'),
-            dcc.Dropdown(id='user_list')],style={'display':'none'}),
+            dcc.Dropdown(id='user_list',style={'color':'#333'})],style={'display':'none'}),
             html.Br(),
             html.Br(),
             html.Div(id='outputs2')],style={'display':'none'}),
         
-        html.Div(id='users_',children=[html.P(children='Users:'),dcc.Dropdown(id='user_list_')],style={'display':'none'}),
+        html.Div(id='users_',children=[html.P(children='Users:'),dcc.Dropdown(id='user_list_',style={'color':'#333'})],style={'display':'none'}),
         html.Br(),
         html.Br(),
         html.Div(id='outputs3'),
         html.Br(),
         html.Br(),
         html.Div(id='trajs',children=[html.P(children='Trajectories:'),
-            dcc.Dropdown(id='trajs_list')
+            dcc.Dropdown(id='trajs_list',style={'color':'#333'})
         ],style={'display':'none'}),
+        html.Br(),
         html.Div(id='output-maps'),
     ]),
     
@@ -192,10 +193,10 @@ def show_output(radio,inputs,tab,click):
     # try to use current triggered in order to raise error (state null value)
 
     disable0 = False
-    #disable1 = True
-    #disable2 = True
-    disable1 = False
-    disable2 = False
+    disable1 = True
+    disable2 = True
+    #disable1 = False
+    #disable2 = False
     outputs = []
     options = []
     options2 = []
@@ -227,16 +228,19 @@ def show_output(radio,inputs,tab,click):
         global class_pp
         class_ = globals()[name_class]
         class_pp = class_(inputs)    
-        class_pp.core()
+        results = class_pp.core()
 
-        outputs.append(html.H6(children='Dataset statistics'))
-        outputs.append(html.Hr())
-        outputs.append(html.P(children='Tot. users: {} \t\t\t Tot. trajectories: {}'.format(class_pp.get_num_users(), class_pp.get_num_trajs())))
-        outputs.append(dcc.Graph(figure=px.histogram(class_pp.df.datetime,x='datetime')))
+        if results != '':
+            outputs.append(html.H6(children='File not found or not valid path',)) 
+        else:
+            outputs.append(html.H6(children='Dataset statistics'))
+            outputs.append(html.Hr())
+            outputs.append(html.P(children='Tot. users: {} \t\t\t Tot. trajectories: {}'.format(class_pp.get_num_users(), class_pp.get_num_trajs())))
+            outputs.append(dcc.Graph(figure=px.histogram(class_pp.df.datetime,x='datetime')))
 
-        class_pp.output()
-        #disable0 = True
-        #disable1 = False
+            class_pp.output()
+            disable0 = True
+            disable1 = False
 
     elif tab == 'Segmentation':
 
@@ -250,8 +254,8 @@ def show_output(radio,inputs,tab,click):
         users = class_s.get_users()
         options=[{'label': i, 'value': i} for i in users]
 
-        #disable0 = True
-        #disable2 = False
+        disable0 = True
+        disable2 = False
 
     elif tab == 'Enrichment':
 
@@ -266,8 +270,8 @@ def show_output(radio,inputs,tab,click):
         display2 = {'display':'inline'}
         options2=[{'label': i, 'value': i} for i in users]
         
-        #disable0 = True
-        #disable1 = True
+        disable0 = True
+        disable1 = True
 
     return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
@@ -358,6 +362,7 @@ def info_enrichment(user,traj):
     #print(mats_moves['label'].unique())
     mats_moves['label'] = mats_moves['label'].map(transport)
     #print(mats_moves['label'].unique())
+    mats_stops.drop_duplicates(subset=['category','distance'],inplace=True)
 
     fig = px.line_mapbox(mats_moves, lat="lat", lon="lng", color="tid", hover_name="label")
     
@@ -371,7 +376,7 @@ def info_enrichment(user,traj):
                                    lat = mats_stops.lat.unique(),
                                    text = matched_pois,
                                    hoverinfo = 'text',
-                                   marker = {'size': 10, 'color': '#FF7233'}))
+                                   marker = {'size': 10, 'color': '#F14C2B'}))
 
     mats_systematic['home'] = round((mats_systematic['home']*100),2).astype(str)
     mats_systematic['work'] = round((mats_systematic['work']*100),2).astype(str)
@@ -386,12 +391,12 @@ def info_enrichment(user,traj):
                                    lat = mats_systematic.lat,
                                    text = systematic_desc,
                                    hoverinfo = 'text',
-                                   marker = {'size': 10,'color': '#74C869'}))
+                                   marker = {'size': 10,'color': '#2BD98C'}))
     
     fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=12,
                       margin={"r":0,"t":0,"l":0,"b":0})
 
-    fig.update_traces(line=dict(color='#3392FF',width=2))
+    fig.update_traces(line=dict(color='#2B37F1',width=2))
 
     return dcc.Graph(figure=fig)
 

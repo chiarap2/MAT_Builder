@@ -88,6 +88,7 @@ class preprocessing1(Preprocessing):
         ctdf = compression.compress(ftdf, spatial_radius_km=0.2)
 
         self.df = ctdf
+        return ''
 
     def get_num_users(self):
 
@@ -134,6 +135,7 @@ class preprocessing2(Preprocessing):
         ctdf = compression.compress(ftdf, spatial_radius_km=0.2)
 
         self.df = ctdf
+        return ''
 
     def get_num_users(self):
 
@@ -634,9 +636,17 @@ class stop_move_enrichment(Enrichment):
 
         ######## PROVA ###########
         #mat.set_index(['stop_id','lat','lng'],inplace=True)
-
         self.mats = mat.copy()
 
+        '''if self.weather != 'no':
+
+            weather = pd.read_parquet('data/weather/weather_conditions.parquet')
+            moves['date'] = moves['datetime'].dt.date
+            moves['temperature'] = 0
+            moves['w_conditions'] = ''
+
+            moves[moves['date'].isin(weather['DATE'])]['temperature'] = weather[weather['DATE'].isin(moves['date'])]['TAVG_C']
+            print(moves['date'].unique()) '''
         
 
     def get_users(self):

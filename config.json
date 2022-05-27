@@ -167,7 +167,7 @@
         {
           "Dropdown": {
             "id": "traj_enrich",
-            "options": [{"label": "Social media posts", "value": "post"},
+            "options": [{"label": "Weather conditions", "value": "weather"},
                         {"label":"no enrichment","value":"no"}]
           }
         },
