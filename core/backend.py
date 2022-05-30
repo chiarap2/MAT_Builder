@@ -638,15 +638,26 @@ class stop_move_enrichment(Enrichment):
         #mat.set_index(['stop_id','lat','lng'],inplace=True)
         self.mats = mat.copy()
 
-        '''if self.weather != 'no':
+        if self.weather != 'no':
 
             weather = pd.read_parquet('data/weather/weather_conditions.parquet')
             moves['date'] = moves['datetime'].dt.date
+            weather['DATE'] = weather['DATE'].astype('datetime64')
+            weather['DATE'] = weather['DATE'].dt.date
             moves['temperature'] = 0
             moves['w_conditions'] = ''
 
-            moves[moves['date'].isin(weather['DATE'])]['temperature'] = weather[weather['DATE'].isin(moves['date'])]['TAVG_C']
-            print(moves['date'].unique()) '''
+            moves.reset_index(inplace=True)
+
+            moves.set_index('date',inplace=True)
+            weather.set_index('DATE',inplace=True)
+
+            moves['temperature'].loc[moves.index.isin(weather.index)] = weather['TAVG_C'][weather.index.isin(moves.index)]
+            print(moves['temperature'].unique())
+
+            moves.reset_index(inplace=True)
+            weather.reset_index(inplace=True)
+            
         
 
     def get_users(self):

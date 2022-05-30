@@ -193,10 +193,10 @@ def show_output(radio,inputs,tab,click):
     # try to use current triggered in order to raise error (state null value)
 
     disable0 = False
-    disable1 = True
-    disable2 = True
-    #disable1 = False
-    #disable2 = False
+    #disable1 = True
+    #disable2 = True
+    disable1 = False
+    disable2 = False
     outputs = []
     options = []
     options2 = []
@@ -205,8 +205,8 @@ def show_output(radio,inputs,tab,click):
     display_sm = {'display':'none'}
     
     if click is None:
-        if tab != 'Preprocessing' and tab != 'tab-1':
-            disable0 = True
+        #if tab != 'Preprocessing' and tab != 'tab-1':
+        #    disable0 = True
 
         return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
@@ -239,8 +239,8 @@ def show_output(radio,inputs,tab,click):
             outputs.append(dcc.Graph(figure=px.histogram(class_pp.df.datetime,x='datetime')))
 
             class_pp.output()
-            disable0 = True
-            disable1 = False
+            #disable0 = True
+            #disable1 = False
 
     elif tab == 'Segmentation':
 
@@ -254,8 +254,8 @@ def show_output(radio,inputs,tab,click):
         users = class_s.get_users()
         options=[{'label': i, 'value': i} for i in users]
 
-        disable0 = True
-        disable2 = False
+        #disable0 = True
+        #disable2 = False
 
     elif tab == 'Enrichment':
 
@@ -270,8 +270,8 @@ def show_output(radio,inputs,tab,click):
         display2 = {'display':'inline'}
         options2=[{'label': i, 'value': i} for i in users]
         
-        disable0 = True
-        disable1 = True
+        #disable0 = True
+        #disable1 = True
 
     return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
@@ -364,12 +364,12 @@ def info_enrichment(user,traj):
     #print(mats_moves['label'].unique())
     mats_stops.drop_duplicates(subset=['category','distance'],inplace=True)
 
-    fig = px.line_mapbox(mats_moves, lat="lat", lon="lng", color="tid", hover_name="label")
+    fig = px.line_mapbox(mats_moves, lat="lat", lon="lng", color="tid", hover_data=["label","temperature"])
     
     mats_stops['distance'] = round(mats_stops['distance'],2).astype(str)
     mats_stops['description'] = mats_stops['category'] + ' ' + mats_stops['distance']
 
-    matched_pois = list(mats_stops.groupby('stop_id')['description'].agg("</br>".join))
+    matched_pois = list(mats_stops.groupby('stop_id')['description'].agg("</br></br>".join))
 
     fig.add_trace(go.Scattermapbox(mode = "markers", name = 'occasional stops',
                                    lon = mats_stops.lng.unique(),
