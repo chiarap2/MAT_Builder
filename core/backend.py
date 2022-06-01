@@ -652,13 +652,30 @@ class stop_move_enrichment(Enrichment):
             moves.set_index('date',inplace=True)
             weather.set_index('DATE',inplace=True)
 
-            moves['temperature'].loc[moves.index.isin(weather.index)] = weather['TAVG_C'][weather.index.isin(moves.index)]
-            print(moves['temperature'].unique())
+            moves['temperature'].loc[moves.index.isin(weather.index)] = round(weather['TAVG_C'].loc[weather.index.isin(moves.index)],2)
+            moves['w_conditions'].loc[moves.index.isin(weather.index)] = weather['DESCRIPTION'].loc[weather.index.isin(moves.index)]
 
             moves.reset_index(inplace=True)
             weather.reset_index(inplace=True)
-            
         
+        if self.tweet_user != 'no':
+
+            tweets = pd.read_parquet('data/tweets/tweets.parquet')
+            moves['date'] = moves['datetime'].dt.date
+            tweets['tweet_created'] = tweets['tweet_created'].astype('datetime64')
+            tweets['tweet_created'] = tweets['tweet_created'].dt.date
+            moves['tweet'] = ''
+
+            moves.reset_index(inplace=True)  
+
+            moves.set_index(['date','uid'],inplace=True)   
+            tweets.set_index(['tweet_created','uid'],inplace=True)      
+            matched_tweets = moves.join(tweets,how='inner')
+
+            moves.reset_index(inplace=True)
+            matched_tweets.reset_index(inplace=True)
+
+            self.tweets = matched_tweets.copy()       
 
     def get_users(self):
         self.moves.reset_index(inplace=True)
@@ -675,18 +692,26 @@ class stop_move_enrichment(Enrichment):
 
         return len(self.occasional[self.occasional['uid']==uid])
 
+    def get_transport_duration(self,uid):
+
+        first_transport = self.moves[self.moves['uid']==uid].groupby(['label','tid']).first()['datetime']
+        last_transport = self.moves[self.moves['uid']==uid].groupby(['label','tid']).last()['datetime']
+
+        duration_tid = last_transport - first_transport
+        
+        duration = pd.DataFrame(duration_tid.groupby('label').sum())
+        
+        duration.reset_index(inplace=True)
+
+        return duration
+
+    def get_tweets(self,uid):
+
+        return self.tweets[self.tweets['uid']==uid]['text'].unique()
+
     def get_mats(self,uid,traj_id):
         #print(self.mats[self.mats['tid']==traj_id])
 
         return self.moves[(self.moves['uid']==uid)&(self.moves['tid']==traj_id)], self.mats[(self.mats['uid']==uid)&(self.mats['tid']==traj_id)], self.systematic[(self.systematic['uid']==uid)&(self.systematic['tid']==traj_id)]
 
-        ### TODO: 
-        
-        # filter by rules;
-        # output
-        # upload your file
-        # insert max distance in input
-        # change yes of categories into the name of category
-        # dropdown per scegliere se scaricare o mettere i propri POI
-        # aggiungere dropdown con entità da arricchire (tipo traiettoria intera con meteo, utente con post, ecc.)
-        # 
+    
