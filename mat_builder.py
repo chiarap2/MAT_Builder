@@ -70,15 +70,20 @@ for module in modules:
 
 app.layout = html.Div([
     
-    html.H1(children='MAT-Builder'), 
-    
+    #html.H1(children='MAT-Builder'), 
+    html.Div(id='title',children=[
+        html.Img(src='assets/MAT-Builder-logo.png',style={'width':'25%','height':'5%','float':'left'}),
+        html.Img(src='assets/loghini.jpg',style={'width':'35%','height':'15%','float':'right'})
+    ],style={'display':'inline-block'}),
+    html.Br(),
+    html.Br(),
     html.Div(id='inputs',children=[
         dcc.Tabs(id="tabs-inline", children=children_tabs, style=tabs_styles),
         html.Br(),
         html.Br(),
         html.Div(id='display'),
         html.Button(id='run',children='RUN',style={'display':'none'})],
-        style={'float':'left','width':'40%'}),
+    style={'float':'left','width':'40%'}),
 
     html.Div(style={'float':'right','width':'50%'}, children=[
         dcc.Loading(id="loading-1",children=[html.Div([html.Div(id="loading-output")])],type="circle"),
@@ -158,11 +163,9 @@ def show_input(tab,radio):
                     if p[elem]['id'] == 'list_poi':
                         inputs.append(dcc.Dropdown(id={'type':'input','index':c},options=p[elem]['options'],multi=True,style={'color':'#333'}))                    
                         inputs.append(html.Br())
-                        inputs.append(html.Br())
 
                     else:
-                        inputs.append(dcc.Dropdown(id={'type':'input','index':c},options=p[elem]['options'],style={'color':'#333'}))                    
-                        inputs.append(html.Br())
+                        inputs.append(dcc.Dropdown(id={'type':'input','index':c},options=p[elem]['options'],style={'color':'#333','width':'60%'}))                    
                         inputs.append(html.Br())
 
             c +=1
@@ -194,10 +197,10 @@ def show_output(radio,inputs,tab,click):
     # try to use current triggered in order to raise error (state null value)
 
     disable0 = False
-    #disable1 = True
-    #disable2 = True
-    disable1 = False
-    disable2 = False
+    disable1 = True
+    disable2 = True
+    #disable1 = False
+    #disable2 = False
     outputs = []
     options = []
     options2 = []
@@ -206,8 +209,8 @@ def show_output(radio,inputs,tab,click):
     display_sm = {'display':'none'}
     
     if click is None:
-        #if tab != 'Preprocessing' and tab != 'tab-1':
-        #    disable0 = True
+        if tab != 'Preprocessing' and tab != 'tab-1':
+            disable0 = True
 
         return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
@@ -237,11 +240,10 @@ def show_output(radio,inputs,tab,click):
             outputs.append(html.H6(children='Dataset statistics'))
             outputs.append(html.Hr())
             outputs.append(html.P(children='Tot. users: {} \t\t\t Tot. trajectories: {}'.format(class_pp.get_num_users(), class_pp.get_num_trajs())))
-            outputs.append(dcc.Graph(figure=px.histogram(class_pp.df.datetime,x='datetime')))
-
+            outputs.append(dcc.Graph(figure=px.histogram(class_pp.df.groupby('tid').datetime.first(),x='datetime',title='Distribution of trajectories over time')))
             class_pp.output()
-            #disable0 = True
-            #disable1 = False
+            disable0 = True
+            disable1 = False
 
     elif tab == 'Segmentation':
 
@@ -255,8 +257,8 @@ def show_output(radio,inputs,tab,click):
         users = class_s.get_users()
         options=[{'label': i, 'value': i} for i in users]
 
-        #disable0 = True
-        #disable2 = False
+        disable0 = True
+        disable2 = False
 
     elif tab == 'Enrichment':
 
@@ -271,8 +273,8 @@ def show_output(radio,inputs,tab,click):
         display2 = {'display':'inline'}
         options2=[{'label': i, 'value': i} for i in users]
         
-        #disable0 = True
-        #disable1 = True
+        disable0 = True
+        disable1 = True
 
     return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 

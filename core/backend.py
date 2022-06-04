@@ -399,9 +399,7 @@ class stop_move_enrichment(Enrichment):
             moves_index = moves.index
             acceleration_index = acceleration.index
             moves.loc[moves_index.isin(acceleration_index),'label'] = acceleration.loc[acceleration_index.isin(moves_index),'label']
-            
-            print(moves['label'].unique())
-        
+                    
         ############################################
         ### ---- SYSTEMATIC STOP ENRICHMENT ---- ###
         ############################################
