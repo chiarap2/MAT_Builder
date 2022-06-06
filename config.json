@@ -66,7 +66,7 @@
       "stops_and_moves": [
         {
           "Span":{
-            "children":"Min. duration of a stop "
+            "children":"Min. duration of a stop (minutes) "
           }
         },
         {
