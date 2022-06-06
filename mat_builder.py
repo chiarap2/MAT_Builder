@@ -74,7 +74,7 @@ app.layout = html.Div([
     html.Div(id='title',children=[
         html.Img(src='assets/MAT-Builder-logo.png',style={'width':'25%','height':'5%','float':'left'}),
         html.Img(src='assets/loghini.jpg',style={'width':'35%','height':'15%','float':'right'})
-    ],style={'display':'inline-block'}),
+    ],style={'display':'inline-block','background-color':'white','padding':'1%'}),
     html.Br(),
     html.Br(),
     html.Div(id='inputs',children=[

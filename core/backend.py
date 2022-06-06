@@ -42,6 +42,7 @@ class Segmentation(demo):
     pass
 
 class Enrichment(demo):
+
     '''
     `enrichment` module
     '''
@@ -102,12 +103,12 @@ class preprocessing1(Preprocessing):
 
         self.df.to_parquet('data/temp_dataset/traj_cleaned.parquet')
 
-class preprocessing2(Preprocessing):
-    '''
+'''class preprocessing2(Preprocessing):
+    """
     `preprocessing2` is a subclass of `Preprocessing` to preprocess trajectories and allows users to:
     1) remove outliers
     2) compress trajectories
-    '''
+    """
     pass
 
     df = gpd.GeoDataFrame()
@@ -148,6 +149,8 @@ class preprocessing2(Preprocessing):
     def output(self):
 
         self.df.to_parquet('data/temp_dataset/traj_cleaned.parquet')
+
+'''
 
 
 class stops_and_moves(Segmentation):
