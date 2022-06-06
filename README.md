@@ -45,8 +45,12 @@ The ``segmentation`` module allows users to find ***stops*** and ***moves***.
 The ```Enrichment``` module allows practioners to enrich different "entities" of a trajectory:
 - **Stop enrichment**: 
     - categorize stops into:
-        - *systematic stops*: stops that fall in the same area more than a given number of times. They are enriched as *Home*, *Work* or *Other*
-        - *occasional stops*: stops that are not systematic. They are enriched with the most nearest PoIs.
+        - *systematic stops*: stops that fall in the same area more than a given number of times. They are enriched as *Home*, *Work* or *Other*.
+        - *occasional stops*: stops that are not systematic. They are enriched with the most nearest PoIs. PoI dataset must have an ID, latitude, longitude, and a category at least. If users don't have a PoI dataset, they can download them from OpenStreetMap.
+- **Move enrichment**: users can enrich moves with the transportation mean
+- **Trajectory enrichment**: users can enrich the entire trajectory with the weather conditions that must have an ID, the Trajectory ID and the timestamp. 
+- **User enrichment** : users can enrich the 'users entity' with the social media posts. These data must have an ID, the user ID and the timestamp. If social media posts are geolocated, the enrichment could be based on spatial information (such as for occasional stops).
+
 
 ### **Requirement**
 ---
