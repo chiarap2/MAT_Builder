@@ -48,6 +48,9 @@ class Enrichment(demo):
     '''
     pass
 
+class newModule(demo):
+    pass
+
 class preprocessing1(Preprocessing):
     '''
     `preprocessing1` is a subclass of `Preprocessing` to preprocess trajectories and allows users to:

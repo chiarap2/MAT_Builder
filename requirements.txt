@@ -1,0 +1,12 @@
+dash==2.0.0
+geohash2==1.1
+geopandas==0.10.2
+jupyter_dash==0.4.0
+numpy==1.21.2
+osmnx==1.1.2
+pandas==1.2.5
+plotly==5.4.0
+ptrail==0.6.2b0
+scikit_learn==1.1.1
+scikit_mobility==1.2.2
+Shapely==1.7.1
