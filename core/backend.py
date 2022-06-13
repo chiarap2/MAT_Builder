@@ -48,8 +48,6 @@ class Enrichment(demo):
     '''
     pass
 
-class newModule(demo):
-    pass
 
 class preprocessing1(Preprocessing):
     '''
@@ -502,10 +500,11 @@ class stop_move_enrichment(Enrichment):
         systematic_stops['other'].loc[systematic_stops.index.isin(freq.index)] = freq['other'].loc[freq.index.isin(systematic_stops.index)]
         systematic_stops.reset_index(inplace=True)
         self.systematic = systematic_stops
-
+        self.systematic.to_parquet('data/systematic_stops.parquet')
         ############################################
         ### ---- OCCASIONAL STOP ENRICHMENT ---- ###
         ############################################ 
+
 
         occasional_stops = stops[~stops['stop_id'].isin(systematic_stops['stop_id'])]
 
@@ -619,7 +618,6 @@ class stop_move_enrichment(Enrichment):
 
                 gdf_ = select_columns(poi, self.semantic_granularity)
                 gdf_ = pd.concat([gdf_,poi])
-                #globals()[key] = gdf_
         
             gdf_.to_parquet('data/poi/pois.parquet')
 
@@ -641,6 +639,7 @@ class stop_move_enrichment(Enrichment):
         ######## PROVA ###########
         #mat.set_index(['stop_id','lat','lng'],inplace=True)
         self.mats = mat.copy()
+        self.mats.to_parquet('data/enriched_occasional.parquet')
 
         if self.weather != 'no':
 
