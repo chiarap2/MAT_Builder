@@ -227,6 +227,18 @@
             "type": "text",
             "placeholder": "path/to/your/file"
           }
+        },
+        {
+          "H5": {
+            "children": "RDF Graph: "
+          }
+        },
+        {
+          "Dropdown": {
+            "id": "rdf",
+            "options": [{"label": "yes", "value": "yes"},
+                        {"label":"no","value":"no"}]
+          }
         }
       ]
 }
