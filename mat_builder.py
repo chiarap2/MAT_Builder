@@ -196,10 +196,10 @@ def show_output(radio,inputs,tab,click):
     # try to use current triggered in order to raise error (state null value)
 
     disable0 = False
-    #disable1 = True
-    #disable2 = True
-    disable1 = False
-    disable2 = False
+    disable1 = True
+    disable2 = True
+    #disable1 = False
+    #disable2 = False
     outputs = []
     options = []
     options2 = []
@@ -241,8 +241,8 @@ def show_output(radio,inputs,tab,click):
             outputs.append(html.P(children='Tot. users: {} \t\t\t Tot. trajectories: {}'.format(class_pp.get_num_users(), class_pp.get_num_trajs())))
             outputs.append(dcc.Graph(figure=px.histogram(class_pp.df.groupby('tid').datetime.first(),x='datetime',title='Distribution of trajectories over time')))
             class_pp.output()
-            #disable0 = True
-            #disable1 = False
+            disable0 = True
+            disable1 = False
 
     elif tab == 'Segmentation':
 
@@ -256,8 +256,8 @@ def show_output(radio,inputs,tab,click):
         users = class_s.get_users()
         options=[{'label': i, 'value': i} for i in users]
 
-        #disable0 = True
-        #disable2 = False
+        disable0 = True
+        disable2 = False
 
     elif tab == 'Enrichment':
 
@@ -272,8 +272,8 @@ def show_output(radio,inputs,tab,click):
         display2 = {'display':'inline'}
         options2=[{'label': i, 'value': i} for i in users]
         
-        #disable0 = True
-        #disable1 = True
+        disable0 = True
+        disable1 = True
 
     return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
