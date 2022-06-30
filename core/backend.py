@@ -12,8 +12,7 @@ import pickle
 from sklearn.preprocessing import StandardScaler
 import geohash2
 import osmnx as ox
-import os
-import glob
+from core.RDF_builder import RDFBuilder
 
 shapely.speedups.disable()
 
@@ -346,6 +345,11 @@ class stop_move_enrichment(Enrichment):
             self.upload_trajs = 'no'
         else:
             self.upload_trajs = list_[9]
+        
+        if list_[-1] == 'yes':
+            self.rdf = 'yes'
+        else:
+            self.rdf = 'no'
 
     def core(self):
 
@@ -682,6 +686,17 @@ class stop_move_enrichment(Enrichment):
 
             self.tweets = matched_tweets.copy()       
 
+        if self.rdf == 'yes':
+            
+            builder = RDFBuilder()
+
+            traj_cleaned = pd.read_parquet('data/temp_dataset/traj_cleaned.parquet')
+            builder.add_trajectories(traj_cleaned)
+
+            builder.add_occasional_stops(self.mats)
+            builder.add_systematic_stops(self.systematic)
+            builder.add_moves(moves)
+        
     def get_users(self):
         self.moves.reset_index(inplace=True)
         return self.moves['uid'].unique()
