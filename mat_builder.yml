@@ -1,0 +1,25 @@
+name: test
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - dash
+  - geohash2
+  - geopandas
+  - jupyter-dash
+  - numpy
+  - osmnx
+  - pandas
+  - plotly
+  - pyarrow
+  - pygeos
+  - python=3.9
+  - rdflib
+  - jupyterlab
+  - scikit-learn
+  - scikit-mobility=1.2.2
+  - shapely
+  - pip
+  - pip:
+    - PTRAIL
+prefix: /home/flettich/anaconda3/envs/test
