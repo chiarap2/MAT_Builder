@@ -687,15 +687,24 @@ class stop_move_enrichment(Enrichment):
             self.tweets = matched_tweets.copy()       
 
         if self.rdf == 'yes':
-            
+
+            # Instantiate RDF-builder
             builder = RDFBuilder()
 
+            # Add the users and the information associated to their raw-trajectories to the graph.
             traj_cleaned = pd.read_parquet('data/temp_dataset/traj_cleaned.parquet')
             builder.add_trajectories(traj_cleaned)
 
+            # Add to the RDF graph the stops, the moves, and the semantic information 
+            # associated with the trajectories (social media posts, weather), the stops (type of stop, POIs),
+            # and the moves (transportation mean).
             builder.add_occasional_stops(self.mats)
             builder.add_systematic_stops(self.systematic)
             builder.add_moves(moves)
+            
+            # Output the RDF graph to disk in Turtle format.
+            builder.serialize_graph('kg.ttl')
+            
         
     def get_users(self):
         self.moves.reset_index(inplace=True)
