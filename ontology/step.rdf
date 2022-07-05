@@ -1,0 +1,921 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://purl.org/net/step#"
+     xml:base="http://purl.org/net/step"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:qu="http://purl.oclc.org/NET/ssnx/qu/qu#"
+     xmlns:sf="http://www.opengis.net/ont/sf#"
+     xmlns:vs="http://www.w3.org/2003/06/sw-vocab-status/ns#"
+     xmlns:geo="http://www.opengis.net/ont/geosparql#"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:foaf="http://xmlns.com/foaf/0.1/"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:step="http://purl.org/net/step#"
+     xmlns:swrl="http://www.w3.org/2003/11/swrl#"
+     xmlns:time="http://www.w3.org/2006/time#"
+     xmlns:vann="http://purl.org/vocab/vann/"
+     xmlns:swrla="http://swrl.stanford.edu/ontologies/3.3/swrla.owl#"
+     xmlns:swrlb="http://www.w3.org/2003/11/swrlb#"
+     xmlns:terms="http://purl.org/dc/terms/">
+    <owl:Ontology rdf:about="http://purl.org/net/step">
+        <dc:creator rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Hervé Martin
+https://www.researchgate.net/profile/Herve_Martin</dc:creator>
+        <dc:creator rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Tales P. Nogueira
+https://www.researchgate.net/profile/Tales_Nogueira</dc:creator>
+        <dc:description xml:lang="en">An ontology for representing semantic trajectories and contextual elements in terms of features of interests and episodes.</dc:description>
+        <dc:issued>2016-11-07</dc:issued>
+        <terms:title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Semantic Trajectory Episodes</terms:title>
+        <vann:preferredNamespacePrefix>step</vann:preferredNamespacePrefix>
+        <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Please cite the following paper if you use or refer to this ontology: 
+
+T. P. Nogueira and H. Martin, &quot;Querying Semantic Trajectory Episodes&quot; in 4th ACM SIGSPATIAL International Workshop on Mobile Geographic Information Systems (MobiGIS&apos;15), 2015.</rdfs:comment>
+        <rdfs:label xml:lang="en">Semantic Trajectory Episodes</rdfs:label>
+        <owl:versionInfo rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">2.0</owl:versionInfo>
+    </owl:Ontology>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Annotation properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://purl.org/dc/elements/1.1/creator -->
+
+    <owl:AnnotationProperty rdf:about="http://purl.org/dc/elements/1.1/creator"/>
+    
+
+
+    <!-- http://purl.org/dc/elements/1.1/description -->
+
+    <owl:AnnotationProperty rdf:about="http://purl.org/dc/elements/1.1/description"/>
+    
+
+
+    <!-- http://purl.org/dc/elements/1.1/issued -->
+
+    <owl:AnnotationProperty rdf:about="http://purl.org/dc/elements/1.1/issued"/>
+    
+
+
+    <!-- http://purl.org/dc/terms/title -->
+
+    <owl:AnnotationProperty rdf:about="http://purl.org/dc/terms/title"/>
+    
+
+
+    <!-- http://purl.org/vocab/vann/preferredNamespacePrefix -->
+
+    <owl:AnnotationProperty rdf:about="http://purl.org/vocab/vann/preferredNamespacePrefix"/>
+    
+
+
+    <!-- http://swrl.stanford.edu/ontologies/3.3/swrla.owl#isRuleEnabled -->
+
+    <owl:AnnotationProperty rdf:about="http://swrl.stanford.edu/ontologies/3.3/swrla.owl#isRuleEnabled"/>
+    
+
+
+    <!-- http://www.w3.org/2002/07/owl#equivalentClass -->
+
+    <owl:AnnotationProperty rdf:about="http://www.w3.org/2002/07/owl#equivalentClass"/>
+    
+
+
+    <!-- http://www.w3.org/2002/07/owl#versionInfo -->
+
+    <owl:AnnotationProperty rdf:about="http://www.w3.org/2002/07/owl#versionInfo"/>
+    
+
+
+    <!-- http://www.w3.org/2003/06/sw-vocab-status/ns#term_status -->
+
+    <owl:AnnotationProperty rdf:about="http://www.w3.org/2003/06/sw-vocab-status/ns#term_status"/>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Datatypes
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.opengis.net/ont/sf#WktLiteral -->
+
+    <rdfs:Datatype rdf:about="http://www.opengis.net/ont/sf#WktLiteral">
+        <rdfs:isDefinedBy>http://www.opengis.net/ont/sf#WktLiteral</rdfs:isDefinedBy>
+    </rdfs:Datatype>
+    
+
+
+    <!-- http://www.w3.org/2001/XMLSchema#anySimpleType -->
+
+    <rdfs:Datatype rdf:about="http://www.w3.org/2001/XMLSchema#anySimpleType">
+        <rdfs:isDefinedBy>http://www.w3.org/2001/XMLSchema#anySimpleType</rdfs:isDefinedBy>
+    </rdfs:Datatype>
+    
+
+
+    <!-- http://www.w3.org/2001/XMLSchema#dateTime -->
+
+    <rdfs:Datatype rdf:about="http://www.w3.org/2001/XMLSchema#dateTime">
+        <rdfs:isDefinedBy>http://www.w3.org/2001/XMLSchema#dateTime</rdfs:isDefinedBy>
+    </rdfs:Datatype>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Object Properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://purl.org/net/step#atTime -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#atTime">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://purl.org/net/step#atTime"/>
+                <owl:allValuesFrom>
+                    <owl:Class>
+                        <owl:unionOf rdf:parseType="Collection">
+                            <rdf:Description rdf:about="http://purl.org/net/step#Fix"/>
+                            <rdf:Description rdf:about="http://purl.org/net/step#KeyPoint"/>
+                        </owl:unionOf>
+                    </owl:Class>
+                </owl:allValuesFrom>
+            </owl:Restriction>
+        </rdfs:domain>
+        <rdfs:range rdf:resource="http://www.w3.org/2006/time#Instant"/>
+        <rdfs:comment xml:lang="en">Links the Fix or KeyPoint to a time instant.</rdfs:comment>
+        <rdfs:label xml:lang="en">atTime</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#coarserThan -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#coarserThan">
+        <owl:inverseOf rdf:resource="http://purl.org/net/step#finerThan"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#finerThan -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#finerThan">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#TransitiveProperty"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasEndingPoint -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasEndingPoint">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://purl.org/net/step#SpatiotemporalExtent"/>
+        <rdfs:range rdf:resource="http://purl.org/net/step#KeyPoint"/>
+        <rdfs:comment xml:lang="en">Links a Spatiotemporal extent to a KeyPoint that defines when and where the episode finishes.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasEndingPoint</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasEpisode -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasEpisode">
+        <rdfs:domain rdf:resource="http://purl.org/net/step#FeatureOfInterest"/>
+        <rdfs:range rdf:resource="http://purl.org/net/step#Episode"/>
+        <rdfs:comment xml:lang="en">Links a Feature of Interest to its corresponding Episodes.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasEpisode</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasExtent -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasExtent">
+        <rdfs:domain rdf:resource="http://purl.org/net/step#Episode"/>
+        <rdfs:range rdf:resource="http://purl.org/net/step#Extent"/>
+        <rdfs:comment xml:lang="en">Links an episode to an extent.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasExtent</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasFeature -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasFeature">
+        <rdfs:domain rdf:resource="http://purl.org/net/step#SpatiotemporalElement"/>
+        <rdfs:range rdf:resource="http://purl.org/net/step#FeatureOfInterest"/>
+        <rdfs:comment xml:lang="en">Links a Trajectory or Contextual Element to a Feature of Interest.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasFeature</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasFix -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasFix">
+        <rdfs:domain rdf:resource="http://purl.org/net/step#RawTrajectory"/>
+        <rdfs:range rdf:resource="http://purl.org/net/step#Fix"/>
+        <rdfs:comment xml:lang="en">Links each Fix to its Raw Trajectory.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasFix</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasLocation -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasLocation">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://purl.org/net/step#hasLocation"/>
+                <owl:allValuesFrom>
+                    <owl:Class>
+                        <owl:unionOf rdf:parseType="Collection">
+                            <rdf:Description rdf:about="http://purl.org/net/step#Fix"/>
+                            <rdf:Description rdf:about="http://purl.org/net/step#KeyPoint"/>
+                        </owl:unionOf>
+                    </owl:Class>
+                </owl:allValuesFrom>
+            </owl:Restriction>
+        </rdfs:domain>
+        <rdfs:range rdf:resource="http://www.opengis.net/ont/sf#Point"/>
+        <rdfs:comment xml:lang="en">Links a Fix or a KeyPoint to a location.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasLocation</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasPoint -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasPoint">
+        <rdfs:domain rdf:resource="http://purl.org/net/step#SpatiotemporalExtent"/>
+        <rdfs:range rdf:resource="http://purl.org/net/step#KeyPoint"/>
+        <rdfs:comment xml:lang="en">Links any point of the trajectory to a spatiotemporal extent.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasPoint</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasRawTrajectory -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasRawTrajectory">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://purl.org/net/step#Trajectory"/>
+        <rdfs:range rdf:resource="http://purl.org/net/step#RawTrajectory"/>
+        <rdfs:comment xml:lang="en">Links a trajectory to its own raw representation.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasRawTrajectory</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasSemanticDescription -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasSemanticDescription">
+        <rdfs:domain>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://purl.org/net/step#hasSemanticDescription"/>
+                <owl:allValuesFrom>
+                    <owl:Class>
+                        <owl:unionOf rdf:parseType="Collection">
+                            <rdf:Description rdf:about="http://purl.org/net/step#Episode"/>
+                            <rdf:Description rdf:about="http://purl.org/net/step#FeatureOfInterest"/>
+                        </owl:unionOf>
+                    </owl:Class>
+                </owl:allValuesFrom>
+            </owl:Restriction>
+        </rdfs:domain>
+        <rdfs:range rdf:resource="http://purl.org/net/step#SemanticDescription"/>
+        <rdfs:comment xml:lang="en">Links an episode to a description.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasSemanticDescription</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasStartingPoint -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasStartingPoint">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://purl.org/net/step#SpatiotemporalExtent"/>
+        <rdfs:range rdf:resource="http://purl.org/net/step#KeyPoint"/>
+        <rdfs:comment xml:lang="en">Links a Spatiotemporal extent to a KeyPoint that defines when and where the episode starts.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasStartingPoint</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasTrajectory -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasTrajectory">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://purl.org/net/step#Agent"/>
+        <rdfs:range rdf:resource="http://purl.org/net/step#Trajectory"/>
+        <rdfs:comment xml:lang="en">Links an Agent to a Trajectory.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasTrajectory</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#hasUnit -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasUnit">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://purl.org/net/step#QuantitativeValue"/>
+        <rdfs:range rdf:resource="http://purl.oclc.org/NET/ssnx/qu/qu#Unit"/>
+        <rdfs:comment xml:lang="en">Links an Unit to a Quantitative Description.</rdfs:comment>
+        <rdfs:label xml:lang="en">hasUnit</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- http://purl.org/net/step#relatesTo -->
+
+    <owl:ObjectProperty rdf:about="http://purl.org/net/step#relatesTo">
+        <rdfs:domain rdf:resource="http://purl.org/net/step#Episode"/>
+        <rdfs:range rdf:resource="http://purl.org/net/step#ContextualElement"/>
+        <rdfs:comment xml:lang="en">Links an Episode to a ContextualElement.</rdfs:comment>
+        <rdfs:label xml:lang="en">relatesTo</rdfs:label>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Data properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://purl.org/net/step#hasValue -->
+
+    <owl:DatatypeProperty rdf:about="http://purl.org/net/step#hasValue">
+        <rdfs:domain rdf:resource="http://purl.org/net/step#QuantitativeValue"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anySimpleType"/>
+        <rdfs:comment xml:lang="en">Links the value to a QuantitativeValue of an Episode.</rdfs:comment>
+        <rdfs:label>hasValue</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.opengis.net/ont/geosparql#asWKT -->
+
+    <owl:DatatypeProperty rdf:about="http://www.opengis.net/ont/geosparql#asWKT">
+        <rdfs:domain rdf:resource="http://www.opengis.net/ont/sf#Geometry"/>
+        <rdfs:range rdf:resource="http://www.opengis.net/ont/sf#WktLiteral"/>
+        <rdfs:comment xml:lang="en">The WKT serialization of a geometry.</rdfs:comment>
+        <rdfs:isDefinedBy>http://www.opengis.net/ont/geosparql#asWKT</rdfs:isDefinedBy>
+        <rdfs:label>asWKT</rdfs:label>
+        <rdfs:seeAlso>http://www.opengis.net/ont/geosparql#asWKT</rdfs:seeAlso>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.w3.org/2006/time#inXSDDateTime -->
+
+    <owl:DatatypeProperty rdf:about="http://www.w3.org/2006/time#inXSDDateTime">
+        <rdfs:domain rdf:resource="http://www.w3.org/2006/time#Instant"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+        <rdfs:comment xml:lang="en">See hhttp://www.w3.org/TR/owl-time/</rdfs:comment>
+        <rdfs:isDefinedBy>http://www.w3.org/2006/time#inXSDDateTime</rdfs:isDefinedBy>
+        <rdfs:seeAlso xml:lang="en">http://www.w3.org/2006/time#inXSDDateTime</rdfs:seeAlso>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Classes
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://purl.oclc.org/NET/ssnx/qu/qu#Unit -->
+
+    <owl:Class rdf:about="http://purl.oclc.org/NET/ssnx/qu/qu#Unit">
+        <rdfs:comment xml:lang="en">A Unit is an abstract classifier that represents the [VIM] concept of &quot;measurement unit&quot; that is defined as &quot;real scalar quantity, defined and adopted by convention, with which any other quantity of the same kind can be compared to express the ratio of the two quantities as a number.&quot;</rdfs:comment>
+        <rdfs:isDefinedBy xml:lang="en">http://purl.oclc.org/NET/ssnx/qu/qu#Unit</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Unit</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#Agent -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#Agent">
+        <rdfs:comment xml:lang="en">The agent is the moving object. It can be a person, an animal, a car, etc.</rdfs:comment>
+        <rdfs:isDefinedBy>http://xmlns.com/foaf/0.1/Agent</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Agent</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#ContextualElement -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#ContextualElement">
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#SpatiotemporalElement"/>
+        <rdfs:comment xml:lang="en">The contextual element can be anything related to the trajectory. It can be another agent, another trajectory, a geographic feature, etc.</rdfs:comment>
+        <rdfs:label xml:lang="en">Contextual Element</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#Episode -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#Episode">
+        <rdfs:subClassOf>
+            <owl:Restriction>
+                <owl:onProperty rdf:resource="http://purl.org/net/step#hasSemanticDescription"/>
+                <owl:minQualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:minQualifiedCardinality>
+                <owl:onClass rdf:resource="http://purl.org/net/step#SemanticDescription"/>
+            </owl:Restriction>
+        </rdfs:subClassOf>
+        <rdfs:comment xml:lang="en">The episode is the smallest semantic unity for discretizing some aspect of a Feature of Interest.</rdfs:comment>
+        <rdfs:label xml:lang="en">Episode</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#Extent -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#Extent">
+        <rdfs:comment xml:lang="en">Extent is a superclass for all kinds of extents an Episode may have.</rdfs:comment>
+        <rdfs:label xml:lang="en">Extent</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#FeatureOfInterest -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#FeatureOfInterest">
+        <rdfs:comment xml:lang="en">The aspect of the trajectory or context that is being described. Example: speed, direction, etc.</rdfs:comment>
+        <rdfs:label xml:lang="en">Feature of Interest</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#Fix -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#Fix">
+        <rdfs:comment xml:lang="en">A Fix is a spatial timestamped point.</rdfs:comment>
+        <rdfs:label xml:lang="en">Fix</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#KeyPoint -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#KeyPoint">
+        <rdfs:comment xml:lang="en">Key Points delimits the extent of SpatiotemporalExtents and can also be used to represent important points of a trajectory.</rdfs:comment>
+        <rdfs:label xml:lang="en">Key Point</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#QualitativeDescription -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#QualitativeDescription">
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#SemanticDescription"/>
+        <rdfs:comment xml:lang="en">A Qualitative Description is used in situations when the Episode cannot be described by numeric values. This is also a point of extension of the ontology as other ontologies can be plugged here for extending it. For instance, one can define values such as &quot;slow&quot;, &quot;medium&quot;, or &quot;fast&quot; for speed episodes.</rdfs:comment>
+        <rdfs:label xml:lang="en">Qualitative Description</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#QuantitativeValue -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#QuantitativeValue">
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#SemanticDescription"/>
+        <rdfs:comment xml:lang="en">The value associated to the Episode. For instance, integer, decimal values. It is also associated with an Unit.</rdfs:comment>
+        <rdfs:label xml:lang="en">Quantitative Value</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#RawTrajectory -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#RawTrajectory">
+        <rdfs:comment xml:lang="en">Represent the raw data from trajectories. As there&apos;s no official support for ensuring sequential ordering of tuples, we advise putting sequential numbers into the URLs of fixes to be able to retrieve the spatial footprint of the trajectory. Another solution is querying using an ORDER BY statement that sorts by the time:Interval of each Fix that composes the RawTrajectory.</rdfs:comment>
+        <rdfs:label xml:lang="en">Raw Trajectory</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#SemanticDescription -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#SemanticDescription">
+        <rdfs:comment xml:lang="en">Each episode may have one or many semantic descriptions, which can be of two types: Qualitative or Quantitative.</rdfs:comment>
+        <rdfs:label xml:lang="en">Semantic Description</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#SpatialExtent -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#SpatialExtent">
+        <owl:equivalentClass rdf:resource="http://www.opengis.net/ont/sf#Geometry"/>
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#Extent"/>
+        <rdfs:comment xml:lang="en">An extent determined only by spatial concepts (points, lines, polygons, etc). The usage of OGC Simple Features is a suggestion and can be exchanged by other ontologies.</rdfs:comment>
+        <rdfs:isDefinedBy>http://www.opengis.net/ont/sf#Geometry</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Spatial Extent</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#SpatiotemporalElement -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#SpatiotemporalElement">
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Spatiotemporal Element</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#SpatiotemporalExtent -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#SpatiotemporalExtent">
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#Extent"/>
+        <rdfs:comment xml:lang="en">Spatiotemporal extents are delimited by KeyPoints and the properties hasStartingPoint and hasEndingPoint. Event-like episodes may be delimited by the property hasPoint.</rdfs:comment>
+        <rdfs:label xml:lang="en">Spatiotemporal Extent</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#TemporalExtent -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#TemporalExtent">
+        <owl:equivalentClass rdf:resource="http://www.w3.org/2006/time#TemporalEntity"/>
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#Extent"/>
+        <rdfs:comment xml:lang="en">An extent determined only by temporal concepts (interval, instant, etc). The usage of OWL Time is a suggestion and can be exchanged by other ontologies.</rdfs:comment>
+        <rdfs:label xml:lang="en">Temporal Extent</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://purl.org/net/step#Trajectory -->
+
+    <owl:Class rdf:about="http://purl.org/net/step#Trajectory">
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#SpatiotemporalElement"/>
+        <rdfs:comment xml:lang="en">The agent&apos;s trajectory.</rdfs:comment>
+        <rdfs:label xml:lang="en">Trajectory</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.opengis.net/ont/sf#Geometry -->
+
+    <owl:Class rdf:about="http://www.opengis.net/ont/sf#Geometry">
+        <rdfs:comment xml:lang="en">Geometry is the root class of the hierarchy. The instantiable subclasses of Geometry are restricted to 0, 1 and 2-dimensional geometric objects that exist in 2, 3 or 4-dimensional coordinate space (R2, R3 or R4). Geometry values in R2 have points with coordinate values for x and y. Geometry values in R3 have points with coordinate values for x, y and z or for x, y and m. Geometry values in R4 have points with coordinate values for x, y, z and m. The interpretation of the coordinates is subject to the coordinate reference systems associated to the point. All coordinates within a geometry object should be in the same coordinate reference systems. Each coordinate shall be unambiguously associated to a coordinate reference system either directly or through its containing geometry. The z coordinate of a point is typically, but not necessarily, represents altitude or elevation. The m coordinate represents a measurement. All Geometry classes described in this specification are defined so that instances of Geometry are topologically closed, i.e. all represented geometries include their boundary as point sets. This does not affect their representation, and open version of the same classes may be used in other circumstances, such as topological representations.</rdfs:comment>
+        <rdfs:isDefinedBy>http://www.opengis.net/ont/sf#Geometry</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Geometry</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.opengis.net/ont/sf#Point -->
+
+    <owl:Class rdf:about="http://www.opengis.net/ont/sf#Point">
+        <rdfs:subClassOf rdf:resource="http://www.opengis.net/ont/sf#Geometry"/>
+        <rdfs:comment xml:lang="en">A Point is a 0-dimensional geometric object and represents a single location in coordinate space. A Point has an x-coordinate value, a y-coordinate value. If called for by the associated Spatial Reference System, it may also have coordinate values for z and m. The boundary of a Point is the empty set.</rdfs:comment>
+        <rdfs:isDefinedBy xml:lang="en">http://www.opengis.net/ont/sf#Point</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Point</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.w3.org/2006/time#Instant -->
+
+    <owl:Class rdf:about="http://www.w3.org/2006/time#Instant">
+        <rdfs:subClassOf rdf:resource="http://www.w3.org/2006/time#TemporalEntity"/>
+        <rdfs:comment xml:lang="en">See http://www.w3.org/TR/owl-time/</rdfs:comment>
+        <rdfs:isDefinedBy>http://www.w3.org/2006/time#Instant</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Instant</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.w3.org/2006/time#TemporalEntity -->
+
+    <owl:Class rdf:about="http://www.w3.org/2006/time#TemporalEntity">
+        <rdfs:comment xml:lang="en">See http://www.w3.org/TR/owl-time/</rdfs:comment>
+        <rdfs:isDefinedBy>http://www.w3.org/2006/time#TemporalEntity</rdfs:isDefinedBy>
+        <rdfs:label xml:lang="en">Temporal Entity</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // General axioms
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    <rdf:Description>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointProperties"/>
+        <owl:members rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://purl.org/net/step#atTime"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasEndingPoint"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasEpisode"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasExtent"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasFeature"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasFix"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasLocation"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasPoint"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasRawTrajectory"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasSemanticDescription"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasStartingPoint"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasTrajectory"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#hasUnit"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#relatesTo"/>
+        </owl:members>
+    </rdf:Description>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Rules
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    <rdf:Description rdf:about="http://purl.org/net/step#st">
+        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#Variable"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://purl.org/net/step#foi">
+        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#Variable"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://purl.org/net/step#ep">
+        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#Variable"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://purl.org/net/step#st_element">
+        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#Variable"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://purl.org/net/step#kp1">
+        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#Variable"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://purl.org/net/step#kp2">
+        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#Variable"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://purl.org/net/step#t1">
+        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#Variable"/>
+    </rdf:Description>
+    <rdf:Description rdf:about="http://purl.org/net/step#t2">
+        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#Variable"/>
+    </rdf:Description>
+    <rdf:Description>
+        <swrla:isRuleEnabled rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">true</swrla:isRuleEnabled>
+        <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string"></rdfs:comment>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SpatiotemporalElementHasEpisode</rdfs:label>
+        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#Imp"/>
+        <swrl:body>
+            <rdf:Description>
+                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                <rdf:first>
+                    <rdf:Description>
+                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#ClassAtom"/>
+                        <swrl:classPredicate rdf:resource="http://purl.org/net/step#SpatiotemporalElement"/>
+                        <swrl:argument1 rdf:resource="http://purl.org/net/step#st"/>
+                    </rdf:Description>
+                </rdf:first>
+                <rdf:rest>
+                    <rdf:Description>
+                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                        <rdf:first>
+                            <rdf:Description>
+                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#ClassAtom"/>
+                                <swrl:classPredicate rdf:resource="http://purl.org/net/step#FeatureOfInterest"/>
+                                <swrl:argument1 rdf:resource="http://purl.org/net/step#foi"/>
+                            </rdf:Description>
+                        </rdf:first>
+                        <rdf:rest>
+                            <rdf:Description>
+                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                                <rdf:first>
+                                    <rdf:Description>
+                                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#ClassAtom"/>
+                                        <swrl:classPredicate rdf:resource="http://purl.org/net/step#Episode"/>
+                                        <swrl:argument1 rdf:resource="http://purl.org/net/step#ep"/>
+                                    </rdf:Description>
+                                </rdf:first>
+                                <rdf:rest>
+                                    <rdf:Description>
+                                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                                        <rdf:first>
+                                            <rdf:Description>
+                                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#IndividualPropertyAtom"/>
+                                                <swrl:propertyPredicate rdf:resource="http://purl.org/net/step#hasFeature"/>
+                                                <swrl:argument1 rdf:resource="http://purl.org/net/step#st_element"/>
+                                                <swrl:argument2 rdf:resource="http://purl.org/net/step#foi"/>
+                                            </rdf:Description>
+                                        </rdf:first>
+                                        <rdf:rest>
+                                            <rdf:Description>
+                                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                                                <rdf:first>
+                                                    <rdf:Description>
+                                                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#IndividualPropertyAtom"/>
+                                                        <swrl:propertyPredicate rdf:resource="http://purl.org/net/step#hasEpisode"/>
+                                                        <swrl:argument1 rdf:resource="http://purl.org/net/step#foi"/>
+                                                        <swrl:argument2 rdf:resource="http://purl.org/net/step#ep"/>
+                                                    </rdf:Description>
+                                                </rdf:first>
+                                                <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
+                                            </rdf:Description>
+                                        </rdf:rest>
+                                    </rdf:Description>
+                                </rdf:rest>
+                            </rdf:Description>
+                        </rdf:rest>
+                    </rdf:Description>
+                </rdf:rest>
+            </rdf:Description>
+        </swrl:body>
+        <swrl:head>
+            <rdf:Description>
+                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                <rdf:first>
+                    <rdf:Description>
+                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#IndividualPropertyAtom"/>
+                        <swrl:propertyPredicate rdf:resource="http://purl.org/net/step#hasEpisode"/>
+                        <swrl:argument1 rdf:resource="http://purl.org/net/step#st_element"/>
+                        <swrl:argument2 rdf:resource="http://purl.org/net/step#ep"/>
+                    </rdf:Description>
+                </rdf:first>
+                <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
+            </rdf:Description>
+        </swrl:head>
+    </rdf:Description>
+    <rdf:Description>
+        <swrla:isRuleEnabled rdf:datatype="http://www.w3.org/2001/XMLSchema#boolean">true</swrla:isRuleEnabled>
+        <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string"></rdfs:comment>
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">StartingAndEndingPoints</rdfs:label>
+        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#Imp"/>
+        <swrl:body>
+            <rdf:Description>
+                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                <rdf:first>
+                    <rdf:Description>
+                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#ClassAtom"/>
+                        <swrl:classPredicate rdf:resource="http://purl.org/net/step#SpatiotemporalExtent"/>
+                        <swrl:argument1 rdf:resource="http://purl.org/net/step#st"/>
+                    </rdf:Description>
+                </rdf:first>
+                <rdf:rest>
+                    <rdf:Description>
+                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                        <rdf:first>
+                            <rdf:Description>
+                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#ClassAtom"/>
+                                <swrl:classPredicate rdf:resource="http://purl.org/net/step#KeyPoint"/>
+                                <swrl:argument1 rdf:resource="http://purl.org/net/step#kp1"/>
+                            </rdf:Description>
+                        </rdf:first>
+                        <rdf:rest>
+                            <rdf:Description>
+                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                                <rdf:first>
+                                    <rdf:Description>
+                                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#ClassAtom"/>
+                                        <swrl:classPredicate rdf:resource="http://purl.org/net/step#KeyPoint"/>
+                                        <swrl:argument1 rdf:resource="http://purl.org/net/step#kp2"/>
+                                    </rdf:Description>
+                                </rdf:first>
+                                <rdf:rest>
+                                    <rdf:Description>
+                                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                                        <rdf:first>
+                                            <rdf:Description>
+                                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#ClassAtom"/>
+                                                <swrl:classPredicate rdf:resource="http://www.w3.org/2006/time#Instant"/>
+                                                <swrl:argument1 rdf:resource="http://purl.org/net/step#t1"/>
+                                            </rdf:Description>
+                                        </rdf:first>
+                                        <rdf:rest>
+                                            <rdf:Description>
+                                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                                                <rdf:first>
+                                                    <rdf:Description>
+                                                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#ClassAtom"/>
+                                                        <swrl:classPredicate rdf:resource="http://www.w3.org/2006/time#Instant"/>
+                                                        <swrl:argument1 rdf:resource="http://purl.org/net/step#t2"/>
+                                                    </rdf:Description>
+                                                </rdf:first>
+                                                <rdf:rest>
+                                                    <rdf:Description>
+                                                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                                                        <rdf:first>
+                                                            <rdf:Description>
+                                                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#IndividualPropertyAtom"/>
+                                                                <swrl:propertyPredicate rdf:resource="http://purl.org/net/step#hasStartingPoint"/>
+                                                                <swrl:argument1 rdf:resource="http://purl.org/net/step#st"/>
+                                                                <swrl:argument2 rdf:resource="http://purl.org/net/step#kp1"/>
+                                                            </rdf:Description>
+                                                        </rdf:first>
+                                                        <rdf:rest>
+                                                            <rdf:Description>
+                                                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                                                                <rdf:first>
+                                                                    <rdf:Description>
+                                                                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#IndividualPropertyAtom"/>
+                                                                        <swrl:propertyPredicate rdf:resource="http://purl.org/net/step#atTime"/>
+                                                                        <swrl:argument1 rdf:resource="http://purl.org/net/step#kp1"/>
+                                                                        <swrl:argument2 rdf:resource="http://purl.org/net/step#t1"/>
+                                                                    </rdf:Description>
+                                                                </rdf:first>
+                                                                <rdf:rest>
+                                                                    <rdf:Description>
+                                                                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                                                                        <rdf:first>
+                                                                            <rdf:Description>
+                                                                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#IndividualPropertyAtom"/>
+                                                                                <swrl:propertyPredicate rdf:resource="http://purl.org/net/step#atTime"/>
+                                                                                <swrl:argument1 rdf:resource="http://purl.org/net/step#kp2"/>
+                                                                                <swrl:argument2 rdf:resource="http://purl.org/net/step#t2"/>
+                                                                            </rdf:Description>
+                                                                        </rdf:first>
+                                                                        <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
+                                                                    </rdf:Description>
+                                                                </rdf:rest>
+                                                            </rdf:Description>
+                                                        </rdf:rest>
+                                                    </rdf:Description>
+                                                </rdf:rest>
+                                            </rdf:Description>
+                                        </rdf:rest>
+                                    </rdf:Description>
+                                </rdf:rest>
+                            </rdf:Description>
+                        </rdf:rest>
+                    </rdf:Description>
+                </rdf:rest>
+            </rdf:Description>
+        </swrl:body>
+        <swrl:head>
+            <rdf:Description>
+                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                <rdf:first>
+                    <rdf:Description>
+                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#IndividualPropertyAtom"/>
+                        <swrl:propertyPredicate rdf:resource="http://purl.org/net/step#hasEndingPoint"/>
+                        <swrl:argument1 rdf:resource="http://purl.org/net/step#st"/>
+                        <swrl:argument2 rdf:resource="http://purl.org/net/step#kp2"/>
+                    </rdf:Description>
+                </rdf:first>
+                <rdf:rest>
+                    <rdf:Description>
+                        <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#AtomList"/>
+                        <rdf:first>
+                            <rdf:Description>
+                                <rdf:type rdf:resource="http://www.w3.org/2003/11/swrl#BuiltinAtom"/>
+                                <swrl:builtin rdf:resource="http://www.w3.org/2003/11/swrlb#lessThan"/>
+                                <swrl:arguments rdf:parseType="Collection">
+                                    <rdf:Description rdf:about="http://purl.org/net/step#t1"/>
+                                    <rdf:Description rdf:about="http://purl.org/net/step#t2"/>
+                                </swrl:arguments>
+                            </rdf:Description>
+                        </rdf:first>
+                        <rdf:rest rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"/>
+                    </rdf:Description>
+                </rdf:rest>
+            </rdf:Description>
+        </swrl:head>
+    </rdf:Description>
+</rdf:RDF>
+
+
+
+<!-- Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi -->
+

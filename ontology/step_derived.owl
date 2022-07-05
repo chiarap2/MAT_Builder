@@ -1,0 +1,353 @@
+<?xml version="1.0"?>
+<rdf:RDF xmlns="http://www.semanticweb.org/franc/ontologies/2022/4/untitled-ontology-10#"
+     xml:base="http://www.semanticweb.org/franc/ontologies/2022/4/untitled-ontology-10"
+     xmlns:dc="http://purl.org/dc/elements/1.1/"
+     xmlns:ns="http://www.w3.org/2003/06/sw-vocab-status/ns#"
+     xmlns:owl="http://www.w3.org/2002/07/owl#"
+     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:xml="http://www.w3.org/XML/1998/namespace"
+     xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+     xmlns:vann="http://purl.org/vocab/vann/"
+     xmlns:swrla="http://swrl.stanford.edu/ontologies/3.3/swrla.owl#"
+     xmlns:terms="http://purl.org/dc/terms/">
+    <owl:Ontology rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized">
+        <owl:imports rdf:resource="http://purl.org/net/step"/>
+    </owl:Ontology>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Object Properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasPOI -->
+
+    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasPOI">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topObjectProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Occasional_Stop"/>
+        <rdfs:range rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest"/>
+    </owl:ObjectProperty>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Data properties
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasEndHour -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasEndHour">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topDataProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Regular_Stop"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasHumidity -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasHumidity">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topDataProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Weather"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasID -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasID">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topDataProperty"/>
+        <rdfs:domain rdf:resource="http://purl.org/net/step#Trajectory"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anySimpleType"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasOSMValue -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasOSMValue">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:comment>Links the string representing the ID OpenStreetMap assigns to the POI associated with the Stop of an Episode.
+
+NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:comment>
+        <rdfs:label>hasOSMValue</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasSkyCondition -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasSkyCondition">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topDataProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Weather"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anySimpleType"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasStartHour -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasStartHour">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topDataProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Regular_Stop"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasTemperature -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasTemperature">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topDataProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Weather"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasWindDirection -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasWindDirection">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topDataProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Weather"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anySimpleType"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasWindSpeed -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasWindSpeed">
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topDataProperty"/>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Weather"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#stopHasValue -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#stopHasValue">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:comment>Links the WikiData URI of the POI visited during the Stop of an Episode. Not always applicable, e.g., a person is just staying at home.</rdfs:comment>
+        <rdfs:label>hasWDValue</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.w3.org/2002/07/owl#topDataProperty -->
+
+    <rdf:Description rdf:about="http://www.w3.org/2002/07/owl#topDataProperty">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Regular_Stop"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </rdf:Description>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Classes
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Bike -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Bike">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Bus -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Bus">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Car -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Car">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Home -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Home">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Regular_Stop"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move">
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#QualitativeDescription"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Occasional_Stop -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Occasional_Stop">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Stop"/>
+        <owl:disjointWith rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Regular_Stop"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest"/>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Regular_Stop -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Regular_Stop">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Stop"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Stop -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Stop">
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#QualitativeDescription"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Subway -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Subway">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Taxi -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Taxi">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Train -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Train">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Walk -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Walk">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Weather -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Weather">
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#QualitativeDescription"/>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Work -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Work">
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Regular_Stop"/>
+    </owl:Class>
+    
+
+
+    <!-- 
+    ///////////////////////////////////////////////////////////////////////////////////////
+    //
+    // General axioms
+    //
+    ///////////////////////////////////////////////////////////////////////////////////////
+     -->
+
+    <rdf:Description>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
+        <owl:members rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://purl.oclc.org/NET/ssnx/qu/qu#Unit"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#Agent"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#Episode"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#Extent"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#FeatureOfInterest"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#Fix"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#KeyPoint"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#RawTrajectory"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#SemanticDescription"/>
+            <rdf:Description rdf:about="http://purl.org/net/step#SpatiotemporalElement"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest"/>
+        </owl:members>
+    </rdf:Description>
+    <rdf:Description>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
+        <owl:members rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Bike"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Bus"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Car"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Subway"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Taxi"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Train"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Walk"/>
+        </owl:members>
+    </rdf:Description>
+    <rdf:Description>
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#AllDisjointClasses"/>
+        <owl:members rdf:parseType="Collection">
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Stop"/>
+            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Weather"/>
+        </owl:members>
+    </rdf:Description>
+</rdf:RDF>
+
+
+
+<!-- Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi -->
+
