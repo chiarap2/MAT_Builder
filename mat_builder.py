@@ -11,14 +11,25 @@ import numpy as np
 from core.backend import *
 import json
 
+
+### GLOBAL VARIABLES ###
+
 #external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
+# TODO: perhaps we can pass a .css encapsulating all the style parameters we declare and define below
 app = JupyterDash(__name__)#external_stylesheets=external_stylesheets)
 
-tabs_styles = {
+
+
+# CSS style parameters declarations/definitions #
+
+tabs_styles = \
+{
     'height': '44px'
 }
-tab_style = {
+
+tab_style = \
+{
     'borderBottom': '1px solid #ddc738',
     'borderLeft': '0px',
     'borderRight': '0px',
@@ -28,7 +39,8 @@ tab_style = {
     'backgroundColor': '#131313'
 }
 
-tab_selected_style = {
+tab_selected_style = \
+{
     'borderTop': '1px solid',
     'borderLeft': '1px solid',
     'borderRight': '1px solid',
@@ -39,7 +51,8 @@ tab_selected_style = {
     'padding': '6px'
 }
 
-disabled_style = {
+disabled_style = \
+{
     'borderBottom': '1px solid #ddc738',
     'borderLeft': '0px',
     'borderRight': '0px',
@@ -50,49 +63,63 @@ disabled_style = {
     'color': '#5d5d5d'
 }
 
+
+
 modules = [cls for cls in demo.__subclasses__()]
-
 children_tabs = []
-
 index = 0
-
 for module in modules:
     
     methods = [ {'label':cls.__name__,'value':cls.__name__} for cls in module.__subclasses__()]
-    if index == 0:
+    if index == 0 :
         children_tabs.append(dcc.Tab(id=str(index),label=module.__name__,value=module.__name__,style=tab_style,selected_style=tab_selected_style,disabled_style=disabled_style,
                                  children=[html.P('Choose a method:'),dcc.RadioItems(id={'type':'radio_items','index':index}, options=methods)]))
     else:
-        children_tabs.append(dcc.Tab(id=str(index),label=module.__name__,value=module.__name__,style=tab_style,selected_style=tab_selected_style,disabled=True, disabled_style=disabled_style,
+        children_tabs.append(dcc.Tab(id=str(index),label=module.__name__,value=module.__name__,style=tab_style,selected_style=tab_selected_style, disabled=True, disabled_style=disabled_style,
                                  children=[html.P('Choose a method:'),dcc.RadioItems(id={'type':'radio_items','index':index}, options=methods)]))
     index += 1
 
-app.layout = html.Div([
-    
-    #html.H1(children='MAT-Builder'), 
-    html.Div(id='title',children=[
-        html.Img(src='assets/MAT-Builder-logo.png',style={'width':'25%','height':'5%','float':'left'}),
-        html.Img(src='assets/loghini.jpg',style={'width':'35%','height':'15%','float':'right'})
-    ],style={'display':'inline-block','background-color':'white','padding':'1%','border-style':'solid','border-color':'#dcc738'}),
-    html.Br(),
-    html.Br(),
-    html.Div(id='inputs',children=[
-        dcc.Tabs(id="tabs-inline", children=children_tabs, style=tabs_styles),
-        html.Br(),
-        html.Br(),
-        html.Div(id='display'),
-        html.Button(id='run',children='RUN',style={'display':'none'})],
-    style={'float':'left','width':'40%'}),
 
-    html.Div(style={'float':'right','width':'50%'}, children=[
-        dcc.Loading(id="loading-1",children=[html.Div([html.Div(id="loading-output")])],type="circle"),
-        html.Div(id='outputs'),
-        html.Div(id='output_sm',children=[
-            html.Div(id='users',children=[html.P(children='Users:'),
-            dcc.Dropdown(id='user_list',style={'color':'#333'})],style={'display':'none'}),
-            html.Br(),
-            html.Br(),
-            html.Div(id='outputs2')],style={'display':'none'}),
+
+# Here we set up the layout that'll be used for the interface #
+
+app.layout = html.Div([
+    #html.H1(children='MAT-Builder'), 
+    html.Div(id='title',
+             children = 
+             [
+                html.Img(src='assets/MAT-Builder-logo.png',style={'width':'25%','height':'5%','float':'left'}),
+                html.Img(src='assets/loghi_mobidatalab.png',style={'width':'35%','height':'15%','float':'right'})
+             ],
+             style={'display':'inline-block','background-color':'white','padding':'1%','border-style':'solid','border-color':'#dcc738'}),
+    
+    html.Br(),
+    html.Br(),
+    
+    html.Div(id='inputs',
+             children=[
+                dcc.Tabs(id="tabs-inline", children=children_tabs, style=tabs_styles),
+                html.Br(),
+                html.Br(),
+                html.Div(id='display'),
+                html.Button(id='run',
+                            children='RUN',
+                            style={'display':'none'})],
+                style={'float':'left','width':'40%'}),
+
+    html.Div(style={'float':'right','width':'50%'},
+             children=[dcc.Loading(id="loading-1",
+                                   children= [html.Div([html.Div(id="loading-output")])], 
+                                   type="circle"),
+             html.Div(id='outputs'),
+             html.Div(id='output_sm',
+                      children=[html.Div(id='users',
+                                         children=[html.P(children='Users:'),
+                                         dcc.Dropdown(id='user_list',style={'color':'#333'})],style={'display':'none'}),
+                                html.Br(),
+                                html.Br(),
+                                html.Div(id='outputs2')],
+                      style={'display':'none'}),
         
         html.Div(id='users_',children=[html.P(children='Users:'),dcc.Dropdown(id='user_list_',style={'color':'#333'})],style={'display':'none'}),
         html.Br(),
@@ -109,11 +136,16 @@ app.layout = html.Div([
     
 ])
 
-@app.callback(
+@app.callback
+(
     Output(component_id='display', component_property='children'),
     Input(component_id='tabs-inline', component_property='value'),
     Input(component_id={'type':'radio_items','index':ALL}, component_property='value')
 )
+
+
+
+
 
 def show_input(tab,radio):
 
@@ -190,7 +222,7 @@ def show_input(tab,radio):
     Input(component_id='run', component_property='n_clicks')
 )
 
-def show_output(radio,inputs,tab,click):
+def show_output(radio, inputs, tab, click):
     ### --- TO DO --- ###
     #
     # try to use current triggered in order to raise error (state null value)
@@ -480,6 +512,8 @@ def info_enrichment(user,traj):
     return dcc.Graph(figure=fig)
 
 
+
+### MAIN application ###
 
 if __name__ == '__main__':
     app.run_server(debug=True)
