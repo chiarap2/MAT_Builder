@@ -55,16 +55,26 @@ class preprocessing1(Preprocessing):
     2) remove outliers
     3) compress trajectories
     '''
-    pass
+    
 
+
+    ### STATIC VARIABLES ###
+    
     df = gpd.GeoDataFrame()
 
+
+
+    ### CLASS CONSTRUCTOR ###
     def __init__(self, list_):
 
         self.path = list_[0]
         self.num_point = list_[2]
         self.kmh = list_[1]
 
+
+
+    ### CLASS METHODS ###
+    
     def core(self):
                 
         if self.path[-3:] == 'csv':
@@ -86,7 +96,7 @@ class preprocessing1(Preprocessing):
         tdf = skmob.TrajDataFrame(df, latitude='lat', longitude='lon', datetime='time', user_id='user',
                                   trajectory_id='traj_id')
         ftdf = filtering.filter(tdf, max_speed_kmh=self.kmh)
-        ctdf = compression.compress(ftdf, spatial_radius_km=0.2)
+        ctdf = compression.compress(ftdf, spatial_radius_km = 0.2)
 
         self.df = ctdf
         return ''
@@ -102,6 +112,8 @@ class preprocessing1(Preprocessing):
     def output(self):
 
         self.df.to_parquet('data/temp_dataset/traj_cleaned.parquet')
+
+
 
 '''class preprocessing2(Preprocessing):
     """
@@ -170,6 +182,8 @@ class stops_and_moves(Segmentation):
         self.minutes = list_[0]
         self.radius = list_[1]
         self.preprocessed_trajs = pd.read_parquet('data/temp_dataset/traj_cleaned.parquet')
+
+
 
     def core(self):
         
@@ -285,6 +299,8 @@ class stops_and_moves(Segmentation):
         s['duration'] = (s['leaving_datetime'] - s['datetime']).astype('timedelta64[m]')
 
         return round(s['duration'].mean(),2)
+
+
 
 class stop_move_enrichment(Enrichment):
 

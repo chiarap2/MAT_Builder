@@ -84,7 +84,6 @@ for module in modules:
 # Here we set up the layout that'll be used for the interface #
 
 app.layout = html.Div([
-    #html.H1(children='MAT-Builder'), 
     html.Div(id='title',
              children = 
              [
@@ -136,7 +135,7 @@ app.layout = html.Div([
     
 ])
 
-@app.callback
+@app.callback\
 (
     Output(component_id='display', component_property='children'),
     Input(component_id='tabs-inline', component_property='value'),
@@ -147,7 +146,10 @@ app.layout = html.Div([
 
 
 
-def show_input(tab,radio):
+def show_input(tab, radio):
+    '''
+    `show_input` is a method that 
+    '''
 
     inputs = []
     method = ''
@@ -156,15 +158,12 @@ def show_input(tab,radio):
         return 
 
     current_state = dash.callback_context.triggered
-    
     if current_state[0]['prop_id'] != 'tabs-inline.value':
-
         method = current_state[0]['value']
 
+
     f = open('config.json')
-
     data = json.load(f)
-
     if(method != ''):
         parameters = data[method]
         c = 0 
@@ -173,30 +172,35 @@ def show_input(tab,radio):
             for elem in p:
                 
                 if elem == 'H5':
-
                     inputs.append(html.H5(children=p[elem]['children']))                    
 
                 if elem == 'Span':
-
                     inputs.append(html.Span(children=p[elem]['children']))
 
                 if elem == 'Input':
-
-                    inputs.append(dcc.Input(id={'type':'input','index':c},type=p[elem]['type'],placeholder=p[elem]['placeholder']))
+                
+                    inputs.append(dcc.Input(id={'type':'input','index':c},
+                                            value = p[elem]['default'] if 'default' in p[elem] else None,
+                                            type = p[elem]['type'],
+                                            placeholder=p[elem]['placeholder']))
                     inputs.append(html.Br())
                     inputs.append(html.Br())
 
                 elif elem == 'Checklist':
-
                     inputs.append(dcc.Checklist(id={'type':'input','index':c},options=p[elem]['options']))
 
                 elif elem == 'Dropdown':
                     if p[elem]['id'] == 'list_poi':
-                        inputs.append(dcc.Dropdown(id={'type':'input','index':c},options=p[elem]['options'],multi=True,style={'color':'#333'}))                    
+                        inputs.append(dcc.Dropdown(id={'type':'input','index':c},
+                                                   options=p[elem]['options'],
+                                                   multi=True,
+                                                   style={'color':'#333'}))                    
                         inputs.append(html.Br())
 
                     else:
-                        inputs.append(dcc.Dropdown(id={'type':'input','index':c},options=p[elem]['options'],style={'color':'#333','width':'60%'}))                    
+                        inputs.append(dcc.Dropdown(id={'type':'input','index':c},
+                                                   options=p[elem]['options'],
+                                                   style={'color':'#333','width':'60%'}))                    
                         inputs.append(html.Br())
 
             c +=1
@@ -256,6 +260,8 @@ def show_output(radio, inputs, tab, click):
     if is_empty:
         return None,html.H5(children='Please, insert input values!',style={'color':'red'}),None,None,None,None,None,None,None,None
 
+
+
     if tab == 'Preprocessing':
 
         name_class = radio[0]
@@ -275,6 +281,7 @@ def show_output(radio, inputs, tab, click):
             class_pp.output()
             disable0 = True
             disable1 = False
+
 
     elif tab == 'Segmentation':
 

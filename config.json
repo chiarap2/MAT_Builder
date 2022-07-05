@@ -2,7 +2,7 @@
       "preprocessing1": [
         {
           "Span": {
-            "children":"Path of your dataset "
+            "children":"Path to the raw trajectory dataset: "
           }
         },
         {
@@ -14,33 +14,38 @@
         },
         {
           "Span":{
-            "children":"Outlier detection (km/h) "
+            "children":"Outlier detection value (in km/h): "
           }
         },
         {
           "Input": {
             "id": "kmh",
             "type": "number",
-            "placeholder": "km/h"
+            "placeholder": "300",
+			"default": 300
           }
         },
         {
           "Span":{
-            "children":"Min. number of points per trajectory "
+            "children":"Minimum number of samples a trajectory must have: "
           }
         },
         {
           "Input": {
             "id": "n_point",
             "type": "number",
-            "placeholder": "n point"
+            "placeholder": "10",
+			"default": 10
           }
         }
       ],
+	  
+	  
+	  
       "preprocessing2": [
         {
           "Span": {
-            "children":"Path of your dataset "
+            "children":"Path to the raw trajectory dataset: "
           }
         },
         {
@@ -52,43 +57,52 @@
         },
         {
           "Span":{
-            "children":"Outlier detection (km/h) "
+            "children":"Outlier detection value (in km/h): "
           }
         },
         {
           "Input": {
             "id": "kmh",
             "type": "number",
-            "placeholder": "km/h"
+            "placeholder": "km/h",
+			"default": 300
           }
         }
       ],
+	  
+	  
+	  
       "stops_and_moves": [
         {
           "Span":{
-            "children":"Min. duration of a stop (minutes) "
+            "children":"Minimum duration of a stop (minutes): "
           }
         },
         {
           "Input": {
             "id": "minutes",
             "type": "number",
-            "placeholder": "Minutes"
+            "placeholder": "Minutes",
+			"default": 10
           }
         },
         {
           "Span":{
-            "children":"Spatial radius (km) "
+            "children":"Spatial radius (in km) of the stop"
           }
         },
         {
           "Input": {
             "id": "radius",
             "type": "number",
-            "placeholder": "Search radius"
+            "placeholder": "Search radius",
+			"default": 1
           }
         }
       ],
+	  
+	  
+	  
       "stop_move_enrichment": [
         {
           "H5": {
@@ -146,14 +160,15 @@
         },
         {
           "Span": {
-            "children": "... or upload your file (write 'no' if no file is uploaded) "
+            "children": "... or upload your file containing a POI dataset (leave 'no' if no file is uploaded) "
           }
         },
         {
           "Input": {
             "id": "place",
             "type": "text",
-            "placeholder": "path/to/your/file"
+            "placeholder": "path/to/your/file",
+			"default": "no"
           }
         },
         {
@@ -165,19 +180,21 @@
           "Input": {
             "id": "granularity",
             "type": "number",
-            "placeholder": "Semantic Granularity"
+            "placeholder": "Semantic Granularity",
+			"default": 80
           }
         },
         {
           "Span": {
-            "children": "Max distance from stops (meters) "
+            "children": "Maximum distance from the centroid of the stops (in meters): "
           }
         },
         {
           "Input": {
             "id": "max_distance",
             "type": "number",
-            "placeholder": "Max distance from PoIs"
+            "placeholder": "Max distance from PoIs",
+			"default": 500
           }
         },
         {
@@ -201,7 +218,8 @@
           "Input": {
             "id": "place",
             "type": "text",
-            "placeholder": "path/to/your/file"
+            "placeholder": "path/to/your/file",
+			"default": "no"
           }
         },
         {
@@ -225,7 +243,8 @@
           "Input": {
             "id": "place",
             "type": "text",
-            "placeholder": "path/to/your/file"
+            "placeholder": "path/to/your/file",
+			"default": "no"
           }
         },
         {
