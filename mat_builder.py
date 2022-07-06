@@ -19,19 +19,15 @@ import json
 # TODO: perhaps we can pass a .css encapsulating all the style parameters we declare and define below
 app = JupyterDash(__name__)#external_stylesheets=external_stylesheets)
 
+
+
 @app.callback\
 (
     Output(component_id='display', component_property='children'),
     Input(component_id='tabs-inline', component_property='value'),
     Input(component_id={'type':'radio_items','index':ALL}, component_property='value')
 )
-
-
-
 def show_input(tab, radio):
-    '''
-    `show_input` is a method that 
-    '''
 
     inputs = []
     method = ''
@@ -40,6 +36,7 @@ def show_input(tab, radio):
         return 
 
     current_state = dash.callback_context.triggered
+    print(f"show_input current state: {current_state}")
     if current_state[0]['prop_id'] != 'tabs-inline.value':
         method = current_state[0]['value']
 
@@ -90,8 +87,10 @@ def show_input(tab, radio):
         inputs.append(html.Button(id='run',children='RUN'))
     
     return inputs
-    
-@app.callback(
+
+
+@app.callback\
+(
     Output(component_id='loading-output', component_property='children'),
     Output(component_id='outputs', component_property='children'), 
     Output(component_id='users', component_property='style'),  
@@ -107,7 +106,6 @@ def show_input(tab, radio):
     State(component_id='tabs-inline', component_property='value'),
     Input(component_id='run', component_property='n_clicks')
 )
-
 def show_output(radio, inputs, tab, click):
     ### --- TO DO --- ###
     #
@@ -125,27 +123,29 @@ def show_output(radio, inputs, tab, click):
     display2 = {'display':'none'}
     display_sm = {'display':'none'}
     
+    
     if click is None:
         if tab != 'Preprocessing' and tab != 'tab-1':
             disable0 = True
-
         return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
+    
+    # Here we check if all the inputs required by some specific module have been provided.
     is_empty = False
-
     for input in inputs:
-
         if input is None:
-
             is_empty = True
-
     if is_empty:
-        return None,html.H5(children='Please, insert input values!',style={'color':'red'}),None,None,None,None,None,None,None,None
+        return None,\
+               html.H5(children='Please, insert input values!',style={'color':'red'}),\
+               None,None,None,None,None,None,None,None
 
 
 
     if tab == 'Preprocessing':
 
+        print("Clicked the RUN button for preprocessing!")
+        
         name_class = radio[0]
 
         global class_pp
@@ -165,7 +165,10 @@ def show_output(radio, inputs, tab, click):
             disable1 = False
 
 
+
     elif tab == 'Segmentation':
+
+        print("Clicked the RUN button for segmentation!")
 
         display_sm = {'display':'inline'}
         display = {'display':'inline'}
@@ -180,7 +183,11 @@ def show_output(radio, inputs, tab, click):
         disable0 = True
         disable2 = False
 
+
+
     elif tab == 'Enrichment':
+    
+        print("Clicked the RUN button for enrichment!")
 
         name_class = radio[2]
         global class_e
@@ -196,13 +203,15 @@ def show_output(radio, inputs, tab, click):
         disable0 = True
         disable1 = True
 
+
     return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
-@app.callback(
+
+@app.callback\
+(
     Output(component_id='outputs2', component_property='children'),   
     Input(component_id='user_list',component_property='value')
 )
-
 def info_stops(user):
 
     outputs = []
@@ -220,12 +229,13 @@ def info_stops(user):
 
     return outputs
 
-@app.callback(
+
+@app.callback\
+(
     Output(component_id='trajs', component_property='style'),   
     Output(component_id='trajs_list',component_property='options'),
     Input(component_id='user_list_',component_property='value'),
 )
-
 def trajectories(user):
 
     display = {'display':'none'}
@@ -240,11 +250,12 @@ def trajectories(user):
 
     return display,options
 
-@app.callback(
+
+@app.callback\
+(
     Output(component_id='outputs3',component_property='children'),
     Input(component_id='user_list_',component_property='value')
 )
-
 def info_trajs(users):
 
     outputs = []
@@ -335,12 +346,13 @@ def info_trajs(users):
 
     return outputs
 
-@app.callback(
+
+@app.callback\
+(
     Output('output-maps','children'),
     State(component_id='user_list_',component_property='value'),
     Input(component_id='trajs_list',component_property='value')
 )
-
 def info_enrichment(user,traj):
 
     transport = { 
@@ -455,17 +467,32 @@ def main() :
         
         methods = [ {'label':cls.__name__,'value':cls.__name__} for cls in module.__subclasses__()]
         if index == 0 :
-            children_tabs.append(dcc.Tab(id=str(index),label=module.__name__,value=module.__name__,style=tab_style,selected_style=tab_selected_style,disabled_style=disabled_style,
-                                     children=[html.P('Choose a method:'),dcc.RadioItems(id={'type':'radio_items','index':index}, options=methods)]))
+            children_tabs.append(dcc.Tab(id = str(index),
+                                         label = module.__name__,
+                                         value = module.__name__,
+                                         style = tab_style,
+                                         selected_style = tab_selected_style,
+                                         disabled_style = disabled_style,
+                                         children=[html.P('Choose a method:'),
+                                                   dcc.RadioItems(id={'type':'radio_items','index':index},
+                                                                  options=methods)]))
         else:
-            children_tabs.append(dcc.Tab(id=str(index),label=module.__name__,value=module.__name__,style=tab_style,selected_style=tab_selected_style, disabled=True, disabled_style=disabled_style,
-                                     children=[html.P('Choose a method:'),dcc.RadioItems(id={'type':'radio_items','index':index}, options=methods)]))
+            children_tabs.append(dcc.Tab(id=str(index),
+                                         label = module.__name__,
+                                         value = module.__name__,
+                                         style = tab_style,
+                                         selected_style = tab_selected_style, 
+                                         disabled = True, 
+                                         disabled_style = disabled_style,
+                                         children=[html.P('Choose a method:'),
+                                                   dcc.RadioItems(id={'type':'radio_items','index':index},
+                                                   options=methods)]))
+                                                   
         index += 1
 
 
 
-    ### Here we set up the layout that'll be used for the web interface ###
-
+    ### Here we set up the initial layout of the web interface ###
     app.layout = html.Div([
         html.Div(id='title',
                  children = 
@@ -509,9 +536,9 @@ def main() :
             html.Div(id='outputs3'),
             html.Br(),
             html.Br(),
-            html.Div(id='trajs',children=[html.P(children='Trajectories:'),
-                dcc.Dropdown(id='trajs_list',style={'color':'#333'})
-            ],style={'display':'none'}),
+            html.Div(id='trajs',
+                     children=[html.P(children='Trajectories:'), dcc.Dropdown(id='trajs_list',style={'color':'#333'})],
+                     style={'display':'none'}),
             html.Br(),
             html.Div(id='output-maps'),
         ]),

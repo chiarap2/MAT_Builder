@@ -57,7 +57,6 @@ class preprocessing1(Preprocessing):
     '''
     
 
-
     ### STATIC VARIABLES ###
     
     df = gpd.GeoDataFrame()
@@ -170,8 +169,6 @@ class stops_and_moves(Segmentation):
     '''
     `stops_and_moves` is a subclass of `Segmentation` to detect stop points and moves.
     '''
-
-    pass
 
     stops = pd.DataFrame()
     moves = pd.DataFrame()
@@ -312,8 +309,6 @@ class stop_move_enrichment(Enrichment):
         2.b) systematic stops are enriched as home/work or other
     '''
 
-    pass
-
     stops = pd.DataFrame()
     moves = pd.DataFrame()
     mats = gpd.GeoDataFrame()
@@ -366,6 +361,8 @@ class stop_move_enrichment(Enrichment):
             self.rdf = 'yes'
         else:
             self.rdf = 'no'
+
+
 
     def core(self):
 
@@ -425,6 +422,8 @@ class stop_move_enrichment(Enrichment):
             moves.loc[moves_index.isin(acceleration_index),'label'] = acceleration.loc[acceleration_index.isin(moves_index),'label']
             
             moves.to_parquet('data/enriched_moves.parquet')
+
+
 
         ############################################
         ### ---- SYSTEMATIC STOP ENRICHMENT ---- ###
@@ -523,10 +522,12 @@ class stop_move_enrichment(Enrichment):
         systematic_stops.reset_index(inplace=True)
         self.systematic = systematic_stops
         self.systematic.to_parquet('data/systematic_stops.parquet')
+        
+        
+        
         ############################################
         ### ---- OCCASIONAL STOP ENRICHMENT ---- ###
         ############################################ 
-
 
         occasional_stops = stops[~stops['stop_id'].isin(systematic_stops['stop_id'])]
 
@@ -577,6 +578,8 @@ class stop_move_enrichment(Enrichment):
 
             return gdf
 
+
+
         def preparing_stops(stop,max_distance):
     
             # buffer stop points -> convert their geometries from points into polygon 
@@ -588,6 +591,8 @@ class stop_move_enrichment(Enrichment):
             stops['geometry'] = stops['geometry_stop'].buffer(max_distance)
 
             return stops
+
+
 
         def semantic_enrichment(stop,semantic_df,suffix):
             
@@ -604,9 +609,10 @@ class stop_move_enrichment(Enrichment):
             mats = mats.sort_values(['tid','stop_id','distance'])
             return mats
 
+
+
         gdf_ = gpd.GeoDataFrame()
         
-
         if self.list_pois != []:
 
             for key in self.list_pois:
@@ -663,6 +669,9 @@ class stop_move_enrichment(Enrichment):
         self.mats = mat.copy()
         self.mats.to_parquet('data/enriched_occasional.parquet')
 
+
+        ### ENRICHMENT WITH WEATHER CONDITIONS ###
+
         if self.weather != 'no':
 
             weather = pd.read_parquet('data/weather/weather_conditions.parquet')
@@ -683,6 +692,10 @@ class stop_move_enrichment(Enrichment):
             moves.reset_index(inplace=True)
             weather.reset_index(inplace=True)
         
+        
+        
+        ### ENRICHMENT WITH SOCIAL MEDIA POSTS ###
+                
         if self.tweet_user != 'no':
 
             tweets = pd.read_parquet('data/tweets/tweets.parquet')
@@ -702,6 +715,10 @@ class stop_move_enrichment(Enrichment):
 
             self.tweets = matched_tweets.copy()       
 
+
+
+        ### RDF GRAPH SAVE ###
+        
         if self.rdf == 'yes':
 
             # Instantiate RDF-builder
