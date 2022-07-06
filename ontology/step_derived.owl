@@ -34,7 +34,7 @@
         <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2002/07/owl#topObjectProperty"/>
         <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Occasional_Stop"/>
         <rdfs:range rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest"/>
-        <rdfs:comment>Links an instance of Point_of_Interest to an instance of Occasional_Stop.</rdfs:comment>
+        <rdfs:comment>Links an instance of Point of Interest to an instance of Occasional Stop.</rdfs:comment>
         <rdfs:label>hasPOI</rdfs:label>
     </owl:ObjectProperty>
     
@@ -180,13 +180,16 @@ NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:c
     <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Occasional_Stop">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Stop"/>
         <owl:disjointWith rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Regular_Stop"/>
+        <rdfs:label>Occasional Stop</rdfs:label>
     </owl:Class>
     
 
 
     <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest -->
 
-    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest"/>
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest">
+        <rdfs:label>Point of Interest</rdfs:label>
+    </owl:Class>
     
 
 
@@ -194,6 +197,7 @@ NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:c
 
     <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Regular_Stop">
         <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Stop"/>
+        <rdfs:label>Systematic Stop</rdfs:label>
     </owl:Class>
     
 

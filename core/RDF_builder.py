@@ -90,7 +90,7 @@ class RDFBuilder() :
         # Define a dictionary containing the mapping to be used for transport mode.
         self.dic_sys_stop = {'home' : self.STEP.Home,
                              'work' : self.STEP.Work,
-                             'other' : self.STEP.Regular_Stop}
+                             'other' : self.STEP.SystematicStop}
         
         
         # Define a dictionary containing the mapping to be used for transport mode.
@@ -229,14 +229,14 @@ class RDFBuilder() :
 
             # Semantic description (Occasional Stop) node.
             stop_desc = BNode()
-            self.g.add((stop_desc, RDF.type, self.STEP.Occasional_Stop))
+            self.g.add((stop_desc, RDF.type, self.STEP.OccasionalStop))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
 
             # Associate with the Occasional Stop all the POIs that may be associated with it.
-            # Passano alcuni valori NaN, da controllare!
+            # Passano alcuni valori NaN, da controllare.
             for p in list_POI :
                 poi = BNode()
-                self.g.add((poi, RDF.type, self.STEP.Point_of_Interest))
+                self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
                 self.g.add((poi, self.STEP.hasOSMValue, Literal(str(p))))
                 self.g.add((stop_desc, self.STEP.hasPOI, poi))
 
