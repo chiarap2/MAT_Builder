@@ -309,16 +309,22 @@ class stop_move_enrichment(Enrichment):
         2.b) systematic stops are enriched as home/work or other
     '''
 
-    stops = pd.DataFrame()
-    moves = pd.DataFrame()
-    mats = gpd.GeoDataFrame()
+
+    ### CLASS CONSTRUCTOR ###
 
     def __init__(self,list_):
+    
+        ### Reset the state of the static variables...
+        self.stops = pd.DataFrame()
+        self.moves = pd.DataFrame()
+        self.mats = gpd.GeoDataFrame()
         
-        self.moves = pd.read_parquet('data/temp_dataset/moves.parquet')
+    
+        print("Executing the constructor of the semantic enrichment module...")
 
         if list_[0] == 'yes':
             self.enrich_moves = True
+            self.moves = pd.read_parquet('data/temp_dataset/moves.parquet')
         else:
             self.enrich_moves = False
 
@@ -364,11 +370,18 @@ class stop_move_enrichment(Enrichment):
 
 
 
+    ### CLASS PUBLIC METHODS ###
+
     def core(self):
+    
+        print("Executing the core of the semantic enrichment module...")
+    
 
         #################################
         ### ---- MOVE ENRICHMENT ---- ###
         #################################
+        
+        print("Executing move enrichment...")
 
         if self.enrich_moves == True:
             
@@ -428,6 +441,8 @@ class stop_move_enrichment(Enrichment):
         ############################################
         ### ---- SYSTEMATIC STOP ENRICHMENT ---- ###
         ############################################
+        
+        print("Executing systematic stop enrichment...")
 
         self.stops = pd.read_parquet('data/temp_dataset/stops.parquet')
 
@@ -527,15 +542,9 @@ class stop_move_enrichment(Enrichment):
         
         ############################################
         ### ---- OCCASIONAL STOP ENRICHMENT ---- ###
-        ############################################ 
+        ############################################
 
-        occasional_stops = stops[~stops['stop_id'].isin(systematic_stops['stop_id'])]
-
-        self.occasional = occasional_stops
-
-        # Download PoIs from OpenStreetMap #
-
-        def select_columns(gdf,threshold=80.0):
+        def select_columns(gdf, threshold=80.0):
             """
             A function to select columns of a GeoDataFrame that have a percentage of null values
             lower than a given threshold.
@@ -545,15 +554,15 @@ class stop_move_enrichment(Enrichment):
             gdf: a GeoDataFrame
 
             threshold: default 80.0
-                a float representing the maxium percentage of null values in a column
-
-
+                a float representing the maxium percentage of null values in a column.
             """
+            
             # list of columns
             cols = gdf.columns
+            print(f"Initial set of POI columns...{cols}")
+            
             # list of columns to delete
             del_cols = []
-
             for c in cols:
 
                 # check if column contains only null value
@@ -571,11 +580,15 @@ class stop_move_enrichment(Enrichment):
                     perc = null_vals/len(gdf[c])*100
 
                     # save only columns that have a perc of null values lower than the given threshold
-                    if(threshold<=perc):
+                    if(threshold <= perc):
                         del_cols.append(c)
 
-            gdf = gdf.drop(columns=del_cols)
+        
+            # Now, drop the selected columns MINUS 'osmid' and 'wikidata' 
+            del_cols = list(set(del_cols) - set(['osmid', 'wikidata']))
+            gdf = gdf.drop(columns = del_cols)
 
+            print(f"POI dataframe info: {gdf.info()}")
             return gdf
 
 
@@ -594,64 +607,94 @@ class stop_move_enrichment(Enrichment):
 
 
 
-        def semantic_enrichment(stop,semantic_df,suffix):
+        def semantic_enrichment(stop, semantic_df, suffix):
+        
+            print("DEBUG enrichment occasional stops...")
             
             # duplicate geometry column because we loose it during the sjoin_nearest
             s_df = semantic_df.copy()
             s_df['geometry_'+suffix] = s_df['geometry']
-            # now we can use sjoin_nearest obtaining the results we want
-            mats = stop.sjoin_nearest(s_df,max_distance=0.00001,how='left',rsuffix=suffix)
+            s_df['osmid'] = s_df['osmid'].astype(str)
+            
+            print(f"Stampa df stop occasionali: {stop.info()}")
+            print(f"Stampa df POIs: {s_df.info()}")
+            
+            # now we can use sjoin_nearest to obtain the results we want
+            mats = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
+            
             # compute the distance between the stop point and the POI geometry
             #mats['distance_'+suffix] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
             mats['distance'] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
+            
             # sort by distance
             #mats = mats.sort_values(['stop_id','distance_'+suffix])
             mats = mats.sort_values(['tid','stop_id','distance'])
+            
+            print(f"Stampa df risultati: {mats.info()}")
             return mats
 
 
 
-        gdf_ = gpd.GeoDataFrame()
+        def download_poi_osm(list_pois, place, semantic_granularity) :
         
-        if self.list_pois != []:
-
-            for key in self.list_pois:
-
-                # downloading POI
-                poi = ox.geometries_from_place(self.place,tags={key:True})
-                
-                # convert list into string in order to save poi into parquet
-                if 'nodes' in poi.columns:
-
-                    poi['nodes'] = poi['nodes'].astype(str)
-
-                if 'ways' in poi.columns:
-
-                    poi['ways'] = poi['ways'].astype(str)
-
-                poi.reset_index(inplace=True)
-                poi.rename(columns={key:'category'}, inplace=True)
-                poi['category'].replace({'yes':key}, inplace=True)
-
-                if poi.crs is None:
-                    poi.set_crs('epsg:4326',inplace=True)
-                    poi.to_crs('epsg:3857',inplace=True)
-                else:
-                    poi.to_crs('epsg:3857',inplace=True)
-                
-                poi.to_parquet('data/poi/'+key+'.parquet')
-                
-                #poi = gpd.read_parquet('data/poi/'+key+'.parquet')
-
-
-                gdf_ = select_columns(poi, self.semantic_granularity)
-                gdf_ = pd.concat([gdf_,poi])
-        
-            gdf_.to_parquet('data/poi/pois.parquet')
-
-
-        if self.upload_stops != 'no':
+            # Here we download the POIs from OSM if the list of types of POIs is not empty.
+            gdf_ = gpd.GeoDataFrame()
+            if list_pois != [] :
             
+                for key in list_pois:
+
+                    # downloading POI
+                    print(f"Downloading {key} POIs from OSM...")
+                    poi = ox.geometries_from_place(place, tags={key:True})
+                    print(f"Download completed! Dataframe with the downloaded POIs: {poi}")
+                    
+                    # convert list into string in order to save poi into parquet
+                    if 'nodes' in poi.columns:
+                        poi['nodes'] = poi['nodes'].astype(str)
+
+                    if 'ways' in poi.columns:
+                        poi['ways'] = poi['ways'].astype(str)
+
+                    poi.reset_index(inplace=True)
+                    poi.rename(columns={key: 'category'}, inplace=True)
+                    poi['category'].replace({'yes': key}, inplace=True)
+
+                    if poi.crs is None:
+                        poi.set_crs('epsg:4326',inplace=True)
+                        poi.to_crs('epsg:3857',inplace=True)
+                    else:
+                        poi.to_crs('epsg:3857',inplace=True)
+                    
+                    # Now drop the columns with too many missing values...
+                    poi = select_columns(poi, semantic_granularity)
+                    
+                    # Now write out this subset of POIs to a file. 
+                    poi.to_parquet('data/poi/' + key + '.parquet')
+
+                    # And finally, concatenate this subset of POIs to the other POIs
+                    # that have been added to the main dataframe so far.
+                    gdf_ = pd.concat([gdf_, poi])
+            
+            
+                # print(f"A few info on the POIs downloaded from OSM: {gdf_.info()}")
+                gdf_.to_parquet('data/poi/pois.parquet')
+                return gdf_
+
+
+
+        print("Executing occasional stop enrichment...")
+
+        occasional_stops = stops[~stops['stop_id'].isin(systematic_stops['stop_id'])]
+        self.occasional = occasional_stops
+        
+
+        # Get a POI dataset, either from OSM or from a file. 
+        gdf_ = None
+        if self.upload_stops == 'no':
+            print(f"Downloading POIs from OSM for the location of {self.place}. Selected types of POIs: {self.list_pois}")
+            gdf_ = download_poi_osm(self.list_pois, self.place, self.semantic_granularity)
+        else :    
+            print(f"Using a POI file: {self.upload_stops}!")
             gdf_ = gpd.read_parquet(self.upload_stops)
 
             if gdf_.crs is None:
@@ -659,15 +702,18 @@ class stop_move_enrichment(Enrichment):
                 gdf_.to_crs('epsg:3857',inplace=True)
             else:
                 gdf_.to_crs('epsg:3857',inplace=True)
+        print(f"A few info on the POIs that will be used to enrich the occasional stops: {gdf_.info()}")
 
-        o_stops = preparing_stops(occasional_stops,self.max_distance)    
 
-        mat = semantic_enrichment(o_stops,gdf_[['osmid','geometry','category']],'poi')
+        # Calling functions internal to this method...
+        o_stops = preparing_stops(occasional_stops, self.max_distance)    
+        mat = semantic_enrichment(o_stops, gdf_[['osmid','wikidata','geometry','category']], 'poi')
 
         ######## PROVA ###########
         #mat.set_index(['stop_id','lat','lng'],inplace=True)
         self.mats = mat.copy()
         self.mats.to_parquet('data/enriched_occasional.parquet')
+
 
 
         ### ENRICHMENT WITH WEATHER CONDITIONS ###
@@ -737,6 +783,7 @@ class stop_move_enrichment(Enrichment):
             
             # Output the RDF graph to disk in Turtle format.
             builder.serialize_graph('kg.ttl')
+            
             
         
     def get_users(self):

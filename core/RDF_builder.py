@@ -185,10 +185,10 @@ class RDFBuilder() :
         
         df_occasional_stops['datetime'] = pd.to_datetime(df_occasional_stops['datetime'], utc = True)
         df_occasional_stops['leaving_datetime'] = pd.to_datetime(df_occasional_stops['leaving_datetime'], utc = True)
-        #display(df_occasional_stops.info())
+        #print(df_occasional_stops.info())
 
-        view_stop_data = df_occasional_stops[['stop_id', 'uid', 'tid', 'datetime', 'leaving_datetime', 'osmid']]
-        #display(view_stop_data)
+        view_stop_data = df_occasional_stops[['stop_id', 'uid', 'tid', 'datetime', 'leaving_datetime', 'osmid', 'wikidata']]
+        #print(view_stop_data)
         print(f"Number of occasional stops: {view_stop_data['stop_id'].nunique()}")
         
         gb = view_stop_data.groupby(['stop_id'])
@@ -202,11 +202,11 @@ class RDFBuilder() :
             tid = group['tid'].iloc[0]
             start = group['datetime'].iloc[0]
             end = group['leaving_datetime'].iloc[0]
-            list_POI = group['osmid']
+            list_POI = group[['osmid', 'wikidata']]
 
-            #print(f"{key} -- {uid} -- {tid} -- {start} -- {end}")
-            #display(list_POI)
-            #break
+            print(f"{key} -- {uid} -- {tid} -- {start} -- {end}")
+            print(list_POI)
+            # break
 
             # Find the nodes in the graph associated with the "uid" and "tid" identifiers.
             user, traj, raw_traj = self.find_trajectories_from_graph(uid, tid)
@@ -234,11 +234,16 @@ class RDFBuilder() :
 
             # Associate with the Occasional Stop all the POIs that may be associated with it.
             # Passano alcuni valori NaN, da controllare.
-            for p in list_POI :
-                poi = BNode()
-                self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
-                self.g.add((poi, self.STEP.hasOSMValue, Literal(str(p))))
-                self.g.add((stop_desc, self.STEP.hasPOI, poi))
+            for osm, wd in zip(list_POI['osmid'], list_POI['wikidata']) :
+                if osm is not None:
+                    print('POI associato allo stop occasionale!')
+                    poi = BNode()
+                    self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
+                    self.g.add((poi, self.STEP.hasOSMValue, Literal(str(osm))))
+                    if wd is not None: self.g.add((poi, self.STEP.hasWDValue, URIRef("www.wikidata.org/wiki/" + str(wd))))
+                    self.g.add((stop_desc, self.STEP.hasPOI, poi))
+                else : 
+                    print('Questo occasional stop non ha associato alcun POI!')
 
             # Spatiotemporal extent.
             st_extent = BNode()
@@ -258,6 +263,7 @@ class RDFBuilder() :
             self.g.add((end_kp, self.STEP.atTime, instant_end))
             self.g.add((end_kp, self.STEP.hasLocation, location_end))
             self.g.add((st_extent, self.STEP.hasStartingPoint, end_kp))
+
             
             
     def add_systematic_stops(self, df_sys_stops) :
