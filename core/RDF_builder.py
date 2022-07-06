@@ -1,5 +1,6 @@
 import geopandas as gpd
 import pandas as pd
+import math
 
 from rdflib import Graph, Namespace
 from rdflib import Literal, URIRef, BNode
@@ -204,8 +205,9 @@ class RDFBuilder() :
             end = group['leaving_datetime'].iloc[0]
             list_POI = group[['osmid', 'wikidata']]
 
-            print(f"{key} -- {uid} -- {tid} -- {start} -- {end}")
-            print(list_POI)
+            # print(f"{key} -- {uid} -- {tid} -- {start} -- {end}")
+            # print(list_POI)
+            # print(list_POI.info())
             # break
 
             # Find the nodes in the graph associated with the "uid" and "tid" identifiers.
@@ -232,18 +234,14 @@ class RDFBuilder() :
             self.g.add((stop_desc, RDF.type, self.STEP.OccasionalStop))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
 
-            # Associate with the Occasional Stop all the POIs that may be associated with it.
-            # Passano alcuni valori NaN, da controllare.
+            # Link this Occasional Stop with all the POIs that may be associated with it.
             for osm, wd in zip(list_POI['osmid'], list_POI['wikidata']) :
-                if osm is not None:
-                    print('POI associato allo stop occasionale!')
+                if not pd.isna(osm) :
                     poi = BNode()
                     self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
                     self.g.add((poi, self.STEP.hasOSMValue, Literal(str(osm))))
-                    if wd is not None: self.g.add((poi, self.STEP.hasWDValue, URIRef("www.wikidata.org/wiki/" + str(wd))))
+                    if not pd.isna(wd): self.g.add((poi, self.STEP.hasWDValue, URIRef("www.wikidata.org/wiki/" + str(wd))))
                     self.g.add((stop_desc, self.STEP.hasPOI, poi))
-                else : 
-                    print('Questo occasional stop non ha associato alcun POI!')
 
             # Spatiotemporal extent.
             st_extent = BNode()
