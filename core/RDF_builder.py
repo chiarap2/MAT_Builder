@@ -5,7 +5,7 @@ import math
 from rdflib import Graph, Namespace
 from rdflib import Literal, URIRef, BNode
 from rdflib import RDF
-from rdflib.namespace import FOAF, TIME
+from rdflib.namespace import FOAF, TIME, XSD
 
 
 class RDFBuilder() :     
@@ -299,8 +299,8 @@ class RDFBuilder() :
             # Semantic description node.
             stop_desc = BNode()
             self.g.add((stop_desc, RDF.type, self.dic_sys_stop[type_stop]))
-            self.g.add((stop_desc, self.STEP.hasStartHour, Literal(start_hour)))
-            self.g.add((stop_desc, self.STEP.hasEndHour, Literal(end_hour)))
+            self.g.add((stop_desc, self.STEP.hasStartHour, Literal(int(start_hour))))
+            self.g.add((stop_desc, self.STEP.hasEndHour, Literal(int(end_hour))))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
 
             # Spatial extent (i.e, the latitude and longitude retrieved from the dataframe).
