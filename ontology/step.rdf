@@ -226,14 +226,7 @@ T. P. Nogueira and H. Martin, &quot;Querying Semantic Trajectory Episodes&quot; 
     <!-- http://purl.org/net/step#hasFeature -->
 
     <owl:ObjectProperty rdf:about="http://purl.org/net/step#hasFeature">
-        <rdfs:domain>
-            <owl:Class>
-                <owl:unionOf rdf:parseType="Collection">
-                    <rdf:Description rdf:about="http://purl.org/net/step#Agent"/>
-                    <rdf:Description rdf:about="http://purl.org/net/step#SpatiotemporalElement"/>
-                </owl:unionOf>
-            </owl:Class>
-        </rdfs:domain>
+        <rdfs:domain rdf:resource="http://purl.org/net/step#SpatiotemporalElement"/>
         <rdfs:range rdf:resource="http://purl.org/net/step#FeatureOfInterest"/>
         <rdfs:comment xml:lang="en">Links a Trajectory or Contextual Element to a Feature of Interest.</rdfs:comment>
         <rdfs:label xml:lang="en">hasFeature</rdfs:label>
