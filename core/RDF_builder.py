@@ -374,7 +374,82 @@ class RDFBuilder() :
             self.g.add((end_kp, self.STEP.atTime, instant_end))
             self.g.add((end_kp, self.STEP.hasLocation, location_end))
             self.g.add((st_extent, self.STEP.hasStartingPoint, end_kp))
+            
+    
+    def add_weather(self, weather_info) :
         
+        iter_rows = zip(weather_info['uid'], weather_info['tid'],
+                        weather_info['lat'], weather_info['end_lat'],
+                        weather_info['lng'], weather_info['end_lng'],
+                        weather_info['datetime'], weather_info['end_datetime'],
+                        weather_info['TAVG_C'], weather_info['DESCRIPTION'])
+        
+        for uid, tid, lat_start, lat_end, lng_start, lng_end, t_start, t_end, temp, desc in iter_rows :
+            
+            # Find the nodes in the graph associated with the "uid" and "tid" identifiers.
+            user, traj, raw_traj = self.find_trajectories_from_graph(uid, tid)
+            
+            # *** Now, create all the triples neeed to semantically enrich the trajectory with this move. *** #
+            # Feature node.
+            feature = BNode()
+            self.g.add((feature, RDF.type, self.STEP.Feature))
+            self.g.add((traj, self.STEP.hasFeature, feature))
+            
+            # Episode node.
+            episode = BNode()
+            self.g.add((episode, RDF.type, self.STEP.Episode))
+            self.g.add((feature, self.STEP.hasEpisode, episode))
+            
+            # Semantic description node.
+            weather_desc = BNode()
+            self.g.add((weather_desc, RDF.type, self.STEP.Weather))
+            self.g.add((weather_desc, self.STEP.hasTemperature, Literal(temp)))
+            self.g.add((weather_desc, self.STEP.hasWeatherCondition, Literal(desc)))
+            self.g.add((episode, self.STEP.hasSemanticDescription, weather_desc))
+            
+            
+            # *** Spatiotemporal extent *** #
+            st_extent = BNode()
+            self.g.add((st_extent, RDF.type, self.STEP.SpatiotemporalExtent))
+            self.g.add((episode, self.STEP.hasExtent, st_extent))
+            
+            # 1 - Starting keypoint to associate to the spatiotemporal extent.
+            start_kp = BNode()
+            self.g.add((start_kp, RDF.type, self.STEP.KeyPoint))
+            self.g.add((st_extent, self.STEP.hasStartingPoint, start_kp))
+            
+            # Associate coordinates to the starting keypoint.
+            start_point = BNode()
+            self.g.add((start_point, RDF.type, self.STEP.Point))
+            self.g.add((start_kp, self.STEP.hasLocation, start_point))
+            self.g.add((start_point, self.GEO.lat, Literal(lat_start)))
+            self.g.add((start_point, self.GEO.long, Literal(lng_start)))
+
+            # Associate time instant to the starting keypoint.
+            start_instant = BNode()
+            self.g.add((start_instant, RDF.type, self.STEP.Instant))
+            self.g.add((start_kp, self.STEP.atTime, start_instant))
+            self.g.add((start_instant, TIME.inXSDDateTime, Literal(t_start)))
+
+            
+            # 2 - Ending keypoint to associate to the spatiotemporal extent.
+            end_kp = BNode()
+            self.g.add((end_kp, RDF.type, self.STEP.KeyPoint))
+            self.g.add((st_extent, self.STEP.hasStartingPoint, end_kp))
+            
+            # Associate coordinates to the starting keypoint.
+            end_point = BNode()
+            self.g.add((end_point, RDF.type, self.STEP.Point))
+            self.g.add((end_kp, self.STEP.hasLocation, end_point))
+            self.g.add((end_point, self.GEO.lat, Literal(lat_end)))
+            self.g.add((end_point, self.GEO.long, Literal(lng_end)))
+
+            # Associate time instant to the starting keypoint.
+            end_instant = BNode()
+            self.g.add((end_instant, RDF.type, self.STEP.Instant))
+            self.g.add((end_kp, self.STEP.atTime, end_instant))
+            self.g.add((end_instant, TIME.inXSDDateTime, Literal(t_end)))
+            
         
                     
     def serialize_graph(self, path, formato = 'turtle') :

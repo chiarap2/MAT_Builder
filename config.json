@@ -135,7 +135,7 @@
             "id": "place",
             "type": "text",
             "placeholder": "City",
-			"default": "Venice, Italy"
+			"default": "Rome, Italy"
           }
         },
         {
@@ -200,7 +200,7 @@
         },
         {
           "H5": {
-            "children": "User enrichment: "
+            "children": "Enrich trajectory users with social media posts: "
           }
         },
         {
@@ -250,7 +250,7 @@
         },
         {
           "H5": {
-            "children": "Save RDF graph to disk: "
+            "children": "Save the enriched trajectories into an RDF graph: "
           }
         },
         {

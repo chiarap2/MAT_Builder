@@ -380,10 +380,9 @@ class stop_move_enrichment(Enrichment):
         #################################
         ### ---- MOVE ENRICHMENT ---- ###
         #################################
-        
-        print("Executing move enrichment...")
 
         if self.enrich_moves == True:
+            print("Executing move enrichment...")
             
             moves = self.moves
 
@@ -713,34 +712,55 @@ class stop_move_enrichment(Enrichment):
         #mat.set_index(['stop_id','lat','lng'],inplace=True)
         self.mats = mat.copy()
         self.mats.to_parquet('data/enriched_occasional.parquet')
+        
+        
+        
+        ####################################
+        ### ---- WEATHER ENRICHMENT ---- ###
+        ####################################
+        
+        def weather_enrichment(traj_cleaned, weather) :
+            
+            traj_cleaned['DATE'] = (traj_cleaned['datetime'].dt.date).astype(str)
+            
+            # Per ogni traiettoria, trova il primo ed ultimo sample in ogni giornata coperta dalla traiettoria.
+            gb = traj_cleaned.groupby(['tid', 'DATE'])
+            traj_day = gb.first().reset_index()
+            end_traj_day = gb.last().reset_index()
 
+            # Adesso joina i due dataframe.
+            traj_day['end_lat'] = end_traj_day['lat']
+            traj_day['end_lng'] = end_traj_day['lng']
+            traj_day['end_datetime'] = end_traj_day['datetime']
+            print(traj_day)
+            print(traj_day.info())
+            
+            # For each trajectory and day covered by the trajectory, find whether we can associate weather information.
+            weather_enrichment = traj_day.merge(weather, on = 'DATE', how = 'inner')
 
+            weather_enrichment['datetime'] = pd.to_datetime(weather_enrichment['datetime'], utc = True)
+            weather_enrichment['end_datetime'] = pd.to_datetime(weather_enrichment['end_datetime'], utc = True)
 
-        ### ENRICHMENT WITH WEATHER CONDITIONS ###
+            print(weather_enrichment)
+            print(weather_enrichment.info())
 
+            return(weather_enrichment)
+            
+            
+            
+        df_weather_enrichment = None
         if self.weather != 'no':
+            print("Adding weather info to the trajectories...")
 
-            weather = pd.read_parquet('data/weather/weather_conditions.parquet')
-            moves['date'] = moves['datetime'].dt.date
-            weather['DATE'] = weather['DATE'].astype('datetime64')
-            weather['DATE'] = weather['DATE'].dt.date
-            moves['temperature'] = 0
-            moves['w_conditions'] = ''
-
-            moves.reset_index(inplace=True)
-
-            moves.set_index('date',inplace=True)
-            weather.set_index('DATE',inplace=True)
-
-            moves['temperature'].loc[moves.index.isin(weather.index)] = round(weather['TAVG_C'].loc[weather.index.isin(moves.index)],2)
-            moves['w_conditions'].loc[moves.index.isin(weather.index)] = weather['DESCRIPTION'].loc[weather.index.isin(moves.index)]
-
-            moves.reset_index(inplace=True)
-            weather.reset_index(inplace=True)
+            traj_cleaned = pd.read_parquet('data/temp_dataset/traj_cleaned.parquet')
+            weather = pd.read_parquet('./data/weather/weather_conditions.parquet')
+            df_weather_enrichment = weather_enrichment(traj_cleaned, weather)
         
         
         
-        ### ENRICHMENT WITH SOCIAL MEDIA POSTS ###
+        ##############################################
+        ### ---- SOCIAL MEDIA POST ENRICHMENT ---- ###
+        ##############################################
                 
         if self.tweet_user != 'no':
 
@@ -780,6 +800,10 @@ class stop_move_enrichment(Enrichment):
             builder.add_occasional_stops(self.mats)
             builder.add_systematic_stops(self.systematic)
             builder.add_moves(moves)
+            
+            # Add weather information to the trajectories.
+            if df_weather_enrichment is not None :
+                builder.add_weather(df_weather_enrichment)
             
             # Output the RDF graph to disk in Turtle format.
             builder.serialize_graph('kg.ttl')
