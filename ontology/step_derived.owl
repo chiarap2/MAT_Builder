@@ -53,6 +53,7 @@
     <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasEndHour -->
 
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasEndHour">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
         <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
         <rdfs:comment>Links an instance of Systematic Stop to an integer value representing its ending hour.</rdfs:comment>
@@ -64,6 +65,7 @@
     <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasID -->
 
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasID">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
         <rdfs:domain rdf:resource="http://purl.org/net/step#Trajectory"/>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
         <rdfs:comment>Links the identifier value associated to a trajectory with an instance of Trajectory.</rdfs:comment>
@@ -86,9 +88,20 @@ NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:c
     
 
 
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasPublicationTime -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasPublicationTime">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SocialMediaPost"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#dateTime"/>
+    </owl:DatatypeProperty>
+    
+
+
     <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasStartHour -->
 
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasStartHour">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
         <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
         <rdfs:comment>Links an instance of Systematic stop to an integer value representing its starting hour.</rdfs:comment>
@@ -109,6 +122,15 @@ NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:c
     
 
 
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasText -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasText">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SocialMediaPost"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+    
+
+
     <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasWeatherCondition -->
 
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasWeatherCondition">
@@ -124,7 +146,6 @@ NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:c
     <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#stopHasValue -->
 
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#stopHasValue">
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
         <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest"/>
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
         <rdfs:comment>Links the WikiData URI of a Point of Interest to an instance of Point_of_Interest. Not always applicable, e.g., a POI may not have a WikiData URI.</rdfs:comment>
@@ -198,6 +219,15 @@ NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:c
 
     <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest">
         <rdfs:label>Point of Interest</rdfs:label>
+    </owl:Class>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SocialMediaPost -->
+
+    <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SocialMediaPost">
+        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#QualitativeDescription"/>
+        <rdfs:label>Social Media Post</rdfs:label>
     </owl:Class>
     
 
