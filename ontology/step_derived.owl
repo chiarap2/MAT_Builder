@@ -50,6 +50,17 @@
     
 
 
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasCategory -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasCategory">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:comment>Links an instance of Point of Interest to a string representing its POI category (e.g., amenity, aeroway, building).</rdfs:comment>
+        <rdfs:label>hasCategory</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
     <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasEndHour -->
 
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasEndHour">
