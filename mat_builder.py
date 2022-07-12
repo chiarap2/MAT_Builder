@@ -371,10 +371,15 @@ def info_enrichment(user,traj):
     #print(mats_moves['label'].unique())
     mats_moves['label'] = mats_moves['label'].map(transport)
     #print(mats_moves['label'].unique())
+    
     mats_stops.drop_duplicates(subset=['category','distance'],inplace=True)
 
-    fig = px.line_mapbox(mats_moves, lat="lat", lon="lng", color="tid", hover_data=["label","temperature","w_conditions"],
-                        labels={"label":"transportation mean","w_conditions":"weather condition"})
+    fig = px.line_mapbox(mats_moves,
+                         lat="lat",
+                         lon="lng",
+                         color="tid",
+                         hover_data=["label","temperature","w_conditions"],
+                         labels={"label":"transportation mean", "w_conditions":"weather condition"})
     
     mats_stops['distance'] = round(mats_stops['distance'],2).astype(str)
     mats_stops['description'] = '<b>PoI category</b>: '+mats_stops['category'] + ' <b>Distance</b>: ' + mats_stops['distance']

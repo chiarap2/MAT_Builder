@@ -377,15 +377,15 @@ class stop_move_enrichment(Enrichment):
         print("Executing the core of the semantic enrichment module...")
     
 
+
         #################################
         ### ---- MOVE ENRICHMENT ---- ###
         #################################
 
+        moves = self.moves
         if self.enrich_moves == True:
             print("Executing move enrichment...")
             
-            moves = self.moves
-
             # add speed, acceleration, distance info using PTRAIL
             df = PTRAILDataFrame(moves, latitude='lat', longitude='lng', datetime='datetime', traj_id='tid')
             speed = spatial.create_speed_column(df)
@@ -433,6 +433,7 @@ class stop_move_enrichment(Enrichment):
             acceleration_index = acceleration.index
             moves.loc[moves_index.isin(acceleration_index),'label'] = acceleration.loc[acceleration_index.isin(moves_index),'label']
             
+            self.moves = moves
             moves.to_parquet('data/enriched_moves.parquet')
 
 
@@ -717,7 +718,28 @@ class stop_move_enrichment(Enrichment):
         
         ####################################
         ### ---- WEATHER ENRICHMENT ---- ###
-        ####################################
+        ####################################       
+
+        def move_weather_enrichment(moves, weather) :        
+
+            res = moves.copy()
+            if weather is not None :
+                
+                res['DATE'] = (res['datetime'].dt.date).astype(str)
+                res = res.merge(weather, on = 'DATE', how = 'left')
+                res.drop(columns = ['DATE'])
+                res.rename(columns = {'TAVG_C' : 'temperature', 'DESCRIPTION' : 'w_conditions'}, inplace = True)
+                
+                # The merge has eliminated the old multilevel index on moves...let's restore it. 
+                res = res.set_index(moves.index) 
+
+            # If weather conditions are not available then set NA values in the appropriate columns.
+            else :
+                res['temperature'] = pd.NA
+                res['w_conditions'] = pd.NA
+
+            return(res)
+        
         
         def weather_enrichment(traj_cleaned, weather) :
             
@@ -745,7 +767,7 @@ class stop_move_enrichment(Enrichment):
             print(weather_enrichment.info())
 
             return(weather_enrichment)
-            
+        
             
             
         df_weather_enrichment = None
@@ -756,6 +778,11 @@ class stop_move_enrichment(Enrichment):
             weather = pd.read_parquet('./data/weather/weather_conditions.parquet')
             df_weather_enrichment = weather_enrichment(traj_cleaned, weather)
         
+        # Set up the moves dataframe to have temperature and weather conditions (needed later on by
+        # the component plotting the trajectories).
+        print(f'Prima: {self.moves}')
+        self.moves = move_weather_enrichment(self.moves, weather)
+        print(f'Dopo: {self.moves}')
         
         
         ##############################################
@@ -765,18 +792,18 @@ class stop_move_enrichment(Enrichment):
         if self.tweet_user != 'no':
 
             tweets = pd.read_parquet('data/tweets/tweets.parquet')
-            moves['date'] = moves['datetime'].dt.date
+            self.moves['date'] = self.moves['datetime'].dt.date
             tweets['tweet_created'] = tweets['tweet_created'].astype('datetime64')
             tweets['tweet_created'] = tweets['tweet_created'].dt.date
-            moves['tweet'] = ''
+            self.moves['tweet'] = ''
 
-            moves.reset_index(inplace=True)  
+            self.moves.reset_index(inplace=True)  
 
-            moves.set_index(['date','uid'],inplace=True)   
+            self.moves.set_index(['date','uid'],inplace=True)   
             tweets.set_index(['tweet_created','uid'],inplace=True)      
-            matched_tweets = moves.join(tweets,how='inner')
+            matched_tweets = self.moves.join(tweets,how='inner')
 
-            moves.reset_index(inplace=True)
+            self.moves.reset_index(inplace=True)
             matched_tweets.reset_index(inplace=True)
 
             self.tweets = matched_tweets.copy()       
@@ -799,7 +826,7 @@ class stop_move_enrichment(Enrichment):
             # and the moves (transportation mean).
             builder.add_occasional_stops(self.mats)
             builder.add_systematic_stops(self.systematic)
-            builder.add_moves(moves)
+            builder.add_moves(self.moves)
             
             # Add weather information to the trajectories.
             if df_weather_enrichment is not None :

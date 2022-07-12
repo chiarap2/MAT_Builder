@@ -109,13 +109,15 @@ class RDFBuilder() :
     def add_trajectories(self, df_raw_traj) :
         
         df_raw_traj['datetime'] = pd.to_datetime(df_raw_traj['datetime'], utc = True)
-        print(df_raw_traj)
-        print(df_raw_traj.info())
+        # print(df_raw_traj)
+        # print(df_raw_traj.info())
 
 
         # Retrieve the list of users from the dataframe.
-        list_users_cleaned = df_raw_traj['uid'].unique()
-        print(f"List of unique user IDs: {list_users_cleaned}")
+        #list_users_cleaned = df_raw_traj['uid'].unique()
+        # print(f"List of unique user IDs: {list_users_cleaned}")
+        print(f"Number of users whose trajectories will be added to the RDF graph: {df_raw_traj['uid'].nunique()}")
+        print(f"Number of trajectories that will be added to the RDF graph: {df_raw_traj['tid'].nunique()}")
         
         
         # *** Build the part of the KG related to the users and their trajectories. *** #
@@ -126,7 +128,7 @@ class RDFBuilder() :
             
             # Create the agent node.
             agent = URIRef('http://example.org/user_' + str(t) + '/')
-            print(f"Considering user {t} (graph node with ID {agent})")
+            # print(f"Considering user {t} (graph node with ID {agent})")
             
             self.g.add((agent, RDF.type, FOAF.Agent))
             self.g.add((agent, FOAF.name, Literal(t)))
@@ -134,8 +136,8 @@ class RDFBuilder() :
             # Associate to the agent all its trajectories
             list_sub_t = view["tid"].unique()
             # print(f"List of subtrajectory IDs associated with the user {t}: {list_sub_t}")
-            print(f"Number of trajectories associated with the user {t}: {len(list_sub_t)}")
-            print(f"Number of samples associated with the user {t}: {view.shape[0]}")
+            #print(f"Number of trajectories associated with the user {t}: {len(list_sub_t)}")
+            #print(f"Number of samples associated with the user {t}: {view.shape[0]}")
             
             for s in list_sub_t :
                 
@@ -328,7 +330,7 @@ class RDFBuilder() :
 
         #print(df_moves)
         #print(df_moves.info())
-        #print(f"Modes of movement: {df_moves['label'].unique()}")
+        
         
         
         # Compute a groupby on the enriched moves in order to extract the relevant information.
@@ -390,6 +392,7 @@ class RDFBuilder() :
     
     def add_weather(self, weather_info) :
         
+        print('Adding weather information to the RDF graph...')
         iter_rows = zip(weather_info['uid'], weather_info['tid'],
                         weather_info['lat'], weather_info['end_lat'],
                         weather_info['lng'], weather_info['end_lng'],
