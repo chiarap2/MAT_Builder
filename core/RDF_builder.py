@@ -385,7 +385,7 @@ class RDFBuilder() :
             self.g.add((end_kp, RDF.type, self.STEP.KeyPoint))
             self.g.add((end_kp, self.STEP.atTime, instant_end))
             self.g.add((end_kp, self.STEP.hasLocation, location_end))
-            self.g.add((st_extent, self.STEP.hasStartingPoint, end_kp))
+            self.g.add((st_extent, self.STEP.hasEndingPoint, end_kp))
             
     
     def add_weather(self, weather_info) :
@@ -396,6 +396,7 @@ class RDFBuilder() :
                         weather_info['datetime'], weather_info['end_datetime'],
                         weather_info['TAVG_C'], weather_info['DESCRIPTION'])
         
+        id_weather = 0
         for uid, tid, lat_start, lat_end, lng_start, lng_end, t_start, t_end, temp, desc in iter_rows :
             
             # Find the nodes in the graph associated with the "uid" and "tid" identifiers.
@@ -409,7 +410,7 @@ class RDFBuilder() :
             self.g.add((traj, self.STEP.hasFeature, feature))
             
             # Episode node.
-            URI_episode = URI_feat + str(t_start) + '/'
+            URI_episode = URI_feat + str(id_weather) + '/'
             episode = URIRef(URI_episode)
             self.g.add((episode, RDF.type, self.STEP.Episode))
             self.g.add((feature, self.STEP.hasEpisode, episode))
@@ -449,7 +450,7 @@ class RDFBuilder() :
             # 2 - Ending keypoint to associate to the spatiotemporal extent.
             end_kp = URIRef(URI_episode + 'extent/ekp/')
             self.g.add((end_kp, RDF.type, self.STEP.KeyPoint))
-            self.g.add((st_extent, self.STEP.hasStartingPoint, end_kp))
+            self.g.add((st_extent, self.STEP.hasEndingPoint, end_kp))
             
             # Associate coordinates to the starting keypoint.
             end_point = URIRef(URI_episode + 'extent/ekp/p/')
@@ -464,6 +465,8 @@ class RDFBuilder() :
             self.g.add((end_kp, self.STEP.atTime, end_instant))
             self.g.add((end_instant, TIME.inXSDDateTime, Literal(t_end)))
             
+            id_weather = id_weather + 1
+        
         
                     
     def serialize_graph(self, path, formato = 'turtle') :
