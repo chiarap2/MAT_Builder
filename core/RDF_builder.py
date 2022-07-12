@@ -78,7 +78,6 @@ class RDFBuilder() :
     
     
         # Pull in the ontologies we will use while populating the knowledge graph.
-        # self.STEP = Namespace('http://purl.org/net/step#')
         self.STEP = Namespace('http://purl.org/net/step_specialized#')
         self.GEO = Namespace('http://www.w3.org/2003/01/geo/wgs84_pos#')
 
@@ -126,7 +125,7 @@ class RDFBuilder() :
             #display(view)
             
             # Create the agent node.
-            agent = BNode()
+            agent = URIRef('http://example.org/user_' + str(t) + '/')
             print(f"Considering user {t} (graph node with ID {agent})")
             
             self.g.add((agent, RDF.type, FOAF.Agent))
@@ -141,14 +140,15 @@ class RDFBuilder() :
             for s in list_sub_t :
                 
                 # Create the "logical" trajectory which will hold the raw trajectory + its semantic aspects.
-                traj = BNode()
+                URI_traj = 'http://example.org/user_' + str(t) + '/traj_' + str(s) + '/'
+                traj = URIRef(URI_traj)
                 self.g.add((agent, self.STEP.hasTrajectory , traj))
                 self.g.add((traj, RDF.type, self.STEP.Trajectory))
                 self.g.add((traj, self.STEP.hasID, Literal(s))) # Save the ID of this trajectory.
                 
                 
                 # Create the raw trajectory
-                seg = BNode()
+                seg = URIRef(URI_traj + 'raw/')
                 self.g.add((seg, RDF.type, self.STEP.RawTrajectory))
                 self.g.add((traj, self.STEP.hasRawTrajectory, seg))
                 
@@ -161,10 +161,12 @@ class RDFBuilder() :
                 list_fix = zip(list_lat, list_long, list_time)
                 # print(f"Generating trajectory {s} for user {t} (samples: {len(view_2)})")
                 
+                
+                cnt = 0
                 for (lat, long, time) in list_fix :
-                    fix = BNode()
-                    point = BNode()
-                    instant = BNode()
+                    fix = URIRef(URI_traj + 'raw/fix_' + str(cnt) + '/')
+                    point = URIRef(URI_traj + 'raw/pt_' + str(cnt) + '/')
+                    instant = URIRef(URI_traj + 'raw/inst_' + str(cnt) + '/')
                     
                     self.g.add((fix, RDF.type, self.STEP.Fix))
                     self.g.add((seg, self.STEP.hasFix, fix)) # Associate fix to raw trajectory segment.
@@ -181,6 +183,8 @@ class RDFBuilder() :
                     self.g.add((fix, self.STEP.atTime, instant))
                     self.g.add((instant, TIME.inXSDDateTime, Literal(time)))
                     
+                    cnt = cnt + 1
+                    
                     
     def add_occasional_stops(self, df_occasional_stops) :
         
@@ -194,7 +198,9 @@ class RDFBuilder() :
         
         gb = view_stop_data.groupby(['stop_id'])
         for key in gb.groups.keys() :
-
+            
+            cnt = 0
+            
             # Retrieve the rows associated with this stop.
             group = gb.get_group(key)
 
@@ -220,65 +226,67 @@ class RDFBuilder() :
 
             # *** Now, create all the triples neeed to semantically enrich the trajectory with this move. *** #
             # Feature node.
-            feature = BNode()
+            URI_feat = 'http://example.org/user_' + str(uid) + '/traj_' + str(tid) + '/feature_occ_stop/'
+            feature = URIRef(URI_feat)
             self.g.add((feature, RDF.type, self.STEP.Feature))
             self.g.add((traj, self.STEP.hasFeature, feature))
 
             # Episode node.
-            episode = BNode()
+            URI_episode = URI_feat + str(key) + '/'
+            episode = URIRef(URI_episode)
             self.g.add((episode, RDF.type, self.STEP.Episode))
             self.g.add((feature, self.STEP.hasEpisode, episode))
 
             # Semantic description (Occasional Stop) node.
-            stop_desc = BNode()
+            stop_desc = URIRef(URI_episode + 'desc/')
             self.g.add((stop_desc, RDF.type, self.STEP.OccasionalStop))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
 
             # Link this Occasional Stop with all the POIs that may be associated with it.
             for osm, wd in zip(list_POI['osmid'], list_POI['wikidata']) :
                 if not pd.isna(osm) :
-                    poi = BNode()
+                    poi = URIRef('http://example.org/poi_' + str(osm) + '/')
                     self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
                     self.g.add((poi, self.STEP.hasOSMValue, Literal(str(osm))))
                     if not pd.isna(wd): self.g.add((poi, self.STEP.hasWDValue, URIRef("www.wikidata.org/wiki/" + str(wd))))
                     self.g.add((stop_desc, self.STEP.hasPOI, poi))
 
             # Spatiotemporal extent.
-            st_extent = BNode()
+            st_extent = URIRef(URI_episode + 'extent/')
             self.g.add((st_extent, RDF.type, self.STEP.SpatiotemporalExtent))
             self.g.add((episode, self.STEP.hasExtent, st_extent))
 
             # Starting keypoint to associate to the spatiotemporal extent.
-            start_kp = BNode()
+            start_kp = URIRef(URI_episode + 'extent/skp/')
             self.g.add((start_kp, RDF.type, self.STEP.KeyPoint))
             self.g.add((start_kp, self.STEP.atTime, instant_start))
             self.g.add((start_kp, self.STEP.hasLocation, location_start))
             self.g.add((st_extent, self.STEP.hasStartingPoint, start_kp))
 
             # Ending keypoint to associate to the spatiotemporal extent.
-            end_kp = BNode()
+            end_kp = URIRef(URI_episode + 'extent/ekp/')
             self.g.add((end_kp, RDF.type, self.STEP.KeyPoint))
             self.g.add((end_kp, self.STEP.atTime, instant_end))
             self.g.add((end_kp, self.STEP.hasLocation, location_end))
-            self.g.add((st_extent, self.STEP.hasStartingPoint, end_kp))
+            self.g.add((st_extent, self.STEP.hasEndingPoint, end_kp))
 
             
             
     def add_systematic_stops(self, df_sys_stops) :
         
         df_sys_stops['type_stop'] = df_sys_stops[['home','work', 'other']].idxmax(axis=1)
-        print(df_sys_stops)
-        print(df_sys_stops.info())
-
+        # print(df_sys_stops)
+        # print(df_sys_stops.info())
         print(f"Number of systematic stops: {df_sys_stops['stop_id'].nunique()}")
 
         iter_sys_stops = zip(df_sys_stops['uid'], df_sys_stops['tid'], 
                              df_sys_stops['lat'], df_sys_stops['lng'], 
                              df_sys_stops['type_stop'],
+                             df_sys_stops['stop_id'],
                              df_sys_stops['start_time'], df_sys_stops['end_time'])
         
         
-        for uid, tid, lat, lng, type_stop, start_hour, end_hour in iter_sys_stops :
+        for uid, tid, lat, lng, type_stop, stop_id, start_hour, end_hour in iter_sys_stops :
     
             #print(f"{uid} -- {tid} -- {type_stop} -- {lat} -- {lng} -- {start_hour} -- {end_hour}")
 
@@ -287,24 +295,26 @@ class RDFBuilder() :
 
             # *** Now, create all the triples neeed to semantically enrich the trajectory with this move. *** #
             # Feature node.
-            feature = BNode()
+            URI_feat = 'http://example.org/user_' + str(uid) + '/traj_' + str(tid) + '/feature_sys_stop/'
+            feature = URIRef(URI_feat)
             self.g.add((feature, RDF.type, self.STEP.Feature))
             self.g.add((traj, self.STEP.hasFeature, feature))
 
             # Episode node.
-            episode = BNode()
+            URI_episode = URI_feat + str(stop_id) + '/'
+            episode = URIRef(URI_episode)
             self.g.add((episode, RDF.type, self.STEP.Episode))
             self.g.add((feature, self.STEP.hasEpisode, episode))
 
             # Semantic description node.
-            stop_desc = BNode()
+            stop_desc = URIRef(URI_episode + 'desc/')
             self.g.add((stop_desc, RDF.type, self.dic_sys_stop[type_stop]))
             self.g.add((stop_desc, self.STEP.hasStartHour, Literal(int(start_hour))))
             self.g.add((stop_desc, self.STEP.hasEndHour, Literal(int(end_hour))))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
 
             # Spatial extent (i.e, the latitude and longitude retrieved from the dataframe).
-            sp_extent = BNode()
+            sp_extent = URIRef(URI_episode + 'extent/')
             self.g.add((sp_extent, RDF.type, self.STEP.Point))           
             self.g.add((sp_extent, self.GEO.lat, Literal(lat)))
             self.g.add((sp_extent, self.GEO.long, Literal(lng)))
@@ -316,9 +326,9 @@ class RDFBuilder() :
         
         df_moves['datetime'] = pd.to_datetime(df_moves['datetime'], utc = True)
 
-        print(df_moves)
-        print(df_moves.info())
-        print(f"Modes of movement: {df_moves['label'].unique()}")
+        #print(df_moves)
+        #print(df_moves.info())
+        #print(f"Modes of movement: {df_moves['label'].unique()}")
         
         
         # Compute a groupby on the enriched moves in order to extract the relevant information.
@@ -342,34 +352,36 @@ class RDFBuilder() :
 
             # *** Now, create all the triples neeed to semantically enrich the trajectory with this move. *** #
             # Feature node.
-            feature = BNode()
+            URI_feat = 'http://example.org/user_' + str(uid) + '/traj_' + str(tid) + '/feature_move/'
+            feature = URIRef(URI_feat)
             self.g.add((feature, RDF.type, self.STEP.Feature))
             self.g.add((traj, self.STEP.hasFeature, feature))
 
             # Episode node.
-            episode = BNode()
+            URI_episode = URI_feat + str(move_id) + '/'
+            episode = URIRef(URI_episode)
             self.g.add((episode, RDF.type, self.STEP.Episode))
             self.g.add((feature, self.STEP.hasEpisode, episode))
 
             # Semantic description node.
-            move_desc = BNode()
+            move_desc = URIRef(URI_episode + 'desc/')
             self.g.add((move_desc, RDF.type, self.dic_moves[type_move]))
             self.g.add((episode, self.STEP.hasSemanticDescription, move_desc))
 
             # Spatiotemporal extent.
-            st_extent = BNode()
+            st_extent = URIRef(URI_episode + 'extent/')
             self.g.add((st_extent, RDF.type, self.STEP.SpatiotemporalExtent))
             self.g.add((episode, self.STEP.hasExtent, st_extent))
 
             # Starting keypoint to associate to the spatiotemporal extent.
-            start_kp = BNode()
+            start_kp = URIRef(URI_episode + 'extent/skp/')
             self.g.add((start_kp, RDF.type, self.STEP.KeyPoint))
             self.g.add((start_kp, self.STEP.atTime, instant_start))
             self.g.add((start_kp, self.STEP.hasLocation, location_start))
             self.g.add((st_extent, self.STEP.hasStartingPoint, start_kp))
 
             # Ending keypoint to associate to the spatiotemporal extent.
-            end_kp = BNode()
+            end_kp = URIRef(URI_episode + 'extent/ekp/')
             self.g.add((end_kp, RDF.type, self.STEP.KeyPoint))
             self.g.add((end_kp, self.STEP.atTime, instant_end))
             self.g.add((end_kp, self.STEP.hasLocation, location_end))
@@ -391,17 +403,19 @@ class RDFBuilder() :
             
             # *** Now, create all the triples neeed to semantically enrich the trajectory with this move. *** #
             # Feature node.
-            feature = BNode()
+            URI_feat = 'http://example.org/user_' + str(uid) + '/traj_' + str(tid) + '/feature_weather/'
+            feature =  URIRef(URI_feat)
             self.g.add((feature, RDF.type, self.STEP.Feature))
             self.g.add((traj, self.STEP.hasFeature, feature))
             
             # Episode node.
-            episode = BNode()
+            URI_episode = URI_feat + str(t_start) + '/'
+            episode = URIRef(URI_episode)
             self.g.add((episode, RDF.type, self.STEP.Episode))
             self.g.add((feature, self.STEP.hasEpisode, episode))
             
             # Semantic description node.
-            weather_desc = BNode()
+            weather_desc = URIRef(URI_episode + 'desc/')
             self.g.add((weather_desc, RDF.type, self.STEP.Weather))
             self.g.add((weather_desc, self.STEP.hasTemperature, Literal(temp)))
             self.g.add((weather_desc, self.STEP.hasWeatherCondition, Literal(desc)))
@@ -409,43 +423,43 @@ class RDFBuilder() :
             
             
             # *** Spatiotemporal extent *** #
-            st_extent = BNode()
+            st_extent = URIRef(URI_episode + 'extent/')
             self.g.add((st_extent, RDF.type, self.STEP.SpatiotemporalExtent))
             self.g.add((episode, self.STEP.hasExtent, st_extent))
             
             # 1 - Starting keypoint to associate to the spatiotemporal extent.
-            start_kp = BNode()
+            start_kp = URIRef(URI_episode + 'extent/skp/')
             self.g.add((start_kp, RDF.type, self.STEP.KeyPoint))
             self.g.add((st_extent, self.STEP.hasStartingPoint, start_kp))
             
             # Associate coordinates to the starting keypoint.
-            start_point = BNode()
+            start_point = URIRef(URI_episode + 'extent/skp/p/')
             self.g.add((start_point, RDF.type, self.STEP.Point))
             self.g.add((start_kp, self.STEP.hasLocation, start_point))
             self.g.add((start_point, self.GEO.lat, Literal(lat_start)))
             self.g.add((start_point, self.GEO.long, Literal(lng_start)))
 
             # Associate time instant to the starting keypoint.
-            start_instant = BNode()
+            start_instant = URIRef(URI_episode + 'extent/skp/i/')
             self.g.add((start_instant, RDF.type, self.STEP.Instant))
             self.g.add((start_kp, self.STEP.atTime, start_instant))
             self.g.add((start_instant, TIME.inXSDDateTime, Literal(t_start)))
 
             
             # 2 - Ending keypoint to associate to the spatiotemporal extent.
-            end_kp = BNode()
+            end_kp = URIRef(URI_episode + 'extent/ekp/')
             self.g.add((end_kp, RDF.type, self.STEP.KeyPoint))
             self.g.add((st_extent, self.STEP.hasStartingPoint, end_kp))
             
             # Associate coordinates to the starting keypoint.
-            end_point = BNode()
+            end_point = URIRef(URI_episode + 'extent/ekp/p/')
             self.g.add((end_point, RDF.type, self.STEP.Point))
             self.g.add((end_kp, self.STEP.hasLocation, end_point))
             self.g.add((end_point, self.GEO.lat, Literal(lat_end)))
             self.g.add((end_point, self.GEO.long, Literal(lng_end)))
 
             # Associate time instant to the starting keypoint.
-            end_instant = BNode()
+            end_instant = URIRef(URI_episode + 'extent/ekp/i/')
             self.g.add((end_instant, RDF.type, self.STEP.Instant))
             self.g.add((end_kp, self.STEP.atTime, end_instant))
             self.g.add((end_instant, TIME.inXSDDateTime, Literal(t_end)))
@@ -454,5 +468,4 @@ class RDFBuilder() :
                     
     def serialize_graph(self, path, formato = 'turtle') :
         
-        # self.g.serialize(destination = path, format = "pretty-xml")
         self.g.serialize(destination = path, format = formato)
