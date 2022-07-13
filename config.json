@@ -34,8 +34,8 @@
           "Input": {
             "id": "n_point",
             "type": "number",
-            "placeholder": "10",
-			"default": 10
+            "placeholder": "1000",
+			"default": 3000
           }
         }
       ],
@@ -117,7 +117,8 @@
         {
           "Dropdown": {
             "id": "enrich_move",
-            "options": [{"label": "yes", "value": "yes"},{"label":"no","value":"no"}]
+            "options": [{"label": "yes", "value": "yes"},{"label":"no","value":"no"}],
+			"default" : "yes"
           }
         },
         {
@@ -156,7 +157,8 @@
               {"label": "public_transport", "value": "public_transport"},
               {"label": "shop", "value": "shop"},
               {"label": "tourism", "value": "tourism"},
-              {"label":"no enrichment","value":"no"}]
+              {"label":"no enrichment","value":"no"}],
+			"default" : "amenity"
           }
         },
         {
@@ -195,7 +197,7 @@
             "id": "max_distance",
             "type": "number",
             "placeholder": "Max distance from PoIs",
-			"default": 500
+			"default": 100
           }
         },
         {
@@ -207,7 +209,8 @@
           "Dropdown": {
             "id": "user_enrich",
             "options": [{"label": "Social media posts", "value": "post"},
-                        {"label":"no enrichment","value":"no"}]
+                        {"label":"no enrichment","value":"no"}],
+			"default" : "no"
           }
         },
         {
@@ -225,14 +228,15 @@
         },
         {
           "H5": {
-            "children": "Trajectory enrichment: "
+            "children": "Enrich trajectories with weather information: "
           }
         },
         {
           "Dropdown": {
             "id": "traj_enrich",
             "options": [{"label": "Weather conditions", "value": "weather"},
-                        {"label":"no enrichment","value":"no"}]
+                        {"label":"no enrichment","value":"no"}],
+			"default" : "weather"
           }
         },
         {
@@ -257,7 +261,8 @@
           "Dropdown": {
             "id": "rdf",
             "options": [{"label": "yes", "value": "yes"},
-                        {"label":"no","value":"no"}]
+                        {"label":"no","value":"no"}],
+			"default": "yes"
           }
         }
       ]

@@ -71,7 +71,8 @@ def show_input(tab, radio):
                 elif elem == 'Dropdown':
                     if p[elem]['id'] == 'list_poi':
                         inputs.append(dcc.Dropdown(id={'type':'input','index':c},
-                                                   options=p[elem]['options'],
+                                                   options = p[elem]['options'],
+                                                   value = p[elem]['default'] if 'default' in p[elem] else None,
                                                    multi=True,
                                                    style={'color':'#333'}))                    
                         inputs.append(html.Br())
@@ -79,6 +80,7 @@ def show_input(tab, radio):
                     else:
                         inputs.append(dcc.Dropdown(id={'type':'input','index':c},
                                                    options=p[elem]['options'],
+                                                   value = p[elem]['default'] if 'default' in p[elem] else None,
                                                    style={'color':'#333','width':'60%'}))                    
                         inputs.append(html.Br())
 
