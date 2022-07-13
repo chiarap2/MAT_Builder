@@ -114,7 +114,7 @@ class RDFBuilder() :
 
 
         # Retrieve the list of users from the dataframe.
-        #list_users_cleaned = df_raw_traj['uid'].unique()
+        list_users_cleaned = df_raw_traj['uid'].unique()
         # print(f"List of unique user IDs: {list_users_cleaned}")
         print(f"Number of users whose trajectories will be added to the RDF graph: {df_raw_traj['uid'].nunique()}")
         print(f"Number of trajectories that will be added to the RDF graph: {df_raw_traj['tid'].nunique()}")
