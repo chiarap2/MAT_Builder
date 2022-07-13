@@ -353,8 +353,9 @@ def info_trajs(users):
     State(component_id='user_list_',component_property='value'),
     Input(component_id='trajs_list',component_property='value')
 )
-def info_enrichment(user,traj):
+def info_enrichment(user, traj):
 
+    # Dictionary holding the transportation modes mapping. 
     transport = { 
         0: 'walk',
         1: 'bike',
@@ -371,8 +372,10 @@ def info_enrichment(user,traj):
     #print(mats_moves['label'].unique())
     mats_moves['label'] = mats_moves['label'].map(transport)
     #print(mats_moves['label'].unique())
-    
     mats_stops.drop_duplicates(subset=['category','distance'],inplace=True)
+
+
+    ### Preparing the information concerning the moves ###
 
     fig = px.line_mapbox(mats_moves,
                          lat="lat",
@@ -381,10 +384,30 @@ def info_enrichment(user,traj):
                          hover_data=["label","temperature","w_conditions"],
                          labels={"label":"transportation mean", "w_conditions":"weather condition"})
     
+    
+    
+    ### Prepare the information concerning the occasional stops... ###
     mats_stops['distance'] = round(mats_stops['distance'],2).astype(str)
-    mats_stops['description'] = '<b>PoI category</b>: '+mats_stops['category'] + ' <b>Distance</b>: ' + mats_stops['distance']
-
-    matched_pois = list(mats_stops.groupby('stop_id')['description'].agg("</br></br>".join))
+    mats_stops['description'] = '</br><b>PoI category</b>: ' +\
+                                mats_stops['category'] +\
+                                ' <b>Distance</b>: ' +\
+                                mats_stops['distance']
+    
+    matched_pois = []
+    limit_pois = 10
+    gb_occ_stops = mats_stops.groupby('stop_id')
+    for key, item in gb_occ_stops:
+    
+        tmp = item['description']
+        size = tmp.shape[0]
+        limit = min(size, limit_pois)
+        
+        tmp = tmp.head(limit)
+        stringa = tmp.str.cat(sep = "")
+        if size > limit_pois : 
+            stringa = stringa + f"</br>(...and other {size - limit_pois} POIs)"
+            
+        matched_pois.append(stringa)
 
     fig.add_trace(go.Scattermapbox(mode = "markers", name = 'occasional stops',
                                    lon = mats_stops.lng.unique(),
@@ -392,6 +415,10 @@ def info_enrichment(user,traj):
                                    text = matched_pois,
                                    hoverinfo = 'text',
                                    marker = {'size': 10, 'color': '#F14C2B'}))
+
+
+
+    ### Preparing the information concerning the systematic stops ###
 
     mats_systematic['home'] = round((mats_systematic['home']*100),2).astype(str)
     mats_systematic['work'] = round((mats_systematic['work']*100),2).astype(str)
@@ -408,9 +435,11 @@ def info_enrichment(user,traj):
                                    hoverinfo = 'text',
                                    marker = {'size': 10,'color': '#2BD98C'}))
     
+    
+    ### Setting the last parameters... ###
+    
     fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=12,
                       margin={"r":0,"t":0,"l":0,"b":0})
-
     fig.update_traces(line=dict(color='#2B37F1',width=2))
 
     return dcc.Graph(figure=fig)
