@@ -774,24 +774,29 @@ class stop_move_enrichment(Enrichment):
         if self.weather != 'no':
             print("Adding weather info to the trajectories...")
 
-            traj_cleaned = pd.read_parquet('data/temp_dataset/traj_cleaned.parquet')
+            traj_cleaned = pd.read_parquet('./data/temp_dataset/traj_cleaned.parquet')
             weather = pd.read_parquet('./data/weather/weather_conditions.parquet')
+            
             df_weather_enrichment = weather_enrichment(traj_cleaned, weather)
+            df_weather_enrichment.to_parquet('./data/weather_enrichment.parquet')
         
         # Set up the moves dataframe to have temperature and weather conditions (needed later on by
         # the component plotting the trajectories).
-        print(f'Prima: {self.moves}')
         self.moves = move_weather_enrichment(self.moves, weather)
-        print(f'Dopo: {self.moves}')
+        
         
         
         ##############################################
         ### ---- SOCIAL MEDIA POST ENRICHMENT ---- ###
         ##############################################
-                
+        
+        tweets_RDF = None        
         if self.tweet_user != 'no':
-
-            tweets = pd.read_parquet('data/tweets/tweets.parquet')
+            print("Enriching users with social media posts!")
+            
+            tweets = pd.read_parquet('data/tweets/tweets_rome.parquet')
+            tweets_RDF = tweets.copy()
+            
             self.moves['date'] = self.moves['datetime'].dt.date
             tweets['tweet_created'] = tweets['tweet_created'].astype('datetime64')
             tweets['tweet_created'] = tweets['tweet_created'].dt.date
@@ -806,13 +811,17 @@ class stop_move_enrichment(Enrichment):
             self.moves.reset_index(inplace=True)
             matched_tweets.reset_index(inplace=True)
 
-            self.tweets = matched_tweets.copy()       
+            self.tweets = matched_tweets.copy()    
 
 
 
-        ### RDF GRAPH SAVE ###
+        ##############################################
+        ###            RDF GRAPH SAVE              ###
+        ##############################################
         
         if self.rdf == 'yes':
+            
+            print("Creating and then saving to disk the RDF graph...")
 
             # Instantiate RDF-builder
             builder = RDFBuilder()
@@ -831,6 +840,10 @@ class stop_move_enrichment(Enrichment):
             # Add weather information to the trajectories.
             if df_weather_enrichment is not None :
                 builder.add_weather(df_weather_enrichment)
+                
+            # Add weather information to the trajectories.
+            if tweets_RDF is not None :
+                builder.add_social(tweets_RDF)
             
             # Output the RDF graph to disk in Turtle format.
             builder.serialize_graph('kg.ttl')

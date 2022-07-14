@@ -30,6 +30,12 @@ class RDFBuilder() :
         # print(f"Raw => {raw_traj}")
 
         return user, traj, raw_traj
+    
+    
+    # Given a graph g, an agent identifier uid, this method returns the node in g representing the agent corresponding to uid. 
+    def find_user_from_graph(self, uid) :
+
+        return self.g.value(predicate = FOAF.name, object = Literal(uid), any = False)
 
     
     # Given a graph g, a node raw_traj representing a specific raw subtrajectory, and a start and end time instants,
@@ -470,6 +476,58 @@ class RDFBuilder() :
             self.g.add((end_instant, TIME.inXSDDateTime, Literal(t_end)))
             
             id_weather = id_weather + 1
+            
+            
+            
+    def add_social(self, social_info) :
+        
+        print('Adding social media posts of users to the RDF graph...')
+        
+        
+        social_df = social_info.copy()
+        social_df['uid'] = social_df['uid'].astype(str)
+        social_df['tweet_created'] = pd.to_datetime(social_df['tweet_created'], utc = True)
+        iter_rows = zip(social_df['uid'], social_df['tweet_created'], social_df['text'])
+        
+        
+        id_post = 0
+        for uid, time, text in iter_rows :
+            
+            # Find the Agent node whose foaf:name is equal to the "uid" identifier.
+            # NOTE: a user may be missing from those that have at least a trajectory...in such case we skip the tweet.
+            user_node = self.find_user_from_graph(uid)
+            if user_node is None : continue
+                
+            # print(f"Adding tweet for user {user_node}")
+            
+            
+            # *** Now, create all the triples neeed to semantically enrich the users with this post. *** #
+            
+            # Feature node.
+            URI_feat = 'http://example.org/user_' + str(uid) + '/feature_social/'
+            feature =  URIRef(URI_feat)
+            self.g.add((feature, RDF.type, self.STEP.Feature))
+            self.g.add((user_node, self.STEP.hasFeature, feature))
+            
+            # Episode node.
+            URI_episode = URI_feat + str(id_post) + '/'
+            episode = URIRef(URI_episode)
+            self.g.add((episode, RDF.type, self.STEP.Episode))
+            self.g.add((feature, self.STEP.hasEpisode, episode))
+            
+            # Semantic description node.
+            social_desc = URIRef(URI_episode + 'desc/')
+            self.g.add((social_desc, RDF.type, self.STEP.SocialMediaPost))
+            self.g.add((social_desc, self.STEP.hasText, Literal(text)))
+            self.g.add((episode, self.STEP.hasSemanticDescription, social_desc))
+            
+            # *** Temporal extent *** #
+            t_extent = URIRef(URI_episode + 'extent/')
+            self.g.add((t_extent, RDF.type, self.STEP.Instant))
+            self.g.add((t_extent, TIME.inXSDDateTime, Literal(time)))
+            self.g.add((episode, self.STEP.hasExtent, t_extent))
+          
+            id_post = id_post + 1
         
         
                     
