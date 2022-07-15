@@ -9,7 +9,8 @@
           "Input": {
             "id": "path",
             "type": "text",
-            "placeholder": "path"
+            "placeholder": "path",
+			"default": "./data/Rome/rome.parquet"
           }
         },
         {
@@ -141,7 +142,7 @@
         },
         {
           "Span": {
-            "children":"PoI categories "
+            "children":"PoI categories (considered only when downloading from OpenStreetMap)"
           }
         },
         {

@@ -67,8 +67,8 @@ class preprocessing1(Preprocessing):
     def __init__(self, list_):
 
         self.path = list_[0]
-        self.num_point = list_[2]
         self.kmh = list_[1]
+        self.num_point = list_[2]
 
 
 
@@ -321,6 +321,7 @@ class stop_move_enrichment(Enrichment):
         
     
         print("Executing the constructor of the semantic enrichment module...")
+        print(f"Values of the list passed to the constructor: {list_}")
 
         if list_[0] == 'yes':
             self.enrich_moves = True
@@ -343,26 +344,29 @@ class stop_move_enrichment(Enrichment):
         self.semantic_granularity = list_[4]
         self.max_distance = list_[5]
 
+        # Variabili gestione arricchimento social media post.
         if list_[6] == 'no':
-            self.tweet_user = []
+            self.tweet_user = False
         else:
-            self.tweet_user = list_[6]
+            self.tweet_user = True
 
         if list_[7] == 'no':
             self.upload_users = 'no'
         else:
             self.upload_users = list_[7]
 
+        # Variabili gestione arricchimento social media post.
         if list_[8] == 'no':
-            self.weather = []
+            self.weather = False
         else:
-            self.weather = list_[8]
+            self.weather = True
 
         if list_[9] == 'no':
             self.upload_trajs = 'no'
         else:
             self.upload_trajs = list_[9]
         
+        # Variabili gestione scrittura grafo RDF.
         if list_[-1] == 'yes':
             self.rdf = 'yes'
         else:
@@ -771,18 +775,21 @@ class stop_move_enrichment(Enrichment):
             
             
         df_weather_enrichment = None
-        if self.weather != 'no':
+        print(f"Valore self.weather: {self.weather}")
+        if self.weather :
             print("Adding weather info to the trajectories...")
 
             traj_cleaned = pd.read_parquet('./data/temp_dataset/traj_cleaned.parquet')
-            weather = pd.read_parquet('./data/weather/weather_conditions.parquet')
+            weather = pd.read_parquet(self.upload_trajs)
             
             df_weather_enrichment = weather_enrichment(traj_cleaned, weather)
             df_weather_enrichment.to_parquet('./data/weather_enrichment.parquet')
         
-        # Set up the moves dataframe to have temperature and weather conditions (needed later on by
-        # the component plotting the trajectories).
-        self.moves = move_weather_enrichment(self.moves, weather)
+            # Set up the moves dataframe to have temperature and weather conditions (needed later on by
+            # the component plotting the trajectories).
+            self.moves = move_weather_enrichment(self.moves, weather)
+        else :
+            self.moves = move_weather_enrichment(self.moves, None)
         
         
         
@@ -790,11 +797,12 @@ class stop_move_enrichment(Enrichment):
         ### ---- SOCIAL MEDIA POST ENRICHMENT ---- ###
         ##############################################
         
-        tweets_RDF = None        
-        if self.tweet_user != 'no':
+        tweets_RDF = None
+        print(f"Valore self.tweet_user: {self.tweet_user}")        
+        if self.tweet_user :
             print("Enriching users with social media posts!")
             
-            tweets = pd.read_parquet('data/tweets/tweets_rome.parquet')
+            tweets = pd.read_parquet(self.upload_users)
             tweets_RDF = tweets.copy()
             
             self.moves['date'] = self.moves['datetime'].dt.date
@@ -812,8 +820,11 @@ class stop_move_enrichment(Enrichment):
             matched_tweets.reset_index(inplace=True)
 
             self.tweets = matched_tweets.copy()    
-
-
+        
+        else :
+            self.tweets = None
+            
+            
 
         ##############################################
         ###            RDF GRAPH SAVE              ###
@@ -854,16 +865,22 @@ class stop_move_enrichment(Enrichment):
         self.moves.reset_index(inplace=True)
         return self.moves['uid'].unique()
 
-    def get_trajectories(self,uid):
 
+
+    def get_trajectories(self,uid):
         return self.moves[self.moves['uid']==uid]['tid'].unique()
+
+
 
     def get_systematic(self,uid):
         return len(self.systematic[self.systematic['uid']==uid])
 
-    def get_occasional(self,uid):
 
+
+    def get_occasional(self,uid):
         return len(self.occasional[self.occasional['uid']==uid])
+
+
 
     def get_transport_duration(self,uid):
 
@@ -873,18 +890,21 @@ class stop_move_enrichment(Enrichment):
         duration_tid = last_transport - first_transport
         
         duration = pd.DataFrame(duration_tid.groupby('label').sum())
-        
         duration.reset_index(inplace=True)
 
         return duration
 
-    def get_tweets(self,uid):
 
-        return self.tweets[self.tweets['uid']==uid]['text'].unique()
+
+    def get_tweets(self,uid):
+   
+        if self.tweets is not None :
+            return self.tweets[self.tweets['uid']==uid]['text'].unique()
+        else : return []
+
+
 
     def get_mats(self,uid,traj_id):
         #print(self.mats[self.mats['tid']==traj_id])
 
         return self.moves[(self.moves['uid']==uid)&(self.moves['tid']==traj_id)], self.mats[(self.mats['uid']==uid)&(self.mats['tid']==traj_id)], self.systematic[(self.systematic['uid']==uid)&(self.systematic['tid']==traj_id)]
-
-    
