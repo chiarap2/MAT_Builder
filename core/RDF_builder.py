@@ -283,10 +283,14 @@ class RDFBuilder() :
             
     def add_systematic_stops(self, df_sys_stops) :
         
-        df_sys_stops['type_stop'] = df_sys_stops[['home','work', 'other']].idxmax(axis=1)
         # print(df_sys_stops)
         # print(df_sys_stops.info())
+        
+        
         print(f"Number of systematic stops: {df_sys_stops['stop_id'].nunique()}")
+        if(df_sys_stops.shape[0] == 0) : return
+        
+        df_sys_stops['type_stop'] = df_sys_stops[['home','work', 'other']].idxmax(axis=1)
 
         iter_sys_stops = zip(df_sys_stops['uid'], df_sys_stops['tid'], 
                              df_sys_stops['lat'], df_sys_stops['lng'], 
@@ -338,11 +342,9 @@ class RDFBuilder() :
         #print(df_moves)
         #print(df_moves.info())
         
-        
-        
         # Compute a groupby on the enriched moves in order to extract the relevant information.
         res_gb = df_moves.groupby(['tid', 'move_id']).agg({'datetime': ["min", "max"], 'label': 'first', "uid": 'first'}).reset_index()
-        print(res_gb)
+        # print(res_gb)
         iter_res = zip(res_gb[('uid', 'first')], res_gb['tid'], res_gb['move_id'], res_gb[('label', 'first')],
                        res_gb[('datetime', 'min')], res_gb[('datetime', 'max')])
         
