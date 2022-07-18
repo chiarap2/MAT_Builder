@@ -237,7 +237,7 @@
             "id": "traj_enrich",
             "options": [{"label": "Weather conditions", "value": "weather"},
                         {"label":"no enrichment","value":"no"}],
-			"default" : "weather"
+			"default" : "no"
           }
         },
         {

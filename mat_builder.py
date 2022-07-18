@@ -370,15 +370,14 @@ def info_enrichment(user, traj):
     if user is None or traj is None:
         return None
 
+    # Get the dataframes of interest from the enrichment class.
     mats_moves, mats_stops, mats_systematic = class_e.get_mats(user,traj)
-    #print(mats_moves['label'].unique())
-    mats_moves['label'] = mats_moves['label'].map(transport)
-    #print(mats_moves['label'].unique())
-    mats_stops.drop_duplicates(subset=['category','distance'],inplace=True)
 
 
     ### Preparing the information concerning the moves ###
 
+    #print(mats_moves['label'].unique())
+    mats_moves['label'] = mats_moves['label'].map(transport)
     fig = px.line_mapbox(mats_moves,
                          lat="lat",
                          lon="lng",
@@ -389,27 +388,35 @@ def info_enrichment(user, traj):
     
     
     ### Prepare the information concerning the occasional stops... ###
-    mats_stops['distance'] = round(mats_stops['distance'],2).astype(str)
-    mats_stops['description'] = '</br><b>PoI category</b>: ' +\
-                                mats_stops['category'] +\
-                                ' <b>Distance</b>: ' +\
-                                mats_stops['distance']
+    
+    mats_stops.drop_duplicates(subset=['category','distance'], inplace = True)
     
     matched_pois = []
-    limit_pois = 10
-    gb_occ_stops = mats_stops.groupby('stop_id')
-    for key, item in gb_occ_stops:
-    
-        tmp = item['description']
-        size = tmp.shape[0]
-        limit = min(size, limit_pois)
+    if ~mats_stops['distance'].isna().any() :
+        mats_stops['distance'] = round(mats_stops['distance'],2).astype(str)
+        mats_stops['description'] = '</br><b>PoI category</b>: ' +\
+                                    mats_stops['category'] +\
+                                    ' <b>Distance</b>: ' +\
+                                    mats_stops['distance']
         
-        tmp = tmp.head(limit)
-        stringa = tmp.str.cat(sep = "")
-        if size > limit_pois : 
-            stringa = stringa + f"</br>(...and other {size - limit_pois} POIs)"
+        limit_pois = 10
+        gb_occ_stops = mats_stops.groupby('stop_id')
+        for key, item in gb_occ_stops:
+        
+            tmp = item['description']
+            size = tmp.shape[0]
+            limit = min(size, limit_pois)
             
-        matched_pois.append(stringa)
+            tmp = tmp.head(limit)
+            stringa = tmp.str.cat(sep = "")
+            if size > limit_pois : 
+                stringa = stringa + f"</br>(...and other {size - limit_pois} POIs)"
+                
+            matched_pois.append(stringa)
+            
+    else :
+        matched_pois.append("No POI could be associated to this occasional stop!")
+
 
     fig.add_trace(go.Scattermapbox(mode = "markers", name = 'occasional stops',
                                    lon = mats_stops.lng.unique(),
@@ -436,6 +443,7 @@ def info_enrichment(user, traj):
                                    text = systematic_desc,
                                    hoverinfo = 'text',
                                    marker = {'size': 10,'color': '#2BD98C'}))
+    
     
     
     ### Setting the last parameters... ###

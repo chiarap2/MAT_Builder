@@ -573,7 +573,7 @@ class stop_move_enrichment(Enrichment):
             
             # list of columns
             cols = gdf.columns
-            print(f"Initial set of POI columns...{cols}")
+            # print(f"Initial set of POI columns...{cols}")
             
             # list of columns to delete
             del_cols = []
@@ -602,7 +602,7 @@ class stop_move_enrichment(Enrichment):
             del_cols = list(set(del_cols) - set(['osmid', 'wikidata']))
             gdf = gdf.drop(columns = del_cols)
 
-            print(f"POI dataframe info: {gdf.info()}")
+            # print(f"POI dataframe info: {gdf.info()}")
             return gdf
 
 
@@ -623,15 +623,15 @@ class stop_move_enrichment(Enrichment):
 
         def semantic_enrichment(stop, semantic_df, suffix):
         
-            print("DEBUG enrichment occasional stops...")
+            #print("DEBUG enrichment occasional stops...")
             
             # duplicate geometry column because we loose it during the sjoin_nearest
             s_df = semantic_df.copy()
             s_df['geometry_'+suffix] = s_df['geometry']
             s_df['osmid'] = s_df['osmid'].astype(str)
             
-            print(f"Stampa df stop occasionali: {stop.info()}")
-            print(f"Stampa df POIs: {s_df.info()}")
+            #print(f"Stampa df stop occasionali: {stop.info()}")
+            #print(f"Stampa df POIs: {s_df.info()}")
             
             # now we can use sjoin_nearest to obtain the results we want
             mats = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
@@ -644,7 +644,7 @@ class stop_move_enrichment(Enrichment):
             #mats = mats.sort_values(['stop_id','distance_'+suffix])
             mats = mats.sort_values(['tid','stop_id','distance'])
             
-            print(f"Stampa df risultati: {mats.info()}")
+            #print(f"Stampa df risultati: {mats.info()}")
             return mats
 
 
@@ -661,6 +661,14 @@ class stop_move_enrichment(Enrichment):
                     print(f"Downloading {key} POIs from OSM...")
                     poi = ox.geometries_from_place(place, tags={key:True})
                     print(f"Download completed! Dataframe with the downloaded POIs: {poi}")
+                    
+                    # Immediately return the empty dataframe if it doesn't contain any suitable POI...
+                    if poi.empty : 
+                        print("No POI found...")
+                        new_cols = ['osmid', 'wikidata', 'geometry', 'category']
+                        poi = poi.reindex(poi.columns.union(new_cols), axis=1)
+                        return poi
+                    
                     
                     # convert list into string in order to save poi into parquet
                     if 'nodes' in poi.columns:
@@ -704,7 +712,7 @@ class stop_move_enrichment(Enrichment):
 
         # Get a POI dataset, either from OSM or from a file. 
         gdf_ = None
-        if self.upload_stops == 'no':
+        if self.upload_stops == 'no' :
             print(f"Downloading POIs from OSM for the location of {self.place}. Selected types of POIs: {self.list_pois}")
             gdf_ = download_poi_osm(self.list_pois, self.place, self.semantic_granularity)
         else :    
@@ -712,10 +720,10 @@ class stop_move_enrichment(Enrichment):
             gdf_ = gpd.read_parquet(self.upload_stops)
 
             if gdf_.crs is None:
-                gdf_.set_crs('epsg:4326',inplace=True)
-                gdf_.to_crs('epsg:3857',inplace=True)
+                gdf_.set_crs('epsg:4326', inplace=True)
+                gdf_.to_crs('epsg:3857', inplace=True)
             else:
-                gdf_.to_crs('epsg:3857',inplace=True)
+                gdf_.to_crs('epsg:3857', inplace=True)
         print(f"A few info on the POIs that will be used to enrich the occasional stops: {gdf_.info()}")
 
 
