@@ -14,10 +14,9 @@ import json
 
 ### GLOBAL VARIABLES ###
 
-#external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-
 # TODO: perhaps we can pass a .css encapsulating all the style parameters we declare and define below
-app = JupyterDash(__name__)#external_stylesheets=external_stylesheets)
+#external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+app = JupyterDash(__name__) #external_stylesheets=external_stylesheets)
 
 
 
@@ -462,6 +461,7 @@ def main() :
 
     # CSS style parameters declarations/definitions #
 
+    # Here we define the styles to be applied to the tabs...
     tabs_styles = \
     {
         'height': '44px'
@@ -503,14 +503,19 @@ def main() :
     }
 
 
-
+    ### Here we set up the tabs, which depend on the subclasses found in demo. ###
+    ### These tabs are added to the list children_tabs, which will be then inserted into the web interface. ###
     modules = [cls for cls in demo.__subclasses__()]
     children_tabs = []
     index = 0
     for module in modules:
         
-        methods = [ {'label':cls.__name__,'value':cls.__name__} for cls in module.__subclasses__()]
+        print(f"Subclass found for the demo class: {module}")
+        methods = [cls.__name__ for cls in module.__subclasses__()]
+        print(f"Subclasses found for the class {module}: {methods}")
+        
         if index == 0 :
+            print(f"id: {str({'type':'radio_items','index':index})}")
             children_tabs.append(dcc.Tab(id = str(index),
                                          label = module.__name__,
                                          value = module.__name__,
@@ -536,58 +541,72 @@ def main() :
 
 
 
-    ### Here we set up the initial layout of the web interface ###
-    app.layout = html.Div([
-        html.Div(id='title',
-                 children = 
-                 [
-                    html.Img(src='assets/MAT-Builder-logo.png',style={'width':'25%','height':'5%','float':'left'}),
-                    html.Img(src='assets/loghi_mobidatalab.png',style={'width':'35%','height':'15%','float':'right'})
-                 ],
-                 style={'display':'inline-block','background-color':'white','padding':'1%','border-style':'solid','border-color':'#dcc738'}),
-        
-        html.Br(),
-        html.Br(),
-        
-        html.Div(id='inputs',
-                 children=[
-                    dcc.Tabs(id="tabs-inline", children=children_tabs, style=tabs_styles),
-                    html.Br(),
-                    html.Br(),
-                    html.Div(id='display'),
-                    html.Button(id='run',
-                                children='RUN',
-                                style={'display':'none'})],
-                    style={'float':'left','width':'40%'}),
-
-        html.Div(style={'float':'right','width':'50%'},
-                 children=[dcc.Loading(id="loading-1",
-                                       children= [html.Div([html.Div(id="loading-output")])], 
-                                       type="circle"),
-                 html.Div(id='outputs'),
-                 html.Div(id='output_sm',
-                          children=[html.Div(id='users',
-                                             children=[html.P(children='Users:'),
-                                             dcc.Dropdown(id='user_list',style={'color':'#333'})],style={'display':'none'}),
+    ### Here we set up the individual components of the web interface ###
+    
+    title = html.Div(id='title',
+                     children = [
+                        html.Img(src='assets/MAT-Builder-logo.png',
+                                 style={'width':'25%','height':'5%','float':'left'}),
+                        html.Img(src='assets/loghi_mobidatalab.png',
+                                 style={'width':'35%','height':'15%','float':'right'})],
+                     style={'display':'inline-block','background-color':'white','padding':'1%'})
+         
+         
+    input_area = html.Div(id='inputs',
+                          children=[dcc.Tabs(id="tabs-inline", 
+                                             children=children_tabs, 
+                                             style=tabs_styles),
                                     html.Br(),
                                     html.Br(),
-                                    html.Div(id='outputs2')],
-                          style={'display':'none'}),
+                                    html.Div(id='display'),
+                                    html.Button(id='run',
+                                                children='RUN',
+                                                style={'display':'none'})],
+                          style={'float':'left','width':'40%'})
+                          
+                          
+    output_area = html.Div(style={'float':'right','width':'50%'},
+                           children=[dcc.Loading(id="loading-1",
+                                                 children = html.Div(html.Div(id="loading-output")), 
+                                                 type="circle"),
+                                     html.Div(id='outputs'),
+                                     html.Div(id='output_sm',
+                                              children=[html.Div(id='users',
+                                                                 children=[html.P(children='Users:'),
+                                                                           dcc.Dropdown(id='user_list',
+                                                                                        style={'color':'#333'})],
+                                                                 style={'display':'none'}),
+                                                        html.Br(),
+                                                        html.Br(),
+                                                        html.Div(id='outputs2')],
+                                              style={'display':'none'}),
             
-            html.Div(id='users_',children=[html.P(children='Users:'),dcc.Dropdown(id='user_list_',style={'color':'#333'})],style={'display':'none'}),
-            html.Br(),
-            html.Br(),
-            html.Div(id='outputs3'),
-            html.Br(),
-            html.Br(),
-            html.Div(id='trajs',
-                     children=[html.P(children='Trajectories:'), dcc.Dropdown(id='trajs_list',style={'color':'#333'})],
-                     style={'display':'none'}),
-            html.Br(),
-            html.Div(id='output-maps'),
-        ]),
-        
-    ])
+                                     html.Div(id='users_',
+                                              children=[html.P(children='Users:'),
+                                              dcc.Dropdown(id='user_list_',style={'color':'#333'})],
+                                              style={'display':'none'}),
+                                     html.Br(),
+                                     html.Br(),
+                                     html.Div(id='outputs3'),
+                                     html.Br(),
+                                     html.Br(),
+                                     html.Div(id='trajs',
+                                              children=[html.P(children='Trajectories:'), 
+                                                        dcc.Dropdown(id='trajs_list',
+                                                        style={'color':'#333'})],
+                                              style={'display':'none'}),
+                                     html.Br(),
+                                     html.Div(id='output-maps')])
+    
+    
+    
+    ### Here we arrange the layout of the individual components within the overall web interface ###
+    app.layout = html.Div([title,
+                           html.Br(),
+                           html.Br(),
+                           input_area,
+                           output_area])
+
 
     app.run_server(debug=True)
 
