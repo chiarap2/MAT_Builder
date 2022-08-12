@@ -10,18 +10,21 @@ import geopandas as gpd
 import numpy as np
 import json
 
-# from core.backend import *
 from core.backend_new import *
 
 
 ### GLOBAL VARIABLES ###
 
-# Object representing the pipeline to be executed.
-pipeline = Pipeline()
+# Instantiate Dash application.
+app = JupyterDash(__name__)
 
-# TODO: perhaps we can pass a .css encapsulating all the style parameters we declare and define below
-#external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = JupyterDash(__name__) #external_stylesheets=external_stylesheets)
+# By default, Dash applies validation to your callbacks, which performs checks such as validating the types of callback arguments and checking to see whether the specified Input and Output components actually have the specified properties. For full validation, all components within your callback must exist in the layout when your app starts, and you will see an error if they do not.
+# However, in the case of more complex Dash apps that involve dynamic modification of the layout (such as multi-page apps), not every component appearing in your callbacks will be included in the initial layout. You can remove this restriction by disabling callback validation like this:
+app.config.suppress_callback_exceptions = True
+
+
+# Object representing the pipeline to be executed.
+pipeline = Pipeline(app)
 
 
 # NOTA: 'ALL' e 'MATCH' fanno parte delle funzionalita' di pattern-matching associati alle callback.
@@ -93,23 +96,6 @@ app = JupyterDash(__name__) #external_stylesheets=external_stylesheets)
     
     # return inputs
     
-    
-@app.callback\
-(
-    Output(component_id='display', component_property='children'),
-    Input(component_id='tabs-inline', component_property='value')
-)
-def show_input(name_module):
-
-    print(f"show_input invoked! Tab: {name_module}")
-    #print(f"show_input invoked! Children of Tabs: {tabs_children}")
-    
-    inputs = []
-    if name_module != 'None' :
-        print(f"Now the module: {pipeline.get_modules()[name_module]} will populate the input area in the web interface...")
-        inputs = pipeline.get_modules()[name_module].populate_input_area()
-    
-    return inputs
 
 
 # @app.callback\
@@ -577,38 +563,38 @@ def main() :
                           style={'float':'left','width':'40%'})
                           
                           
-    # output_area = html.Div(style={'float':'right','width':'50%'},
-                           # children=[dcc.Loading(id="loading-1",
-                                                 # children = html.Div(html.Div(id="loading-output")), 
-                                                 # type="circle"),
-                                     # html.Div(id='outputs'),
-                                     # html.Div(id='output_sm',
-                                              # children=[html.Div(id='users',
-                                                                 # children=[html.P(children='Users:'),
-                                                                           # dcc.Dropdown(id='user_list',
-                                                                                        # style={'color':'#333'})],
-                                                                 # style={'display':'none'}),
-                                                        # html.Br(),
-                                                        # html.Br(),
-                                                        # html.Div(id='outputs2')],
-                                              # style={'display':'none'}),
+    output_area = html.Div(style={'float':'right','width':'50%'},
+                           children=[dcc.Loading(id="loading-1",
+                                                 children = html.Div(html.Div(id="loading-output")), 
+                                                 type="circle"),
+                                     html.Div(id='outputs'),
+                                     html.Div(id='output_sm',
+                                              children=[html.Div(id='users',
+                                                                 children=[html.P(children='Users:'),
+                                                                           dcc.Dropdown(id='user_list',
+                                                                                        style={'color':'#333'})],
+                                                                 style={'display':'none'}),
+                                                        html.Br(),
+                                                        html.Br(),
+                                                        html.Div(id='outputs2')],
+                                              style={'display':'none'}),
             
-                                     # html.Div(id='users_',
-                                              # children=[html.P(children='Users:'),
-                                              # dcc.Dropdown(id='user_list_',style={'color':'#333'})],
-                                              # style={'display':'none'}),
-                                     # html.Br(),
-                                     # html.Br(),
-                                     # html.Div(id='outputs3'),
-                                     # html.Br(),
-                                     # html.Br(),
-                                     # html.Div(id='trajs',
-                                              # children=[html.P(children='Trajectories:'), 
-                                                        # dcc.Dropdown(id='trajs_list',
-                                                        # style={'color':'#333'})],
-                                              # style={'display':'none'}),
-                                     # html.Br(),
-                                     # html.Div(id='output-maps')])
+                                     html.Div(id='users_',
+                                              children=[html.P(children='Users:'),
+                                              dcc.Dropdown(id='user_list_',style={'color':'#333'})],
+                                              style={'display':'none'}),
+                                     html.Br(),
+                                     html.Br(),
+                                     html.Div(id='outputs3'),
+                                     html.Br(),
+                                     html.Br(),
+                                     html.Div(id='trajs',
+                                              children=[html.P(children='Trajectories:'), 
+                                                        dcc.Dropdown(id='trajs_list',
+                                                        style={'color':'#333'})],
+                                              style={'display':'none'}),
+                                     html.Br(),
+                                     html.Div(id='output-maps')])
     
     
     
@@ -616,9 +602,8 @@ def main() :
     app.layout = html.Div([title,
                            html.Br(),
                            html.Br(),
-                           input_area])
-                           # output_area])
-
+                           input_area,
+                           output_area])
 
     app.run_server(debug=True)
 

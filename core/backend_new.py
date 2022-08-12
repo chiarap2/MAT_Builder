@@ -2,19 +2,23 @@ import geopandas as gpd
 import shapely
 import pandas as pd
 import numpy as np
+
 import skmob
 from skmob.preprocessing import filtering
 from skmob.preprocessing import detection
 from skmob.preprocessing import compression
 from ptrail.core.TrajectoryDF import PTRAILDataFrame
 from ptrail.features.kinematic_features import KinematicFeatures as spatial
+
 import pickle
 from sklearn.preprocessing import StandardScaler
 import geohash2
 import osmnx as ox
 from core.RDF_builder import RDFBuilder
 
+import plotly.express as px
 from dash import html, dcc
+from dash.dependencies import Input, Output, State, MATCH, ALL
 
 from abc import ABC, abstractmethod
 from collections import OrderedDict
@@ -28,15 +32,37 @@ class Pipeline():
     Class `Pipeline` models an entity that contains a list of modules that should be ran sequentially -- for instance,  `preprocessing`, `segmentation`, and `enrichment`.
     '''
 
-    def __init__(self):
+    def __init__(self, app):
         '''
         The constructor of this class defines the modules that will be applied, and the order of application.
         '''
         self.pipeline = OrderedDict()
-        self.pipeline['Preprocessing'] = preprocessing1()
-        self.pipeline['Segmentation'] = stops_and_moves()
-        self.pipeline['Enrichment'] = stop_move_enrichment()
+        self.pipeline['Preprocessing'] = preprocessing1(app)
+        self.pipeline['Segmentation'] = stops_and_moves(app)
+        self.pipeline['Enrichment'] = stop_move_enrichment(app)
         
+        ### Here we register the Dash app within the pipeline ###
+        self.app = app
+        
+        ### Here we register all the callbacks that must be managed by the pipeline instance ###
+        self.app.callback \
+        (
+            Output(component_id='display', component_property='children'),
+            Input(component_id='tabs-inline', component_property='value')
+        )(self.show_input)
+    
+    
+    def show_input(self, name_module):
+
+        print(f"show_input invoked! Tab: {name_module}")
+        
+        inputs = []
+        if name_module != 'None' :
+            print(f"Now the module {self.pipeline[name_module]} will populate the input area in the web interface...")
+            inputs = self.pipeline[name_module].populate_input_area()
+        
+        return inputs
+    
     
     def get_modules(self) : return self.pipeline
 
@@ -44,19 +70,22 @@ class Pipeline():
 
 class ModuleInterface(ABC) :
 
-    def __init__(self) :
+    ### INTERFACE CONSTRUCTOR ###
+    
+    @abstractmethod
+    def __init__(self, app) :
         pass
         
         
         
     ### INTERFACE METHODS ###
     
-    @abstractmethod    
+    @abstractmethod   
     def populate_input_area(self) :
         pass
         
     @abstractmethod
-    def get_input(self, list_) :
+    def get_input_and_execute(self) :
         pass
        
     @abstractmethod
@@ -76,39 +105,100 @@ class preprocessing1(ModuleInterface):
 
     ### CLASS CONSTRUCTOR ###
     
-    def __init__(self):
+    def __init__(self, app):
 
+        ### Here we register the Dash application ###
+        self.app = app
+        
         self.df = gpd.GeoDataFrame()
+        self.id = 'preprocessing'
+        
+        ### Here we define and register all the callbacks that must be managed by the instance of this class ###
+        # NOTE: this must be done 
+        self.app.callback \
+        (
+            Output(component_id = 'loading-output', component_property='children'),
+            Output(component_id = 'outputs', component_property='children'),
+            State(component_id = self.id + '-path', component_property='value'),
+            State(component_id = self.id + '-speed', component_property='value'),
+            State(component_id = self.id + '-n_points', component_property='value'),
+            Input(component_id = self.id + '-run', component_property='n_clicks')
+        )(self.get_input_and_execute)
 
 
 
-    ### CLASS METHODS ###
+    ### CLASS METHODS ###  
     
     def populate_input_area(self) :
         
         web_components = []
         
         web_components.append(html.Span(children = "Path to the raw trajectory dataset: "))
-        
-        web_components.append(dcc.Input(value = './data/Rome/rome.parquet',
+        web_components.append(dcc.Input(id = self.id + '-path',
+                                        value = './data/Rome/rome.parquet',
                                         type = 'text',
                                         placeholder = 'path'))
         web_components.append(html.Br())
         web_components.append(html.Br())
         
-        web_components.append(html.Button(id='run',children='RUN'))
+        web_components.append(html.Span(children = "Outlier detection value (in km/h): "))
+        web_components.append(dcc.Input(id = self.id + '-speed',
+                                        value = 300,
+                                        type = 'number',
+                                        placeholder = 300))
+        web_components.append(html.Br())
+        web_components.append(html.Br())
         
-        # TODO: da continuare...
+        web_components.append(html.Span(children = "Minimum number of samples a trajectory must have: "))
+        web_components.append(dcc.Input(id = self.id + '-n_points',
+                                        value = 3000,
+                                        type = 'number',
+                                        placeholder = 3000))
+        web_components.append(html.Br())
+        web_components.append(html.Br())
+        
+        web_components.append(html.Button(id = self.id + '-run', children='RUN'))             
         
         return web_components
+        
+        
+    def get_input_and_execute(self, path, speed, n_points, button_state) :
     
-    
-    def get_input(self, list_):
+        outputs = []
+        if button_state is not None :
+        
+            print(f"Eseguo if! {button_state}")
 
-        self.path = list_[0]
-        self.kmh = list_[1]
-        self.num_point = list_[2]
-    
+            # Salva nei campi dell'istanza l'input passato 
+            self.path = path
+            self.kmh = speed
+            self.num_point = n_points
+            
+            # Esegui il codice core dell'istanza.
+            results = self.core()
+            
+            # Manage the output to show in the web interface.
+            if results != '':
+                outputs.append(html.H6(children='File not found or not valid path',)) 
+            else:
+                outputs.append(html.H6(children='Dataset statistics'))
+                outputs.append(html.Hr())
+                outputs.append(html.P(children='Tot. users: {} \t\t\t Tot. trajectories: {}'.format(self.get_num_users(), self.get_num_trajs())))
+                outputs.append(dcc.Graph(figure = px.histogram(self.df.groupby('tid').datetime.first(),
+                                         x = 'datetime',
+                                         title = 'Distribution of trajectories over time')))
+                
+                # Save the results of the preprocessing to a file.
+                self.output()
+                
+                # Update the state of the relevant components.
+                button_state = None
+                # disable0 = True
+                # disable1 = False
+        
+        
+        return None, outputs, button_state
+        
     
     def core(self):
                 
@@ -127,22 +217,26 @@ class preprocessing1(ModuleInterface):
 
         # convert GeoDataFrame into pandas DataFrame
         df = pd.DataFrame(gdf)
+        
         # now create a TrajDataFrame from the pandas DataFrame
         tdf = skmob.TrajDataFrame(df, latitude='lat', longitude='lon', datetime='time', user_id='user',
                                   trajectory_id='traj_id')
-        ftdf = filtering.filter(tdf, max_speed_kmh=self.kmh)
+        ftdf = filtering.filter(tdf, max_speed_kmh = self.kmh)
         ctdf = compression.compress(ftdf, spatial_radius_km = 0.2)
 
         self.df = ctdf
         return ''
 
+
     def get_num_users(self):
 
         return str(len(self.df.uid.unique()))
 
+
     def get_num_trajs(self):
 
         return str(len(self.df.tid.unique()))
+
 
     def output(self):
 
@@ -157,8 +251,9 @@ class stops_and_moves(ModuleInterface):
 
     ### CLASS CONSTRUCTOR ###
     
-    def __init__(self) :
-    
+    def __init__(self, app) :
+        
+        self.app = app
         self.stops = pd.DataFrame()
         self.moves = pd.DataFrame()
         self.preprocessed_trajs = pd.DataFrame()
@@ -170,7 +265,7 @@ class stops_and_moves(ModuleInterface):
     def populate_input_area(self) :
         return list()
     
-    def get_input(self, list_):
+    def get_input_and_execute(self, list_):
         
         self.minutes = list_[0]
         self.radius = list_[1]
@@ -306,8 +401,9 @@ class stop_move_enrichment(ModuleInterface):
 
     ### CLASS CONSTRUCTOR ###
     
-    def __init(self) :
-        pass
+    def __init__(self, app) :
+    
+        self.app = app
     
     
     
@@ -317,7 +413,7 @@ class stop_move_enrichment(ModuleInterface):
         return list()
         
         
-    def get_input(self, list_):
+    def get_input_and_execute(self, list_):
     
         ### Reset the state of the static variables...
         self.stops = pd.DataFrame()
