@@ -556,18 +556,12 @@ def main() :
                                              value='None'),
                                     html.Br(),
                                     html.Br(),
-                                    html.Div(id='display'),
-                                    html.Button(id='run',
-                                                children='RUN',
-                                                style={'display':'none'})],
+                                    html.Div(id='display')],
                           style={'float':'left','width':'40%'})
                           
                           
     output_area = html.Div(style={'float':'right','width':'50%'},
-                           children=[dcc.Loading(id="loading-1",
-                                                 children = html.Div(html.Div(id="loading-output")), 
-                                                 type="circle"),
-                                     html.Div(id='outputs'),
+                           children=[html.Div(id='outputs'),
                                      html.Div(id='output_sm',
                                               children=[html.Div(id='users',
                                                                  children=[html.P(children='Users:'),

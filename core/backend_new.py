@@ -36,10 +36,21 @@ class Pipeline():
         '''
         The constructor of this class defines the modules that will be applied, and the order of application.
         '''
+        
+        # Define the modules of the pipeline and the order used to execute them.
         self.pipeline = OrderedDict()
-        self.pipeline['Preprocessing'] = preprocessing1(app)
-        self.pipeline['Segmentation'] = stops_and_moves(app)
-        self.pipeline['Enrichment'] = stop_move_enrichment(app)
+        self.pipeline[preprocessing1.id_class] = preprocessing1(app, self)
+        self.pipeline[stops_and_moves.id_class] = stops_and_moves(app, self)
+        self.pipeline[stop_move_enrichment.id_class] = stop_move_enrichment(app, self)
+        
+        # Make each module aware of the identifier of the module that comes next.
+        prev = None
+        for k, v in self.pipeline.items() :
+            if prev is None : 
+                prev = v
+            else :
+                prev.register_next_module(k)
+                prev = v
         
         ### Here we register the Dash app within the pipeline ###
         self.app = app
@@ -47,25 +58,33 @@ class Pipeline():
         ### Here we register all the callbacks that must be managed by the pipeline instance ###
         self.app.callback \
         (
-            Output(component_id='display', component_property='children'),
-            Input(component_id='tabs-inline', component_property='value')
-        )(self.show_input)
+            Output(component_id = 'display', component_property='children'),
+            Output(component_id = 'outputs', component_property='children'),
+            Input(component_id = 'tabs-inline', component_property='value')
+        )(self.setup_input_output_areas)
     
     
-    def show_input(self, name_module):
+    def setup_input_output_areas(self, name_module):
 
         print(f"show_input invoked! Tab: {name_module}")
         
         inputs = []
+        output_area = []
         if name_module != 'None' :
-            print(f"Now the module {self.pipeline[name_module]} will populate the input area in the web interface...")
-            inputs = self.pipeline[name_module].populate_input_area()
         
-        return inputs
+            print(f"The module {self.pipeline[name_module].id_class} will populate the input area in the web interface...")
+            inputs = self.pipeline[name_module].populate_input_area()
+            
+            print(f"The module {self.pipeline[name_module].id_class} prepares the output area of the web interface...")
+            output_area = [dcc.Loading(id = "loading-" + self.pipeline[name_module].id_class,
+                                       children = html.Div(html.Div(id = "loading-" + self.pipeline[name_module].id_class + '-c')), 
+                                       type="default"),
+                           html.Div(id = 'output-' + self.pipeline[name_module].id_class)]
+        
+        return inputs, output_area
     
     
     def get_modules(self) : return self.pipeline
-
 
 
 class ModuleInterface(ABC) :
@@ -73,12 +92,16 @@ class ModuleInterface(ABC) :
     ### INTERFACE CONSTRUCTOR ###
     
     @abstractmethod
-    def __init__(self, app) :
+    def __init__(self, app, pipeline) :
         pass
         
         
         
     ### INTERFACE METHODS ###
+    
+    @abstractmethod   
+    def register_next_module(self, next_module) :
+        pass
     
     @abstractmethod   
     def populate_input_area(self) :
@@ -103,38 +126,50 @@ class preprocessing1(ModuleInterface):
     '''
 
 
+    ### STATIC FIELDS ###
+    
+    id_class = 'Preprocessing'
+    
+
     ### CLASS CONSTRUCTOR ###
     
-    def __init__(self, app):
+    def __init__(self, app, pipeline):
 
         ### Here we register the Dash application ###
         self.app = app
+        self.pipeline = pipeline
         
         self.df = gpd.GeoDataFrame()
-        self.id = 'preprocessing'
+
+
+
+    ### CLASS METHODS ###
+    
+    def register_next_module(self, next_module) :
+        
+        print(f"Registering next module {next_module} in module {preprocessing1.id_class}")
+        self.next_module = next_module
         
         ### Here we define and register all the callbacks that must be managed by the instance of this class ###
-        # NOTE: this must be done 
         self.app.callback \
         (
-            Output(component_id = 'loading-output', component_property='children'),
-            Output(component_id = 'outputs', component_property='children'),
-            State(component_id = self.id + '-path', component_property='value'),
-            State(component_id = self.id + '-speed', component_property='value'),
-            State(component_id = self.id + '-n_points', component_property='value'),
-            Input(component_id = self.id + '-run', component_property='n_clicks')
+            Output(component_id = 'loading-' + preprocessing1.id_class + '-c', component_property='children'),
+            Output(component_id = 'output-' + preprocessing1.id_class, component_property='children'),
+            Output(component_id = self.next_module, component_property='disabled'),
+            State(component_id = preprocessing1.id_class + '-path', component_property='value'),
+            State(component_id = preprocessing1.id_class + '-speed', component_property='value'),
+            State(component_id = preprocessing1.id_class + '-n_points', component_property='value'),
+            Input(component_id = preprocessing1.id_class + '-run', component_property='n_clicks')
         )(self.get_input_and_execute)
-
-
-
-    ### CLASS METHODS ###  
+        
+    
     
     def populate_input_area(self) :
         
         web_components = []
         
         web_components.append(html.Span(children = "Path to the raw trajectory dataset: "))
-        web_components.append(dcc.Input(id = self.id + '-path',
+        web_components.append(dcc.Input(id = preprocessing1.id_class + '-path',
                                         value = './data/Rome/rome.parquet',
                                         type = 'text',
                                         placeholder = 'path'))
@@ -142,7 +177,7 @@ class preprocessing1(ModuleInterface):
         web_components.append(html.Br())
         
         web_components.append(html.Span(children = "Outlier detection value (in km/h): "))
-        web_components.append(dcc.Input(id = self.id + '-speed',
+        web_components.append(dcc.Input(id = preprocessing1.id_class + '-speed',
                                         value = 300,
                                         type = 'number',
                                         placeholder = 300))
@@ -150,14 +185,14 @@ class preprocessing1(ModuleInterface):
         web_components.append(html.Br())
         
         web_components.append(html.Span(children = "Minimum number of samples a trajectory must have: "))
-        web_components.append(dcc.Input(id = self.id + '-n_points',
+        web_components.append(dcc.Input(id = preprocessing1.id_class + '-n_points',
                                         value = 3000,
                                         type = 'number',
                                         placeholder = 3000))
         web_components.append(html.Br())
         web_components.append(html.Br())
         
-        web_components.append(html.Button(id = self.id + '-run', children='RUN'))             
+        web_components.append(html.Button(id = preprocessing1.id_class + '-run', children='RUN'))           
         
         return web_components
         
@@ -165,6 +200,7 @@ class preprocessing1(ModuleInterface):
     def get_input_and_execute(self, path, speed, n_points, button_state) :
     
         outputs = []
+        next_module_disabled = True
         if button_state is not None :
         
             print(f"Eseguo if! {button_state}")
@@ -179,7 +215,8 @@ class preprocessing1(ModuleInterface):
             
             # Manage the output to show in the web interface.
             if results != '':
-                outputs.append(html.H6(children='File not found or not valid path',)) 
+                outputs.append(html.H6(children='File not found or not valid path'))
+                
             else:
                 outputs.append(html.H6(children='Dataset statistics'))
                 outputs.append(html.Hr())
@@ -192,12 +229,11 @@ class preprocessing1(ModuleInterface):
                 self.output()
                 
                 # Update the state of the relevant components.
-                button_state = None
+                next_module_disabled = False
                 # disable0 = True
                 # disable1 = False
         
-        
-        return None, outputs, button_state
+        return None, outputs, next_module_disabled
         
     
     def core(self):
@@ -248,12 +284,20 @@ class stops_and_moves(ModuleInterface):
     '''
     `stops_and_moves` models a class which instances segment trajectories according to the stop and move paradigm.
     '''
+    
+    
+    ### STATIC FIELDS ###
+    
+    id_class = 'Segmentation'
+    
 
     ### CLASS CONSTRUCTOR ###
     
-    def __init__(self, app) :
+    def __init__(self, app, pipeline) :
         
         self.app = app
+        self.pipeline = pipeline
+        
         self.stops = pd.DataFrame()
         self.moves = pd.DataFrame()
         self.preprocessed_trajs = pd.DataFrame()
@@ -262,8 +306,13 @@ class stops_and_moves(ModuleInterface):
         
     ### CLASS PUBLIC METHODS ###
     
+    def register_next_module(self, next_module) :
+        self.next_module = next_module
+        
+    
     def populate_input_area(self) :
         return list()
+    
     
     def get_input_and_execute(self, list_):
         
@@ -399,15 +448,26 @@ class stop_move_enrichment(ModuleInterface):
     '''
 
 
+    ### STATIC FIELDS ###
+    
+    id_class = 'Enrichment'
+
+
+
     ### CLASS CONSTRUCTOR ###
     
-    def __init__(self, app) :
+    def __init__(self, app, pipeline) :
     
         self.app = app
+        self.pipeline = pipeline
     
     
     
     ### CLASS PUBLIC METHODS ###
+    
+    def register_next_module(self, next_module) :
+        self.next_module = next_module
+        
 
     def populate_input_area(self) :
         return list()
