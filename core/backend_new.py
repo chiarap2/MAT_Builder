@@ -75,7 +75,7 @@ class Pipeline():
             print(f"The module {self.pipeline[name_module].id_class} will populate the input area in the web interface...")
             inputs = self.pipeline[name_module].populate_input_area()
             
-            print(f"The module {self.pipeline[name_module].id_class} prepares the output area of the web interface...")
+            print(f"The pipeline prepares the output area of the web interface for the module {self.pipeline[name_module].id_class}...")
             output_area = [dcc.Loading(id = "loading-" + self.pipeline[name_module].id_class,
                                        children = html.Div(html.Div(id = "loading-" + self.pipeline[name_module].id_class + '-c')), 
                                        type="default"),
@@ -139,6 +139,7 @@ class preprocessing1(ModuleInterface):
         self.app = app
         self.pipeline = pipeline
         
+        self.path_output = './data/temp_dataset/traj_cleaned.parquet'
         self.df = gpd.GeoDataFrame()
 
 
@@ -147,19 +148,19 @@ class preprocessing1(ModuleInterface):
     
     def register_next_module(self, next_module) :
         
-        print(f"Registering next module {next_module} in module {preprocessing1.id_class}")
+        print(f"Registering next module {next_module} in module {self.id_class}")
         self.next_module = next_module
         
         ### Here we define and register all the callbacks that must be managed by the instance of this class ###
         self.app.callback \
         (
-            Output(component_id = 'loading-' + preprocessing1.id_class + '-c', component_property='children'),
-            Output(component_id = 'output-' + preprocessing1.id_class, component_property='children'),
+            Output(component_id = 'loading-' + self.id_class + '-c', component_property='children'),
+            Output(component_id = 'output-' + self.id_class, component_property='children'),
             Output(component_id = self.next_module, component_property='disabled'),
-            State(component_id = preprocessing1.id_class + '-path', component_property='value'),
-            State(component_id = preprocessing1.id_class + '-speed', component_property='value'),
-            State(component_id = preprocessing1.id_class + '-n_points', component_property='value'),
-            Input(component_id = preprocessing1.id_class + '-run', component_property='n_clicks')
+            State(component_id = self.id_class + '-path', component_property='value'),
+            State(component_id = self.id_class + '-speed', component_property='value'),
+            State(component_id = self.id_class + '-n_points', component_property='value'),
+            Input(component_id = self.id_class + '-run', component_property='n_clicks')
         )(self.get_input_and_execute)
         
     
@@ -169,7 +170,7 @@ class preprocessing1(ModuleInterface):
         web_components = []
         
         web_components.append(html.Span(children = "Path to the raw trajectory dataset: "))
-        web_components.append(dcc.Input(id = preprocessing1.id_class + '-path',
+        web_components.append(dcc.Input(id = self.id_class + '-path',
                                         value = './data/Rome/rome.parquet',
                                         type = 'text',
                                         placeholder = 'path'))
@@ -177,7 +178,7 @@ class preprocessing1(ModuleInterface):
         web_components.append(html.Br())
         
         web_components.append(html.Span(children = "Outlier detection value (in km/h): "))
-        web_components.append(dcc.Input(id = preprocessing1.id_class + '-speed',
+        web_components.append(dcc.Input(id = self.id_class + '-speed',
                                         value = 300,
                                         type = 'number',
                                         placeholder = 300))
@@ -185,25 +186,27 @@ class preprocessing1(ModuleInterface):
         web_components.append(html.Br())
         
         web_components.append(html.Span(children = "Minimum number of samples a trajectory must have: "))
-        web_components.append(dcc.Input(id = preprocessing1.id_class + '-n_points',
+        web_components.append(dcc.Input(id = self.id_class + '-n_points',
                                         value = 3000,
                                         type = 'number',
                                         placeholder = 3000))
         web_components.append(html.Br())
         web_components.append(html.Br())
         
-        web_components.append(html.Button(id = preprocessing1.id_class + '-run', children='RUN'))           
+        web_components.append(html.Button(id = self.id_class + '-run', children='RUN'))           
         
         return web_components
         
         
     def get_input_and_execute(self, path, speed, n_points, button_state) :
     
+        print(f"Eseguo get_input_and_execute del modulo {self.id_class}! Button state: {button_state}")
+    
         outputs = []
         next_module_disabled = True
         if button_state is not None :
         
-            print(f"Eseguo if! {button_state}")
+            print(f"Eseguo if in get_input_and_execute del modulo {self.id_class}! {button_state}")
 
             # Salva nei campi dell'istanza l'input passato 
             self.path = path
@@ -230,8 +233,6 @@ class preprocessing1(ModuleInterface):
                 
                 # Update the state of the relevant components.
                 next_module_disabled = False
-                # disable0 = True
-                # disable1 = False
         
         return None, outputs, next_module_disabled
         
@@ -265,18 +266,15 @@ class preprocessing1(ModuleInterface):
 
 
     def get_num_users(self):
-
         return str(len(self.df.uid.unique()))
 
 
     def get_num_trajs(self):
-
         return str(len(self.df.tid.unique()))
 
 
     def output(self):
-
-        self.df.to_parquet('data/temp_dataset/traj_cleaned.parquet')
+        self.df.to_parquet(self.path_output)
 
 
 
@@ -300,54 +298,134 @@ class stops_and_moves(ModuleInterface):
         
         self.stops = pd.DataFrame()
         self.moves = pd.DataFrame()
+        
+        self.path_pre_traj = './data/temp_dataset/traj_cleaned.parquet'
         self.preprocessed_trajs = pd.DataFrame()
+        
+        # Here we register some of the callbacks that must be managed by this class. 
+        self.app.callback \
+        (
+            Output(component_id = 'user_result-'  + self.id_class, component_property = 'children'),   
+            Input(component_id = 'user_sel-' + self.id_class, component_property = 'value')
+        )(self.info_stops)
         
         
         
     ### CLASS PUBLIC METHODS ###
     
     def register_next_module(self, next_module) :
+        
+        print(f"Registering next module {next_module} in module {self.id_class}")
         self.next_module = next_module
+        
+        ### Here we define and register all the callbacks that must be managed by the instance of this class ###
+        self.app.callback \
+        (
+            Output(component_id = 'loading-' + self.id_class + '-c', component_property='children'),
+            Output(component_id = 'output-' + self.id_class, component_property='children'),
+            Output(component_id = self.next_module, component_property='disabled'),
+            State(component_id = self.id_class + '-duration', component_property='value'),
+            State(component_id = self.id_class + '-radius', component_property='value'),
+            Input(component_id = self.id_class + '-run', component_property='n_clicks')
+        )(self.get_input_and_execute)
         
     
     def populate_input_area(self) :
-        return list()
-    
-    
-    def get_input_and_execute(self, list_):
         
-        self.minutes = list_[0]
-        self.radius = list_[1]
-        self.preprocessed_trajs = pd.read_parquet('data/temp_dataset/traj_cleaned.parquet')
+        web_components = []
+        
+        web_components.append(html.Span(children = "Minimum duration of a stop (in minutes): "))
+        web_components.append(dcc.Input(id = self.id_class + '-duration',
+                                        value = 10,
+                                        type = 'number',
+                                        placeholder = 'minutes'))
+        web_components.append(html.Br())
+        web_components.append(html.Br())
+        
+        web_components.append(html.Span(children = "Spatial radius (in km) of the stop: "))
+        web_components.append(dcc.Input(id = self.id_class + '-radius',
+                                        value = 1,
+                                        type = 'number',
+                                        placeholder = 'Spatial radius'))
+        web_components.append(html.Br())
+        web_components.append(html.Br())
+        
+        web_components.append(html.Button(id = self.id_class + '-run', children='RUN'))           
+        
+        return web_components
+    
+    
+    def get_input_and_execute(self, duration, radius, button_state):
+        
+        print(f"Eseguo get_input_and_execute del modulo {self.id_class}! Button state: {button_state}")
+    
+        outputs = []
+        next_module_disabled = True
+        if button_state is not None :
+        
+            print(f"Eseguo if in get_input_and_execute del modulo {self.id_class}! {button_state}")
+
+            # Salva nei campi dell'istanza l'input passato 
+            self.duration = duration
+            self.radius = radius
+            
+            # Esegui il codice core dell'istanza.
+            self.stops = None
+            self.moves = None
+            self.core()
+            
+            # Manage the output to show in the web interface.
+            options = [{'label': i, 'value': i} for i in self.get_users()]
+            outputs.append(html.Div(id = 'users' + self.id_class,
+                                    children=[html.P(children='User selection:'),
+                                              dcc.Dropdown(id='user_sel-' + self.id_class,
+                                                           options = options,
+                                                           style={'color':'#333'}),
+                                              html.Div(id = 'user_result-'  + self.id_class)]))
+            
+            # Save the stops and moves that have been detected to disk.
+            self.save_output()
+            
+            # Update the state of the relevant components.
+            next_module_disabled = False
+
+        
+        return None, outputs, next_module_disabled
 
 
     def core(self):
         
         # read preprocessed dataframe
+        self.preprocessed_trajs = pd.read_parquet(self.path_pre_traj)
+        print(f"Dataframe da lettura file {self.path_pre_traj}: {self.preprocessed_trajs}")
+        
+        
         tdf = skmob.TrajDataFrame(self.preprocessed_trajs)
 
-        # stop detection
-        stdf = detection.stops(tdf, stop_radius_factor=0.5, minutes_for_a_stop=self.minutes, spatial_radius_km=self.radius, leaving_time=True)
+        ### stop detection ###
+        stdf = detection.stops(tdf,
+                               stop_radius_factor = 0.5, 
+                               minutes_for_a_stop = self.duration, 
+                               spatial_radius_km = self.radius, 
+                               leaving_time = True)
         self.stops = stdf
-        # save stops
-        stdf.to_parquet('data/temp_dataset/stops.parquet')
 
-        # move detection
+
+        ### move detection ###
         trajs = tdf.copy()
         starts = stdf.copy()
         ends = stdf.copy()
 
-        trajs.set_index(['tid','datetime'],inplace=True)
-        starts.set_index(['tid','datetime'],inplace=True)
-        ends.set_index(['tid','leaving_datetime'],inplace=True)
+        trajs.set_index(['tid','datetime'], inplace = True)
+        starts.set_index(['tid','datetime'], inplace = True)
+        ends.set_index(['tid','leaving_datetime'], inplace = True)
 
         traj_ids = trajs.index
         start_ids = starts.index
         end_ids = ends.index
 
         # some datetime into stdf are approximated. In order to retrieve moves, we have to check the exact datime into 
-        # trajectory dataframe
-        # we use `isin()` method to reduce time computation
+        # trajectory dataframe. We use `isin()` method to reduce time computation
         traj_df = pd.DataFrame(traj_ids, columns=['trajs'])
         start_df = pd.DataFrame(start_ids, columns=['start'])
         end_df = pd.DataFrame(end_ids, columns=['end'])
@@ -413,21 +491,41 @@ class stops_and_moves(ModuleInterface):
 
         moves = trajs[trajs['move_id']!=-1]
         self.moves = moves.copy()
-        moves.to_parquet('data/temp_dataset/moves.parquet')
 
         del end_df, start_df, traj_df
+        
+        
+    def info_stops(self, user):
+
+        outputs = []
+
+        if user is None: return outputs
+
+        outputs.append(html.Br())
+        num_trajs = self.get_trajectories(user)
+        outputs.append(html.P(children='Number of trajectories found for this user: {}'.format(num_trajs)))
+        num_stops = self.get_stops(user)
+        outputs.append(html.P(children='Number of stops found for this user: {}'.format(num_stops)))
+        mean_duration = self.get_duration(user)
+        outputs.append(html.P(children='Stop average duration: {} minutes'.format(mean_duration)))
+
+        return outputs
+
 
     def get_users(self):
         
         return self.moves['uid'].unique()
 
+
     def get_trajectories(self, uid):
 
         return len(self.moves[self.moves['uid']==uid]['tid'].unique())
 
+
     def get_stops(self, uid):
 
         return len(self.stops[self.stops['uid']==uid])
+
 
     def get_duration(self, uid):
 
@@ -435,6 +533,12 @@ class stops_and_moves(ModuleInterface):
         s['duration'] = (s['leaving_datetime'] - s['datetime']).astype('timedelta64[m]')
 
         return round(s['duration'].mean(),2)
+        
+        
+    def save_output(self) :
+        
+        self.stops.to_parquet('./data/temp_dataset/stops.parquet')
+        self.moves.to_parquet('./data/temp_dataset/moves.parquet')
 
 
 

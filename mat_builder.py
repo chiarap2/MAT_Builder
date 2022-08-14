@@ -555,7 +555,6 @@ def main() :
                                              style=tabs_styles,
                                              value='None'),
                                     html.Br(),
-                                    html.Br(),
                                     html.Div(id='display')],
                           style={'float':'left','width':'40%'})
                           
