@@ -34,67 +34,6 @@ pipeline = Pipeline(app)
     # Input(component_id='tabs-inline', component_property='value'),
     # Input(component_id={'type':'radio_items', 'index': ALL}, component_property='value')
 # )
-# def show_input(tab, radio):
-
-    # print(f"show_input invoked! Tab: {tab} - Radio: {radio}")
-
-
-    # current_state = dash.callback_context.triggered
-    # method = None
-    # if current_state[0]['prop_id'] != 'tabs-inline.value':
-        # method = current_state[0]['value']
-    # print(f"show_input current state: {current_state}")
-    
-
-    # inputs = []
-    # if(method is not None) :
-        # f = open('config.json')
-        # data = json.load(f)
-        # parameters = data[method]
-        # c = 0 
-        # for p in parameters:
-            
-            # for elem in p:
-                
-                # if elem == 'H5':
-                    # inputs.append(html.H5(children=p[elem]['children']))                    
-
-                # if elem == 'Span':
-                    # inputs.append(html.Span(children=p[elem]['children']))
-
-                # if elem == 'Input':
-                
-                    # inputs.append(dcc.Input(id={'type':'input','index':c},
-                                            # value = p[elem]['default'] if 'default' in p[elem] else None,
-                                            # type = p[elem]['type'],
-                                            # placeholder=p[elem]['placeholder']))
-                    # inputs.append(html.Br())
-                    # inputs.append(html.Br())
-
-                # elif elem == 'Checklist':
-                    # inputs.append(dcc.Checklist(id={'type':'input','index':c},options=p[elem]['options']))
-
-                # elif elem == 'Dropdown':
-                    # if p[elem]['id'] == 'list_poi':
-                        # inputs.append(dcc.Dropdown(id={'type':'input','index':c},
-                                                   # options = p[elem]['options'],
-                                                   # value = p[elem]['default'] if 'default' in p[elem] else None,
-                                                   # multi=True,
-                                                   # style={'color':'#333'}))                    
-                        # inputs.append(html.Br())
-
-                    # else:
-                        # inputs.append(dcc.Dropdown(id={'type':'input','index':c},
-                                                   # options=p[elem]['options'],
-                                                   # value = p[elem]['default'] if 'default' in p[elem] else None,
-                                                   # style={'color':'#333','width':'60%'}))                    
-                        # inputs.append(html.Br())
-
-            # c +=1
-
-        # inputs.append(html.Button(id='run',children='RUN'))
-    
-    # return inputs
     
 
 
@@ -149,49 +88,6 @@ pipeline = Pipeline(app)
 
 
 
-    # if tab == 'Preprocessing':
-
-        # print("Clicked the RUN button for preprocessing!")
-        
-        # name_class = radio[0]
-
-        # global class_pp
-        # class_ = globals()[name_class]
-        # class_pp = class_(inputs)    
-        # results = class_pp.core()
-
-        # if results != '':
-            # outputs.append(html.H6(children='File not found or not valid path',)) 
-        # else:
-            # outputs.append(html.H6(children='Dataset statistics'))
-            # outputs.append(html.Hr())
-            # outputs.append(html.P(children='Tot. users: {} \t\t\t Tot. trajectories: {}'.format(class_pp.get_num_users(), class_pp.get_num_trajs())))
-            # outputs.append(dcc.Graph(figure=px.histogram(class_pp.df.groupby('tid').datetime.first(),x='datetime',title='Distribution of trajectories over time')))
-            # class_pp.output()
-            # disable0 = True
-            # disable1 = False
-
-
-
-    # elif tab == 'Segmentation':
-
-        # print("Clicked the RUN button for segmentation!")
-
-        # display_sm = {'display':'inline'}
-        # display = {'display':'inline'}
-        # name_class = radio[1]
-        # global class_s
-        # class_ = globals()[name_class]
-        # class_s = class_(inputs)   
-        # class_s.core()
-        # users = class_s.get_users()
-        # options=[{'label': i, 'value': i} for i in users]
-
-        # disable0 = True
-        # disable2 = False
-
-
-
     # elif tab == 'Enrichment':
     
         # print("Clicked the RUN button for enrichment!")
@@ -213,28 +109,6 @@ pipeline = Pipeline(app)
 
     # return None,outputs,display,options,display2,options2,disable0,disable1,disable2,display_sm
 
-
-# @app.callback\
-# (
-    # Output(component_id='outputs2', component_property='children'),   
-    # Input(component_id='user_list',component_property='value')
-# )
-# def info_stops(user):
-
-    # outputs = []
-
-    # if user is None:
-
-        # return outputs
-
-    # num_trajs = class_s.get_trajectories(user)
-    # outputs.append(html.P(children='N. trajectories: {}'.format(num_trajs)))
-    # num_stops = class_s.get_stops(user)
-    # outputs.append(html.P(children='N. stops: {}'.format(num_stops)))
-    # mean_duration = class_s.get_duration(user)
-    # outputs.append(html.P(children='Stop average duration: {} minutes'.format(mean_duration)))
-
-    # return outputs
 
 
 # @app.callback\
@@ -560,18 +434,7 @@ def main() :
                           
                           
     output_area = html.Div(style={'float':'right','width':'50%'},
-                           children=[html.Div(id='outputs'),
-                                     html.Div(id='output_sm',
-                                              children=[html.Div(id='users',
-                                                                 children=[html.P(children='Users:'),
-                                                                           dcc.Dropdown(id='user_list',
-                                                                                        style={'color':'#333'})],
-                                                                 style={'display':'none'}),
-                                                        html.Br(),
-                                                        html.Br(),
-                                                        html.Div(id='outputs2')],
-                                              style={'display':'none'}),
-            
+                           children=[html.Div(id='outputs'),            
                                      html.Div(id='users_',
                                               children=[html.P(children='Users:'),
                                               dcc.Dropdown(id='user_list_',style={'color':'#333'})],

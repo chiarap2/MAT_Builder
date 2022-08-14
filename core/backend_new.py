@@ -302,7 +302,8 @@ class stops_and_moves(ModuleInterface):
         self.path_pre_traj = './data/temp_dataset/traj_cleaned.parquet'
         self.preprocessed_trajs = pd.DataFrame()
         
-        # Here we register some of the callbacks that must be managed by this class. 
+        # Here we register some of the callbacks that must be managed by this class in order to show
+        # the results in the web interface. 
         self.app.callback \
         (
             Output(component_id = 'user_result-'  + self.id_class, component_property = 'children'),   
@@ -570,11 +571,113 @@ class stop_move_enrichment(ModuleInterface):
     ### CLASS PUBLIC METHODS ###
     
     def register_next_module(self, next_module) :
+        
+        print(f"Registering next module {next_module} in module {self.id_class}")
         self.next_module = next_module
+        
+        ### Here we define and register all the callbacks that must be managed by the instance of this class ###
+        self.app.callback \
+        (
+            Output(component_id = 'loading-' + self.id_class + '-c', component_property='children'),
+            Output(component_id = 'output-' + self.id_class, component_property='children'),
+            Output(component_id = self.next_module, component_property='disabled'),
+            State(component_id = self.id_class + '-duration', component_property='value'),
+            State(component_id = self.id_class + '-radius', component_property='value'),
+            Input(component_id = self.id_class + '-run', component_property='n_clicks')
+        )(self.get_input_and_execute)
         
 
     def populate_input_area(self) :
-        return list()
+        
+        web_components = []
+        
+        # Input move enrichment with transportation means 
+        web_components.append(html.H5(children = "Move enrichment"))
+        web_components.append(html.Span(children = "Enrich moves with transportation means?"))
+        web_components.append(dcc.Dropdown(id = self.id_class + '-move_en',
+                                           options = [{"label": "yes", "value": "yes"},
+                                                      {"label":"no","value":"no"}],
+                                           value = "yes",
+                                           style={'color':'#333'}))
+        web_components.append(html.Br())
+        
+        
+        # Input stop enrichment with POIs 
+        web_components.append(html.H5(children = "Occasional stop enrichment with POIs"))
+        web_components.append(html.Span(children = "Insert the name of the city (to download PoIs from OpenStreetMap): "))
+        web_components.append(dcc.Input(id = self.id_class + '-place',
+                                        value = "Rome, Italy",
+                                        type = 'text',
+                                        placeholder = 'Insert city...'))
+        web_components.append(html.Br())                                
+        web_components.append(html.Span(children = "PoI categories (considered only when downloading from OpenStreetMap)"))
+        web_components.append(dcc.Dropdown(id = self.id_class + '-poi_cat',
+                                           options = [{"label": "amenity", "value": "amenity"},
+                                                      {"label": "aeroway", "value": "aeroway"},
+                                                      {"label": "building", "value": "building"},
+                                                      {"label": "historic", "value": "historic"},
+                                                      {"label": "healthcare", "value": "healthcare"},
+                                                      {"label": "landuse", "value": "landuse"},
+                                                      {"label": "office", "value": "office"},
+                                                      {"label": "public_transport", "value": "public_transport"},
+                                                      {"label": "shop", "value": "shop"},
+                                                      {"label": "tourism", "value": "tourism"},
+                                                      {"label":"no enrichment","value":"no"}],
+                                           value = "amenity",
+                                           style={'color':'#333'}))
+                                           
+        web_components.append(html.Span(children = "... or upload your file containing a POI dataset (leave 'no' if no file is uploaded) "))
+        web_components.append(dcc.Input(id = self.id_class + '-poi_file',
+                                        value = "no",
+                                        type = 'text',
+                                        placeholder = 'Path to the POI dataset...'))   
+        web_components.append(html.Br())
+        
+        
+        web_components.append(html.Span(children = "Maximum distance from the centroid of the stops (in meters): "))
+        web_components.append(dcc.Input(id = self.id_class + '-max_dist',
+                                        value = 100,
+                                        type = 'number',
+                                        placeholder = 'Max distance from PoIs (in meters)...'))
+        web_components.append(html.Br())
+        web_components.append(html.Br())
+        
+        
+        # Input social media posts enrichment
+        web_components.append(html.H5(children = "Enrich trajectory users with social media posts: "))
+        web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done: "))
+        web_components.append(dcc.Input(id = self.id_class + '-social_en',
+                                        value = 'no',
+                                        type = 'text',
+                                        placeholder = 'Path to file containing the posts...'))
+        web_components.append(html.Br())
+        web_components.append(html.Br())
+        
+        
+        # Input weather information enrichment
+        web_components.append(html.H5(children = "Enrich trajectory users with weather information: "))
+        web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done):"))
+        web_components.append(dcc.Input(id = self.id_class + '-weather_en',
+                                        value = 'no',
+                                        type = 'text',
+                                        placeholder = 'Path to file containing weather information...'))
+        web_components.append(html.Br())
+        web_components.append(html.Br())
+        
+        
+        # Input RDF graph
+        web_components.append(html.H5(children = "Save the enriched trajectories into an RDF graph: "))
+        web_components.append(dcc.Dropdown(id = self.id_class + '-write_rdf',
+                                           options = [{"label": "yes", "value": "yes"},
+                                                      {"label":"no","value":"no"}],
+                                           value = "yes",
+                                           style={'color':'#333'}))
+        web_components.append(html.Br())
+        web_components.append(html.Br())        
+                                   
+        web_components.append(html.Button(id = self.id_class + '-run', children='RUN'))           
+        
+        return web_components
         
         
     def get_input_and_execute(self, list_):
