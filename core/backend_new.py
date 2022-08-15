@@ -37,23 +37,26 @@ class Pipeline():
         The constructor of this class defines the modules that will be applied, and the order of application.
         '''
         
+        ### Here we register the Dash app within the pipeline ###
+        self.app = app
+        
         # Define the modules of the pipeline and the order used to execute them.
         self.pipeline = OrderedDict()
         self.pipeline[preprocessing1.id_class] = preprocessing1(app, self)
         self.pipeline[stops_and_moves.id_class] = stops_and_moves(app, self)
         self.pipeline[stop_move_enrichment.id_class] = stop_move_enrichment(app, self)
         
+        
         # Make each module aware of the identifier of the module that comes next.
         prev = None
         for k, v in self.pipeline.items() :
-            if prev is None : 
+            if prev is None :
                 prev = v
             else :
-                prev.register_next_module(k)
+                prev.register_next_module(v)
+                v.register_prev_module(prev)
                 prev = v
-        
-        ### Here we register the Dash app within the pipeline ###
-        self.app = app
+
         
         ### Here we register all the callbacks that must be managed by the pipeline instance ###
         self.app.callback \
@@ -81,6 +84,12 @@ class Pipeline():
                                        type="default"),
                            html.Div(id = 'output-' + self.pipeline[name_module].id_class)]
         
+        # Questo e' il caso in cui ci si trova all'avvio dell'app o refresh browser...si resetta lo stato dei moduli.
+        else :
+            for k, v in self.pipeline.items() :
+                v.reset_state()
+        
+        
         return inputs, output_area
     
     
@@ -100,6 +109,10 @@ class ModuleInterface(ABC) :
     ### INTERFACE METHODS ###
     
     @abstractmethod   
+    def register_prev_module(self, prev_module) :
+        pass
+        
+    @abstractmethod   
     def register_next_module(self, next_module) :
         pass
     
@@ -113,6 +126,14 @@ class ModuleInterface(ABC) :
        
     @abstractmethod
     def core(self) :
+        pass
+        
+    @abstractmethod
+    def get_results(self) :
+        pass
+        
+    @abstractmethod
+    def reset_state(self) :
         pass
 
 
@@ -138,31 +159,37 @@ class preprocessing1(ModuleInterface):
         ### Here we register the Dash application ###
         self.app = app
         self.pipeline = pipeline
+        self.prev_module = None
+        self.next_module = None 
         
         self.path_output = './data/temp_dataset/traj_cleaned.parquet'
-        self.df = gpd.GeoDataFrame()
+        self.df = None
 
-
-
-    ### CLASS METHODS ###
-    
-    def register_next_module(self, next_module) :
-        
-        print(f"Registering next module {next_module} in module {self.id_class}")
-        self.next_module = next_module
-        
         ### Here we define and register all the callbacks that must be managed by the instance of this class ###
         self.app.callback \
         (
             Output(component_id = 'loading-' + self.id_class + '-c', component_property='children'),
             Output(component_id = 'output-' + self.id_class, component_property='children'),
-            Output(component_id = self.next_module, component_property='disabled'),
             State(component_id = self.id_class + '-path', component_property='value'),
             State(component_id = self.id_class + '-speed', component_property='value'),
             State(component_id = self.id_class + '-n_points', component_property='value'),
             Input(component_id = self.id_class + '-run', component_property='n_clicks')
         )(self.get_input_and_execute)
+
+
+
+    ### CLASS METHODS ###
+    
+    def register_prev_module(self, prev_module) :
         
+        print(f"Registering prev module {prev_module} in module {self.id_class}")
+        self.prev_module = prev_module
+
+
+    def register_next_module(self, next_module) :
+        
+        print(f"Registering next {next_module} module in module {self.id_class}")
+        self.next_module = next_module          
     
     
     def populate_input_area(self) :
@@ -230,11 +257,8 @@ class preprocessing1(ModuleInterface):
                 
                 # Save the results of the preprocessing to a file.
                 self.output()
-                
-                # Update the state of the relevant components.
-                next_module_disabled = False
         
-        return None, outputs, next_module_disabled
+        return None, outputs
         
     
     def core(self):
@@ -263,6 +287,16 @@ class preprocessing1(ModuleInterface):
 
         self.df = ctdf
         return ''
+        
+        
+    def get_results(self) :
+        return self.df
+        
+        
+    def reset_state(self) :
+        
+        print(f"Resetting state of the module {self.id_class}")
+        self.df = None
 
 
     def get_num_users(self):
@@ -289,18 +323,22 @@ class stops_and_moves(ModuleInterface):
     id_class = 'Segmentation'
     
 
+
     ### CLASS CONSTRUCTOR ###
     
     def __init__(self, app, pipeline) :
         
         self.app = app
         self.pipeline = pipeline
+        self.prev_module = None
+        self.next_module = None
         
-        self.stops = pd.DataFrame()
-        self.moves = pd.DataFrame()
         
+        self.stops = None
+        self.moves = None
         self.path_pre_traj = './data/temp_dataset/traj_cleaned.parquet'
-        self.preprocessed_trajs = pd.DataFrame()
+        self.preprocessed_trajs = None
+        
         
         # Here we register some of the callbacks that must be managed by this class in order to show
         # the results in the web interface. 
@@ -310,31 +348,56 @@ class stops_and_moves(ModuleInterface):
             Input(component_id = 'user_sel-' + self.id_class, component_property = 'value')
         )(self.info_stops)
         
-        
-        
-    ### CLASS PUBLIC METHODS ###
-    
-    def register_next_module(self, next_module) :
-        
-        print(f"Registering next module {next_module} in module {self.id_class}")
-        self.next_module = next_module
-        
         ### Here we define and register all the callbacks that must be managed by the instance of this class ###
         self.app.callback \
         (
             Output(component_id = 'loading-' + self.id_class + '-c', component_property='children'),
             Output(component_id = 'output-' + self.id_class, component_property='children'),
-            Output(component_id = self.next_module, component_property='disabled'),
+            State(component_id = self.id_class + '-path', component_property='value'),
             State(component_id = self.id_class + '-duration', component_property='value'),
             State(component_id = self.id_class + '-radius', component_property='value'),
             Input(component_id = self.id_class + '-run', component_property='n_clicks')
         )(self.get_input_and_execute)
+        
+        
+        
+    ### CLASS PUBLIC METHODS ###
+    
+    def register_prev_module(self, prev_module) :
+        
+        print(f"Registering prev module {prev_module} in module {self.id_class}")
+        self.prev_module = prev_module
+
+
+    def register_next_module(self, next_module) :
+        
+        print(f"Registering next {next_module} module in module {self.id_class}")
+        self.next_module = next_module   
         
     
     def populate_input_area(self) :
         
         web_components = []
         
+        # Here we manage the case where no data is available from the previous module.
+        if(self.prev_module.get_results() is None) :
+            web_components.append(html.Span(children = f"No preprocessed trajectories available from the {self.prev_module.id_class} module!"))
+            web_components.append(html.Br())
+            web_components.append(html.Span(children = f"Please, provide a file containing them: "))
+            web_components.append(dcc.Input(id = self.id_class + '-path',
+                                            value = './data/temp_dataset/traj_cleaned.parquet',
+                                            type = 'text',
+                                            placeholder = 'Path to file...'))
+            web_components.append(html.Br())
+            web_components.append(html.Br())
+            
+        else : 
+            web_components.append(dcc.Input(id = self.id_class + '-path',
+                                            value = None,
+                                            type = 'text',
+                                            placeholder = 'Path to file...',
+                                            style={'display':'none'}))
+
         web_components.append(html.Span(children = "Minimum duration of a stop (in minutes): "))
         web_components.append(dcc.Input(id = self.id_class + '-duration',
                                         value = 10,
@@ -356,12 +419,11 @@ class stops_and_moves(ModuleInterface):
         return web_components
     
     
-    def get_input_and_execute(self, duration, radius, button_state):
+    def get_input_and_execute(self, path, duration, radius, button_state):
         
         print(f"Eseguo get_input_and_execute del modulo {self.id_class}! Button state: {button_state}")
     
         outputs = []
-        next_module_disabled = True
         if button_state is not None :
         
             print(f"Eseguo if in get_input_and_execute del modulo {self.id_class}! {button_state}")
@@ -370,10 +432,21 @@ class stops_and_moves(ModuleInterface):
             self.duration = duration
             self.radius = radius
             
-            # Esegui il codice core dell'istanza.
             self.stops = None
             self.moves = None
+            
+            if path is not None :
+                try :
+                    self.preprocessed_trajs = pd.read_parquet(path)
+                except BaseException :
+                    outputs.append(html.H5("No file with the preprocessed trajectories found! Please, provide one!"))
+                    return None, outputs
+            else : self.preprocessed_trajs = self.prev_module.get_results()
+            
+            
+            # Esegui il codice core dell'istanza.
             self.core()
+            
             
             # Manage the output to show in the web interface.
             options = [{'label': i, 'value': i} for i in self.get_users()]
@@ -386,20 +459,12 @@ class stops_and_moves(ModuleInterface):
             
             # Save the stops and moves that have been detected to disk.
             self.save_output()
-            
-            # Update the state of the relevant components.
-            next_module_disabled = False
 
         
-        return None, outputs, next_module_disabled
+        return None, outputs
 
 
-    def core(self):
-        
-        # read preprocessed dataframe
-        self.preprocessed_trajs = pd.read_parquet(self.path_pre_traj)
-        print(f"Dataframe da lettura file {self.path_pre_traj}: {self.preprocessed_trajs}")
-        
+    def core(self):       
         
         tdf = skmob.TrajDataFrame(self.preprocessed_trajs)
 
@@ -496,6 +561,21 @@ class stops_and_moves(ModuleInterface):
         del end_df, start_df, traj_df
         
         
+    def get_results(self) :
+    
+        if (self.stops is not None) and (self.moves is not None) :
+            return self.stops, self.moves
+        else : 
+            return None
+            
+            
+    def reset_state(self) :
+    
+        print(f"Resetting state of the module {self.id_class}")
+        self.stops = None
+        self.moves = None
+        
+        
     def info_stops(self, user):
 
         outputs = []
@@ -565,181 +645,213 @@ class stop_move_enrichment(ModuleInterface):
     
         self.app = app
         self.pipeline = pipeline
+        self.prev_module = None
+        self.next_module = None
     
     
-    
-    ### CLASS PUBLIC METHODS ###
-    
-    def register_next_module(self, next_module) :
-        
-        print(f"Registering next module {next_module} in module {self.id_class}")
-        self.next_module = next_module
-        
         ### Here we define and register all the callbacks that must be managed by the instance of this class ###
         self.app.callback \
         (
             Output(component_id = 'loading-' + self.id_class + '-c', component_property='children'),
             Output(component_id = 'output-' + self.id_class, component_property='children'),
-            Output(component_id = self.next_module, component_property='disabled'),
-            State(component_id = self.id_class + '-duration', component_property='value'),
-            State(component_id = self.id_class + '-radius', component_property='value'),
+            State(component_id = self.id_class + '-move_en', component_property='value'),
+            State(component_id = self.id_class + '-place', component_property='value'),
+            State(component_id = self.id_class + '-poi_cat', component_property='value'),
+            State(component_id = self.id_class + '-poi_file', component_property='value'),
+            State(component_id = self.id_class + '-max_dist', component_property='value'),
+            State(component_id = self.id_class + '-social_en', component_property='value'),
+            State(component_id = self.id_class + '-weather_en', component_property='value'),
+            State(component_id = self.id_class + '-write_rdf', component_property='value'),
             Input(component_id = self.id_class + '-run', component_property='n_clicks')
         )(self.get_input_and_execute)
+    
+    
+    
+    ### CLASS PUBLIC METHODS ###
+    
+    def register_prev_module(self, prev_module) :
+        
+        print(f"Registering prev module {prev_module} in module {self.id_class}")
+        self.prev_module = prev_module
+
+
+    def register_next_module(self, next_module) :
+        
+        print(f"Registering next {next_module} module in module {self.id_class}")
+        self.next_module = next_module
         
 
     def populate_input_area(self) :
         
         web_components = []
         
-        # Input move enrichment with transportation means 
-        web_components.append(html.H5(children = "Move enrichment"))
-        web_components.append(html.Span(children = "Enrich moves with transportation means?"))
-        web_components.append(dcc.Dropdown(id = self.id_class + '-move_en',
-                                           options = [{"label": "yes", "value": "yes"},
-                                                      {"label":"no","value":"no"}],
-                                           value = "yes",
-                                           style={'color':'#333'}))
-        web_components.append(html.Br())
         
+        if(self.prev_module.get_results() is None) :
+            web_components.append(html.H5(children = f"No data available from the {self.prev_module.id_class} module!"))
+            web_components.append(html.H5(children = f"Please, execute it first!"))
         
-        # Input stop enrichment with POIs 
-        web_components.append(html.H5(children = "Occasional stop enrichment with POIs"))
-        web_components.append(html.Span(children = "Insert the name of the city (to download PoIs from OpenStreetMap): "))
-        web_components.append(dcc.Input(id = self.id_class + '-place',
-                                        value = "Rome, Italy",
-                                        type = 'text',
-                                        placeholder = 'Insert city...'))
-        web_components.append(html.Br())                                
-        web_components.append(html.Span(children = "PoI categories (considered only when downloading from OpenStreetMap)"))
-        web_components.append(dcc.Dropdown(id = self.id_class + '-poi_cat',
-                                           options = [{"label": "amenity", "value": "amenity"},
-                                                      {"label": "aeroway", "value": "aeroway"},
-                                                      {"label": "building", "value": "building"},
-                                                      {"label": "historic", "value": "historic"},
-                                                      {"label": "healthcare", "value": "healthcare"},
-                                                      {"label": "landuse", "value": "landuse"},
-                                                      {"label": "office", "value": "office"},
-                                                      {"label": "public_transport", "value": "public_transport"},
-                                                      {"label": "shop", "value": "shop"},
-                                                      {"label": "tourism", "value": "tourism"},
-                                                      {"label":"no enrichment","value":"no"}],
-                                           value = "amenity",
-                                           style={'color':'#333'}))
-                                           
-        web_components.append(html.Span(children = "... or upload your file containing a POI dataset (leave 'no' if no file is uploaded) "))
-        web_components.append(dcc.Input(id = self.id_class + '-poi_file',
-                                        value = "no",
-                                        type = 'text',
-                                        placeholder = 'Path to the POI dataset...'))   
-        web_components.append(html.Br())
+        else :
         
-        
-        web_components.append(html.Span(children = "Maximum distance from the centroid of the stops (in meters): "))
-        web_components.append(dcc.Input(id = self.id_class + '-max_dist',
-                                        value = 100,
-                                        type = 'number',
-                                        placeholder = 'Max distance from PoIs (in meters)...'))
-        web_components.append(html.Br())
-        web_components.append(html.Br())
-        
-        
-        # Input social media posts enrichment
-        web_components.append(html.H5(children = "Enrich trajectory users with social media posts: "))
-        web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done: "))
-        web_components.append(dcc.Input(id = self.id_class + '-social_en',
-                                        value = 'no',
-                                        type = 'text',
-                                        placeholder = 'Path to file containing the posts...'))
-        web_components.append(html.Br())
-        web_components.append(html.Br())
-        
-        
-        # Input weather information enrichment
-        web_components.append(html.H5(children = "Enrich trajectory users with weather information: "))
-        web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done):"))
-        web_components.append(dcc.Input(id = self.id_class + '-weather_en',
-                                        value = 'no',
-                                        type = 'text',
-                                        placeholder = 'Path to file containing weather information...'))
-        web_components.append(html.Br())
-        web_components.append(html.Br())
-        
-        
-        # Input RDF graph
-        web_components.append(html.H5(children = "Save the enriched trajectories into an RDF graph: "))
-        web_components.append(dcc.Dropdown(id = self.id_class + '-write_rdf',
-                                           options = [{"label": "yes", "value": "yes"},
-                                                      {"label":"no","value":"no"}],
-                                           value = "yes",
-                                           style={'color':'#333'}))
-        web_components.append(html.Br())
-        web_components.append(html.Br())        
-                                   
-        web_components.append(html.Button(id = self.id_class + '-run', children='RUN'))           
+            # Input move enrichment with transportation means 
+            web_components.append(html.H5(children = "Move enrichment"))
+            web_components.append(html.Span(children = "Enrich moves with transportation means?"))
+            web_components.append(dcc.Dropdown(id = self.id_class + '-move_en',
+                                               options = [{"label": "yes", "value": "yes"},
+                                                          {"label":"no","value":"no"}],
+                                               value = "yes",
+                                               style={'color':'#333'}))
+            web_components.append(html.Br())
+            
+            
+            # Input stop enrichment with POIs 
+            web_components.append(html.H5(children = "Occasional stop enrichment with POIs"))
+            web_components.append(html.Span(children = "Insert the name of the city (to download PoIs from OpenStreetMap): "))
+            web_components.append(dcc.Input(id = self.id_class + '-place',
+                                            value = "Rome, Italy",
+                                            type = 'text',
+                                            placeholder = 'Insert city...'))
+            web_components.append(html.Br())                                
+            web_components.append(html.Span(children = "PoI categories (considered only when downloading from OpenStreetMap)"))
+            web_components.append(dcc.Dropdown(id = self.id_class + '-poi_cat',
+                                               options = [{"label": "amenity", "value": "amenity"},
+                                                          {"label": "aeroway", "value": "aeroway"},
+                                                          {"label": "building", "value": "building"},
+                                                          {"label": "historic", "value": "historic"},
+                                                          {"label": "healthcare", "value": "healthcare"},
+                                                          {"label": "landuse", "value": "landuse"},
+                                                          {"label": "office", "value": "office"},
+                                                          {"label": "public_transport", "value": "public_transport"},
+                                                          {"label": "shop", "value": "shop"},
+                                                          {"label": "tourism", "value": "tourism"},
+                                                          {"label":"no enrichment","value":"no"}],
+                                               value = "amenity",
+                                               style={'color':'#333'}))
+                                               
+            web_components.append(html.Span(children = "... or upload your file containing a POI dataset (leave 'no' if no file is uploaded) "))
+            web_components.append(dcc.Input(id = self.id_class + '-poi_file',
+                                            value = "no",
+                                            type = 'text',
+                                            placeholder = 'Path to the POI dataset...'))   
+            web_components.append(html.Br())
+            
+            
+            web_components.append(html.Span(children = "Maximum distance from the centroid of the stops (in meters): "))
+            web_components.append(dcc.Input(id = self.id_class + '-max_dist',
+                                            value = 100,
+                                            type = 'number',
+                                            placeholder = 'Max distance from PoIs (in meters)...'))
+            web_components.append(html.Br())
+            web_components.append(html.Br())
+            
+            
+            # Input social media posts enrichment
+            web_components.append(html.H5(children = "Enrich trajectory users with social media posts: "))
+            web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done: "))
+            web_components.append(dcc.Input(id = self.id_class + '-social_en',
+                                            value = 'no',
+                                            type = 'text',
+                                            placeholder = 'Path to file containing the posts...'))
+            web_components.append(html.Br())
+            web_components.append(html.Br())
+            
+            
+            # Input weather information enrichment
+            web_components.append(html.H5(children = "Enrich trajectory users with weather information: "))
+            web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done):"))
+            web_components.append(dcc.Input(id = self.id_class + '-weather_en',
+                                            value = 'no',
+                                            type = 'text',
+                                            placeholder = 'Path to file containing weather information...'))
+            web_components.append(html.Br())
+            web_components.append(html.Br())
+            
+            
+            # Input RDF graph
+            web_components.append(html.H5(children = "Save the enriched trajectories into an RDF graph: "))
+            web_components.append(dcc.Dropdown(id = self.id_class + '-write_rdf',
+                                               options = [{"label": "yes", "value": "yes"},
+                                                          {"label":"no","value":"no"}],
+                                               value = "yes",
+                                               style={'color':'#333'}))
+            web_components.append(html.Br())
+            web_components.append(html.Br())        
+                                       
+            web_components.append(html.Button(id = self.id_class + '-run', children='RUN'))           
         
         return web_components
         
         
-    def get_input_and_execute(self, list_):
-    
-        ### Reset the state of the static variables...
-        self.stops = pd.DataFrame()
-        self.moves = pd.DataFrame()
-        self.mats = gpd.GeoDataFrame()
+    def get_input_and_execute(self,
+                              move_enrichment,
+                              place,
+                              poi_categories,
+                              path_poi,
+                              max_dist,
+                              social_enrichment,
+                              weather_enrichment,
+                              create_rdf,
+                              button_state):
         
-    
-        print("Executing the constructor of the semantic enrichment module...")
-        print(f"Values of the list passed to the constructor: {list_}")
-
-        if list_[0] == 'yes':
-            self.enrich_moves = True
-            self.moves = pd.read_parquet('data/temp_dataset/moves.parquet')
-        else:
-            self.enrich_moves = False
-
-        self.place = list_[1]
-
-        if list_[2] == ['no']:
-            self.list_pois = []
-        else:
-            self.list_pois = list_[2]
-
-        if list_[3] == 'no':
-            self.upload_stops = 'no'
-        else:
-            self.upload_stops = list_[3]
-
-        self.semantic_granularity = list_[4]
-        self.max_distance = list_[5]
-
-        # Variabili gestione arricchimento social media post.
-        if list_[6] == 'no':
-            self.tweet_user = False
-        else:
-            self.tweet_user = True
-
-        if list_[7] == 'no':
-            self.upload_users = 'no'
-        else:
-            self.upload_users = list_[7]
-
-        # Variabili gestione arricchimento social media post.
-        if list_[8] == 'no':
-            self.weather = False
-        else:
-            self.weather = True
-
-        if list_[9] == 'no':
-            self.upload_trajs = 'no'
-        else:
-            self.upload_trajs = list_[9]
+        outputs = []        
+        if button_state is not None :
         
-        # Variabili gestione scrittura grafo RDF.
-        if list_[-1] == 'yes':
-            self.rdf = 'yes'
-        else:
-            self.rdf = 'no'
+            print(f"Esecuzione get_input_and_execute del modulo {self.id_class} ({button_state})")
+        
+            ### Reset the state of the static variables...
+            self.stops = pd.DataFrame()
+            self.moves = pd.DataFrame()
+            self.mats = gpd.GeoDataFrame()
+
+
+            # Input parsing...
+            if move_enrichment == 'yes':
+                self.enrich_moves = True
+                self.moves = pd.read_parquet('data/temp_dataset/moves.parquet')
+            else:
+                self.enrich_moves = False
+
+            self.place = place
+
+            if poi_categories == ['no']:
+                self.list_pois = []
+            else:
+                self.list_pois = poi_categories
+
+            if path_poi == 'no':
+                self.upload_stops = 'no'
+            else:
+                self.upload_stops = path_poi
+
+            self.semantic_granularity = 80
+            self.max_distance = max_dist
+
+            # Variabili gestione arricchimento social media post.
+            if social_enrichment == 'no':
+                self.tweet_user = False
+            else:
+                self.tweet_user = True
+                self.upload_users = social_enrichment
+
+            # Variabili gestione arricchimento weather information.
+            if weather_enrichment == 'no':
+                self.weather = False
+            else:
+                self.weather = True
+                self.upload_trajs = weather_enrichment
             
+            # Variabili gestione scrittura grafo RDF.
+            self.rdf = 'yes' if create_rdf == 'yes' else 'no'
+            
+            # Esegui il core dell'istanza.
+            self.core()
+            
+            
+            # Costruisci i componenti da mostrare nell'area di output dell'interfaccia web.
+            # TODO...
+            
+        # Ritorna gli output finali per l'interfaccia web.
+        return None, outputs
+
 
     def core(self):
     
@@ -1240,6 +1352,14 @@ class stop_move_enrichment(ModuleInterface):
             
             # Output the RDF graph to disk in Turtle format.
             builder.serialize_graph('kg.ttl')
+            
+            
+    def get_results(self) :
+        return None
+        
+        
+    def reset_state(self) :
+        print(f"Resetting state of the module {self.id_class}")
                      
         
     def get_users(self):
