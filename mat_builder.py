@@ -1,12 +1,10 @@
 from jupyter_dash import JupyterDash
 import plotly.graph_objects as go
-import dash
-from dash import dcc, html
+from dash import Dash, dcc, html
 import plotly.express as px
 import pandas as pd
 import geopandas as gpd
 import numpy as np
-import json
 
 from core.backend_new import *
 
@@ -14,7 +12,7 @@ from core.backend_new import *
 ### GLOBAL VARIABLES ###
 
 # Instantiate Dash application.
-app = JupyterDash(__name__)
+app = Dash(__name__)
 
 
 # By default, Dash applies validation to your callbacks, which performs checks such as validating the types of callback arguments and checking to see whether the specified Input and Output components actually have the specified properties. For full validation, all components within your callback must exist in the layout when your app starts, and you will see an error if they do not.
@@ -213,8 +211,7 @@ def main() :
                                          label = id,
                                          value = id,
                                          style = tab_style,
-                                         selected_style = tab_selected_style, 
-                                         # disabled = True, 
+                                         selected_style = tab_selected_style,
                                          disabled_style = disabled_style))
 
 

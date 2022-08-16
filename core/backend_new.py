@@ -4,9 +4,7 @@ import pandas as pd
 import numpy as np
 
 import skmob
-from skmob.preprocessing import filtering
-from skmob.preprocessing import detection
-from skmob.preprocessing import compression
+from skmob.preprocessing import filtering, detection, compression
 from ptrail.core.TrajectoryDF import PTRAILDataFrame
 from ptrail.features.kinematic_features import KinematicFeatures as spatial
 
@@ -16,9 +14,11 @@ import geohash2
 import osmnx as ox
 from core.RDF_builder import RDFBuilder
 
-import plotly.express as px
-from dash import html, dcc
+from dash import dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
+
+import plotly.express as px
+import plotly.graph_objects as go
 
 from abc import ABC, abstractmethod
 from collections import OrderedDict
