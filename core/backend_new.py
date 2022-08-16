@@ -650,6 +650,8 @@ class stop_move_enrichment(ModuleInterface):
     
     
         ### Here we define and register all the callbacks that must be managed by the instance of this class ###
+        
+        # This is the callback associated with the input area.
         self.app.callback \
         (
             Output(component_id = 'loading-' + self.id_class + '-c', component_property='children'),
@@ -664,6 +666,26 @@ class stop_move_enrichment(ModuleInterface):
             State(component_id = self.id_class + '-write_rdf', component_property='value'),
             Input(component_id = self.id_class + '-run', component_property='n_clicks')
         )(self.get_input_and_execute)
+        
+        
+        # @app.callback\
+        # (
+            # Output(component_id='trajs', component_property='style'),   
+            # Output(component_id='trajs_list',component_property='options'),
+            # Input(component_id='user_list_',component_property='value'),
+        # )
+        # def trajectories(user):
+
+            # display = {'display':'none'}
+            # options = []
+
+            # if user is None:
+                # return display, options
+            
+            # display = {'display':'inline'}
+            # options=[{'label': i, 'value': i} for i in self.get_trajectories(user)]
+
+            # return display,options
     
     
     
@@ -842,12 +864,19 @@ class stop_move_enrichment(ModuleInterface):
             # Variabili gestione scrittura grafo RDF.
             self.rdf = 'yes' if create_rdf == 'yes' else 'no'
             
+            
             # Esegui il core dell'istanza.
             self.core()
             
             
-            # Costruisci i componenti da mostrare nell'area di output dell'interfaccia web.
-            # TODO...
+            # Inizializza il dropdown con la lista di utenti da mostrare nell'area di output dell'interfaccia web.
+            list_users = [{'label': u, 'value': u} for u in self.get_users()]
+            outputs.append(html.Div(id='users-' + self.id_class,
+                                    children=[html.P(children = 'Users:'),
+                                              dcc.Dropdown(id = 'user_list-' + self.id_class,
+                                                           options = list_users,
+                                                           style={'color':'#333'})]))
+            
             
         # Ritorna gli output finali per l'interfaccia web.
         return None, outputs
