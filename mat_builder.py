@@ -240,35 +240,8 @@ def main() :
                           style={'float':'left','width':'40%'})
                           
                           
-    output_area = html.Div(style={'float':'right','width':'50%'},
-                           children=[html.Div(id='outputs'),
-                                     html.Div(id='output_sm',
-                                              children=[html.Div(id='users',
-                                                                 children=[html.P(children='Users:'),
-                                                                           dcc.Dropdown(id='user_list',
-                                                                                        style={'color':'#333'})],
-                                                                 style={'display':'none'}),
-                                                        html.Br(),
-                                                        html.Br(),
-                                                        html.Div(id='outputs2')],
-                                              style={'display':'none'}),
-            
-                                     html.Div(id='users_',
-                                              children=[html.P(children='Users:'),
-                                              dcc.Dropdown(id='user_list_',style={'color':'#333'})],
-                                              style={'display':'none'}),
-                                     html.Br(),
-                                     html.Br(),
-                                     html.Div(id='outputs3'),
-                                     html.Br(),
-                                     html.Br(),
-                                     html.Div(id='trajs',
-                                              children=[html.P(children='Trajectories:'), 
-                                                        dcc.Dropdown(id='trajs_list',
-                                                        style={'color':'#333'})],
-                                              style={'display':'none'}),
-                                     html.Br(),
-                                     html.Div(id='output-maps')])
+    output_area = html.Div(style = {'float':'right','width':'50%'},
+                           children = html.Div(id='outputs'))
     
     
     

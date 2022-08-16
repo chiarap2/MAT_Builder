@@ -1387,11 +1387,9 @@ class stop_move_enrichment(ModuleInterface):
     def show_trajectories(self, user) :
 
         options = []
-        print("Entro qua!")
         if user is not None:
 
             list_traj = [{'label': i, 'value': i} for i in self.get_trajectories(user)]
-            print(f"List of trajectories: {list_traj}")
             options.extend([html.P(children = 'Trajectories:'),
                            dcc.Dropdown(id = 'traj_sel-' + self.id_class,
                                         options = list_traj,
