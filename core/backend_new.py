@@ -668,25 +668,22 @@ class stop_move_enrichment(ModuleInterface):
         )(self.get_input_and_execute)
         
         
-        # @app.callback\
-        # (
-            # Output(component_id='trajs', component_property='style'),   
-            # Output(component_id='trajs_list',component_property='options'),
-            # Input(component_id='user_list_',component_property='value'),
-        # )
-        # def trajectories(user):
-
-            # display = {'display':'none'}
-            # options = []
-
-            # if user is None:
-                # return display, options
+        # This is the callback in charge of creating a dropdown menu containing the trajectories
+        # associated with a user.
+        self.app.callback\
+        ( 
+            Output(component_id = 'traj-' + self.id_class, component_property = 'children'),
+            Input(component_id = 'user_sel-' + self.id_class, component_property = 'value'),
+        )(self.show_trajectories)
+        
+        
+        # This is the callback in charge of showing information concerning a trajectory.
+        self.app.callback\
+        (
+            Output(component_id = 'user_info-' + self.id_class, component_property = 'children'),
+            Input(component_id = 'user_sel-' + self.id_class, component_property = 'value')
+        )(self.info_user)
             
-            # display = {'display':'inline'}
-            # options=[{'label': i, 'value': i} for i in self.get_trajectories(user)]
-
-            # return display,options
-    
     
     
     ### CLASS PUBLIC METHODS ###
@@ -872,10 +869,14 @@ class stop_move_enrichment(ModuleInterface):
             # Inizializza il dropdown con la lista di utenti da mostrare nell'area di output dell'interfaccia web.
             list_users = [{'label': u, 'value': u} for u in self.get_users()]
             outputs.append(html.Div(id='users-' + self.id_class,
-                                    children=[html.P(children = 'Users:'),
-                                              dcc.Dropdown(id = 'user_list-' + self.id_class,
-                                                           options = list_users,
-                                                           style={'color':'#333'})]))
+                                    children = [html.P(children = 'User:'),
+                                                dcc.Dropdown(id = 'user_sel-' + self.id_class,
+                                                             options = list_users,
+                                                             style={'color':'#333'}),
+                                                html.Br(),
+                                                html.Div(id = 'user_info-' + self.id_class),
+                                                html.Br(),
+                                                html.Div(id = 'traj-' + self.id_class)]))
             
             
         # Ritorna gli output finali per l'interfaccia web.
@@ -1381,8 +1382,116 @@ class stop_move_enrichment(ModuleInterface):
             
             # Output the RDF graph to disk in Turtle format.
             builder.serialize_graph('kg.ttl')
-            
-            
+    
+
+    def show_trajectories(self, user) :
+
+        options = []
+        print("Entro qua!")
+        if user is not None:
+
+            list_traj = [{'label': i, 'value': i} for i in self.get_trajectories(user)]
+            print(f"List of trajectories: {list_traj}")
+            options.extend([html.P(children = 'Trajectories:'),
+                           dcc.Dropdown(id = 'traj_sel-' + self.id_class,
+                                        options = list_traj,
+                                        style={'color':'#333'})])
+
+        return options
+
+
+    def info_user(self, user):
+
+        outputs = []
+
+        if user is None:
+            return None
+
+        num_systematic = self.get_systematic(user)
+        num_occasional = self.get_occasional(user)
+        duration_transport = self.get_transport_duration(user)
+        duration_walk = duration_transport[duration_transport['label']==0]['datetime'].astype(str).values
+        duration_bike = duration_transport[duration_transport['label']==1]['datetime'].astype(str).values
+        duration_bus = duration_transport[duration_transport['label']==2]['datetime'].astype(str).values
+        duration_car = duration_transport[duration_transport['label']==3]['datetime'].astype(str).values
+        duration_subway = duration_transport[duration_transport['label']==4]['datetime'].astype(str).values
+        duration_train = duration_transport[duration_transport['label']==5]['datetime'].astype(str).values
+        duration_taxi = duration_transport[duration_transport['label']==6]['datetime'].astype(str).values
+
+        if len(duration_walk) == 0:
+            duration_walk = 0
+        else:
+            duration_walk = duration_walk[0]
+
+        if len(duration_bike) == 0:
+            duration_bike = 0
+        else:
+            duration_bike = duration_bike[0]
+
+        if len(duration_bus) == 0:
+            duration_bus = 0
+        else:
+            duration_bus = duration_bus[0]
+
+        if len(duration_car) == 0:
+            duration_car = 0
+        else:
+            duration_car = duration_car[0]
+        
+        if len(duration_subway) == 0:
+            duration_subway = 0
+        else:
+            duration_subway = duration_subway[0]
+        
+        if len(duration_train) == 0:
+            duration_train = 0
+        else:
+            duration_train = duration_train[0]
+
+        if len(duration_taxi) == 0:
+            duration_taxi = 0
+        else:
+            duration_taxi = duration_taxi[0]
+
+        tweets = self.get_tweets(user)
+
+        outputs.append(html.H6(children='Stops info:',style={'font-weight':'bold'}))
+        outputs.append(html.Span(children='N. systematic stops:',style={'text-decoration':'underline'}))
+        outputs.append(html.Span(children=str(num_systematic)+' \t'))
+        outputs.append(html.Br())
+        outputs.append(html.Span(children='N. occasional stops:',style={'text-decoration':'underline'}))
+        outputs.append(html.Span(children=str(num_occasional)))
+        
+        outputs.append(html.H6(children='Transport mean info (duration):',style={'font-weigth':'bold'}))
+        outputs.append(html.Span(children='Walk:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Span(children=str(duration_walk)+' \t'))
+        outputs.append(html.Span(children='Bike:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Span(children=str(duration_bike)+' \t'))
+        outputs.append(html.Span(children='Bus:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Span(children=str(duration_bus)+' \t'))
+        outputs.append(html.Br())
+        outputs.append(html.Span(children='Car:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Span(children=str(duration_car)+' \t'))
+        outputs.append(html.Span(children='Train:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Span(children=str(duration_train)+' \t'))
+        outputs.append(html.Span(children='Subway:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Span(children=str(duration_subway)+' \t'))
+        outputs.append(html.Span(children='Taxi:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Span(children=str(duration_taxi)+' \t'))
+        outputs.append(html.Br())
+
+        if len(tweets) != 0:
+            outputs.append(html.H6(children='Tweets:',style={'font-weigth':'bold'}))
+            for t in tweets:
+                outputs.append(html.Span(children='Tweet text:',style={'text-decoration':'underline'}))
+                outputs.append(html.Span(children='\"'+str(t)+'\"'))
+                outputs.append(html.Br())
+
+        self.get_transport_duration(user)
+
+        return outputs        
+           
+           
     def get_results(self) :
         return None
         
