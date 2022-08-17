@@ -1,27 +1,5 @@
-from jupyter_dash import JupyterDash
-import plotly.graph_objects as go
 from dash import Dash, dcc, html
-import plotly.express as px
-import pandas as pd
-import geopandas as gpd
-import numpy as np
-
 from core.backend_new import *
-
-
-### GLOBAL VARIABLES ###
-
-# Instantiate Dash application.
-app = Dash(__name__)
-
-
-# By default, Dash applies validation to your callbacks, which performs checks such as validating the types of callback arguments and checking to see whether the specified Input and Output components actually have the specified properties. For full validation, all components within your callback must exist in the layout when your app starts, and you will see an error if they do not.
-# However, in the case of more complex Dash apps that involve dynamic modification of the layout (such as multi-page apps), not every component appearing in your callbacks will be included in the initial layout. You can remove this restriction by disabling callback validation like this:
-app.config.suppress_callback_exceptions = True
-
-
-# Object representing the pipeline to be executed.
-pipeline = Pipeline(app)
 
 
 # NOTA: 'ALL' e 'MATCH' fanno parte delle funzionalita' di pattern-matching associati alle callback.
@@ -186,6 +164,21 @@ def main() :
         'backgroundColor': '#131313',
         'color': '#5d5d5d'
     }
+    
+    
+    # Instantiate the Dash application.
+    app = Dash(__name__)
+
+
+    # By default, Dash applies validation to your callbacks, which performs checks such as validating the types of callback arguments and checking to see whether the specified Input and Output components actually have the specified properties. For full validation, all components within your callback must exist in the layout when your app starts, and you will see an error if they do not.
+    # However, in the case of more complex Dash apps that involve dynamic modification of the layout (such as multi-page apps), not every component appearing in your callbacks will be included in the initial layout. You can remove this restriction by disabling callback validation like this:
+    app.config.suppress_callback_exceptions = True
+
+
+    # Object representing the pipeline to be executed.
+    # TODO: separate the definition of the pipeline (i.e., the modules it must execute) from the definition of the class.
+    #       We can do so by passing the list of modules here in the main.
+    pipeline = Pipeline(app)
 
 
     ### Here we set up the tabs, which depend on the subclasses found in demo. ###
@@ -217,14 +210,13 @@ def main() :
 
 
     ### Here we set up the individual components of the web interface ###
-    
+    # TODO: we can move this code in the Pipeline class.
     title = html.Div(id='title',
-                     children = [
-                        html.Img(src='assets/MAT-Builder-logo.png',
-                                 style={'width':'25%','height':'5%','float':'left'}),
-                        html.Img(src='assets/loghi_mobidatalab.png',
-                                 style={'width':'35%','height':'15%','float':'right'})],
-                     style={'display':'inline-block','background-color':'white','padding':'1%'})
+                     children = [html.Img(src='assets/MAT-Builder-logo.png', 
+                                          style={'width':'25%','height':'5%','float':'left'}),
+                                 html.Img(src='assets/loghi_mobidatalab.png', 
+                                          style={'width':'35%','height':'15%','float':'right'})],
+                     style = {'display':'inline-block','background-color':'white','padding':'1%'})
          
          
     input_area = html.Div(id='inputs',
@@ -238,16 +230,16 @@ def main() :
                           
                           
     output_area = html.Div(style = {'float':'right','width':'50%'},
-                           children = html.Div(id='outputs'))
+                           children = [html.Br(),
+                                       html.Div(id='outputs')])
     
     
     
     # ### Here we arrange the layout of the individual components within the overall web interface ###
     app.layout = html.Div([title,
-                           html.Br(),
-                           html.Br(),
                            input_area,
                            output_area])
+
 
     app.run_server(debug=True)
 

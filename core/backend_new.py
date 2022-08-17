@@ -1402,11 +1402,29 @@ class stop_move_enrichment(ModuleInterface):
 
         outputs = []
 
+
         if user is None:
             return None
 
+
+        # Display stops information...
         num_systematic = self.get_systematic(user)
         num_occasional = self.get_occasional(user)
+
+        outputs.append(html.H6(children='Aspects concerning the stops:',
+                               style={'font-weight':'bold'}))
+        outputs.append(html.Span(children='Number of systematic stops: ',
+                                 style={'font-weight':'bold'}))
+        outputs.append(html.Span(children=str(num_systematic)+' \t'))
+        outputs.append(html.Br())
+        outputs.append(html.Span(children='Number of occasional stops: ',
+                                 style={'font-weight':'bold'}))
+        outputs.append(html.Span(children=str(num_occasional)))
+        outputs.append(html.Br())
+        outputs.append(html.Br())
+        
+        
+        # Display transportation means information...
         duration_transport = self.get_transport_duration(user)
         duration_walk = duration_transport[duration_transport['label']==0]['datetime'].astype(str).values
         duration_bike = duration_transport[duration_transport['label']==1]['datetime'].astype(str).values
@@ -1450,42 +1468,43 @@ class stop_move_enrichment(ModuleInterface):
             duration_taxi = 0
         else:
             duration_taxi = duration_taxi[0]
-
-        tweets = self.get_tweets(user)
-
-        outputs.append(html.H6(children='Stops info:',style={'font-weight':'bold'}))
-        outputs.append(html.Span(children='N. systematic stops:',style={'text-decoration':'underline'}))
-        outputs.append(html.Span(children=str(num_systematic)+' \t'))
-        outputs.append(html.Br())
-        outputs.append(html.Span(children='N. occasional stops:',style={'text-decoration':'underline'}))
-        outputs.append(html.Span(children=str(num_occasional)))
-        
-        outputs.append(html.H6(children='Transport mean info (duration):',style={'font-weigth':'bold'}))
-        outputs.append(html.Span(children='Walk:',style={'text-decoration':'underline'}))    
+            
+        outputs.append(html.H6(children='Aspects concerning the moves (transportation means and duration):',
+                               style={'font-weight':'bold'}))
+        outputs.append(html.Span(children='Walk: ',style={'font-weight':'bold'}))    
         outputs.append(html.Span(children=str(duration_walk)+' \t'))
-        outputs.append(html.Span(children='Bike:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Br())
+        outputs.append(html.Span(children='Bike: ',style={'font-weight':'bold'}))    
         outputs.append(html.Span(children=str(duration_bike)+' \t'))
-        outputs.append(html.Span(children='Bus:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Br())
+        outputs.append(html.Span(children='Bus: ',style={'font-weight':'bold'}))    
         outputs.append(html.Span(children=str(duration_bus)+' \t'))
         outputs.append(html.Br())
-        outputs.append(html.Span(children='Car:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Span(children='Car: ',style={'font-weight':'bold'}))    
         outputs.append(html.Span(children=str(duration_car)+' \t'))
-        outputs.append(html.Span(children='Train:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Br())
+        outputs.append(html.Span(children='Train: ',style={'font-weight':'bold'}))    
         outputs.append(html.Span(children=str(duration_train)+' \t'))
-        outputs.append(html.Span(children='Subway:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Br())
+        outputs.append(html.Span(children='Subway: ',style={'font-weight':'bold'}))    
         outputs.append(html.Span(children=str(duration_subway)+' \t'))
-        outputs.append(html.Span(children='Taxi:',style={'text-decoration':'underline'}))    
+        outputs.append(html.Br())
+        outputs.append(html.Span(children='Taxi: ',style={'font-weight':'bold'}))    
         outputs.append(html.Span(children=str(duration_taxi)+' \t'))
         outputs.append(html.Br())
+        outputs.append(html.Br())
 
+
+        # Display social media information...
+        tweets = self.get_tweets(user)
         if len(tweets) != 0:
-            outputs.append(html.H6(children='Tweets:',style={'font-weigth':'bold'}))
-            for t in tweets:
-                outputs.append(html.Span(children='Tweet text:',style={'text-decoration':'underline'}))
-                outputs.append(html.Span(children='\"'+str(t)+'\"'))
-                outputs.append(html.Br())
+        
+            outputs.append(html.H6(children='Aspects concerning social media:',style={'font-weight':'bold'}))
+            children_list = []
+            for t in tweets: children_list.append(html.Li(children='Tweet text: ' + str(t)))
+            outputs.append(html.Ul(children = children_list))
+            outputs.append(html.Br())
 
-        self.get_transport_duration(user)
 
         return outputs        
            
