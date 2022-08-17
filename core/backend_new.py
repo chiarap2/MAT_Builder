@@ -2,6 +2,7 @@ import geopandas as gpd
 import shapely
 import pandas as pd
 import numpy as np
+import math
 
 import skmob
 from skmob.preprocessing import filtering, detection, compression
@@ -677,13 +678,22 @@ class stop_move_enrichment(ModuleInterface):
         )(self.show_trajectories)
         
         
-        # This is the callback in charge of showing information concerning a trajectory.
+        # This is the callback in charge of showing summary information concerning a trajectory.
         self.app.callback\
         (
             Output(component_id = 'user_info-' + self.id_class, component_property = 'children'),
             Input(component_id = 'user_sel-' + self.id_class, component_property = 'value')
         )(self.info_user)
-            
+        
+        
+        # This is the callback in charge of plotting a trajectory.
+        self.app.callback\
+        (
+            Output(component_id = 'traj_display-' + self.id_class, component_property = 'children'),
+            State(component_id = 'user_sel-' + self.id_class, component_property='value'),
+            Input(component_id = 'traj_sel-' + self.id_class, component_property='value')
+        )(self.display_user_trajectory)
+        
     
     
     ### CLASS PUBLIC METHODS ###
@@ -1393,7 +1403,9 @@ class stop_move_enrichment(ModuleInterface):
             options.extend([html.P(children = 'Trajectories:'),
                            dcc.Dropdown(id = 'traj_sel-' + self.id_class,
                                         options = list_traj,
-                                        style={'color':'#333'})])
+                                        style={'color':'#333'}),
+                           html.Br(),
+                           html.Div(id = 'traj_display-' + self.id_class)])
 
         return options
 
@@ -1506,7 +1518,106 @@ class stop_move_enrichment(ModuleInterface):
             outputs.append(html.Br())
 
 
-        return outputs        
+        return outputs      
+
+
+    def display_user_trajectory(self, user, traj):
+
+        # Dictionary holding the transportation modes mapping. 
+        transport = { 
+            0: 'walk',
+            1: 'bike',
+            2: 'bus',
+            3: 'car',
+            4: 'subway',
+            5: 'train',
+            6: 'taxi'}
+
+        if user is None or traj is None:
+            return None
+
+        # Get the dataframes of interest from the enrichment class.
+        mats_moves, mats_stops, mats_systematic = self.get_mats(user, traj)
+
+
+        ### Preparing the information concerning the moves ###
+
+        #print(mats_moves['label'].unique())
+        mats_moves['label'] = mats_moves['label'].map(transport)
+        fig = px.line_mapbox(mats_moves,
+                             lat="lat",
+                             lon="lng",
+                             color="tid",
+                             hover_data=["label","temperature","w_conditions"],
+                             labels={"label":"transportation mean", "w_conditions":"weather condition"})
+        
+        
+        
+        ### Prepare the information concerning the occasional stops... ###
+        mats_stops.drop_duplicates(subset=['category','distance'], inplace = True)
+        
+        mats_stops['distance'] = round(mats_stops['distance'], 2)
+        mats_stops['description'] = '</br><b>PoI category</b>: ' +\
+                                    mats_stops['category'] +\
+                                    ' <b>Distance</b>: ' +\
+                                    mats_stops['distance'].astype(str)
+        
+        limit_pois = 10
+        gb_occ_stops = mats_stops.groupby('stop_id')
+        matched_pois = []
+        for key, item in gb_occ_stops:
+            
+            tmp = item['description']
+            size = tmp.shape[0]
+            limit = min(size, limit_pois)
+            
+            stringa = ''
+            if ~item['distance'].isna().all() :
+                tmp = tmp.head(limit)
+                stringa = tmp.str.cat(sep = "")
+                if size > limit_pois : 
+                    stringa = stringa + f"</br>(...and other {size - limit_pois} POIs)"
+            else :          
+                stringa = 'No POI could be associated with this occasional stop!'
+                
+            matched_pois.append(stringa)
+
+
+        fig.add_trace(go.Scattermapbox(mode = "markers", name = 'occasional stops',
+                                       lon = mats_stops.lng.unique(),
+                                       lat = mats_stops.lat.unique(),
+                                       text = matched_pois,
+                                       hoverinfo = 'text',
+                                       marker = {'size': 10, 'color': '#F14C2B'}))
+
+
+
+        ### Preparing the information concerning the systematic stops ###
+
+        mats_systematic['home'] = round((mats_systematic['home']*100),2).astype(str)
+        mats_systematic['work'] = round((mats_systematic['work']*100),2).astype(str)
+        mats_systematic['other'] = round((mats_systematic['other']*100),2).astype(str)
+        mats_systematic['frequency'] = mats_systematic['frequency'].astype(str)
+
+        mats_systematic['description'] = '<b> Home </b>: ' + mats_systematic['home'] + '% </br></br> <b> Work </b>: ' + mats_systematic['work'] + '% </br> <b> Other </b>: ' + mats_systematic['other'] + '% </br> <b> Frequency </b>: ' + mats_systematic['frequency']
+        systematic_desc = list(mats_systematic['description'])
+
+        fig.add_trace(go.Scattermapbox(mode = "markers", name = 'systematic stops',
+                                       lon = mats_systematic.lng,
+                                       lat = mats_systematic.lat,
+                                       text = systematic_desc,
+                                       hoverinfo = 'text',
+                                       marker = {'size': 10,'color': '#2BD98C'}))
+        
+        
+        
+        ### Setting the last parameters... ###
+        
+        fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=12,
+                          margin={"r":0,"t":0,"l":0,"b":0})
+        fig.update_traces(line=dict(color='#2B37F1',width=2))
+
+        return dcc.Graph(figure=fig)        
            
            
     def get_results(self) :
