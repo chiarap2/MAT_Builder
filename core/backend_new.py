@@ -33,6 +33,8 @@ class Pipeline():
     Class `Pipeline` models an entity that contains a list of modules that should be ran sequentially -- for instance,  `preprocessing`, `segmentation`, and `enrichment`.
     '''
 
+    ### CLASS CONSTRUCTOR ###
+
     def __init__(self, app):
         '''
         The constructor of this class defines the modules that will be applied, and the order of application.
@@ -57,7 +59,14 @@ class Pipeline():
                 prev.register_next_module(v)
                 v.register_prev_module(prev)
                 prev = v
-
+          
+          
+        # Set up the CSS styles.
+        self._setup_css_styles()
+        
+        # Set up the web interface layout.
+        self._setup_app_layout()
+        
         
         ### Here we register all the callbacks that must be managed by the pipeline instance ###
         self.app.callback \
@@ -67,6 +76,107 @@ class Pipeline():
             Input(component_id = 'tabs-inline', component_property='value')
         )(self.setup_input_output_areas)
     
+    
+    
+    ### PROTECTED METHODS ###
+    
+    def _setup_css_styles(self) :
+    
+    # CSS style parameters declarations/definitions #
+
+        # Here we define the styles to be applied to the tabs...
+        self.tabs_styles = \
+        {
+            'height': '44px'
+        }
+
+        self.tab_style = \
+        {
+            'borderBottom': '1px solid #ddc738',
+            'borderLeft': '0px',
+            'borderRight': '0px',
+            'borderTop': '0px',
+            'padding': '6px',
+            'fontWeight': 'bold',
+            'backgroundColor': '#131313'
+        }
+
+        self.tab_selected_style = \
+        {
+            'borderTop': '1px solid',
+            'borderLeft': '1px solid',
+            'borderRight': '1px solid',
+            'borderBottom': '0px',
+            'borderColor': '#ddc738',
+            'color': '#ddc738',
+            'backgroundColor': '#131313',
+            'padding': '6px'
+        }
+
+        self.disabled_style = \
+        {
+            'borderBottom': '1px solid #ddc738',
+            'borderLeft': '0px',
+            'borderRight': '0px',
+            'borderTop': '0px',
+            'padding': '6px',
+            'fontWeight': 'bold',
+            'backgroundColor': '#131313',
+            'color': '#5d5d5d'
+        }
+    
+    
+    def _setup_app_layout(self) :
+    
+        ### Here we set up the tabs, which depend on the subclasses found in demo. ###
+        ### These tabs are added to the list children_tabs, which will be then inserted into the web interface. ###
+        children_tabs = []
+        for id, instance in self.pipeline.items() :
+            
+            print(f"Creating tab for: {id} -- {instance}")
+            children_tabs.append(dcc.Tab(id=id,
+                                         label = id,
+                                         value = id,
+                                         style = self.tab_style,
+                                         selected_style = self.tab_selected_style,
+                                         disabled_style = self.disabled_style))
+
+
+
+        ### Here we set up the individual components of the web interface ###
+        # TODO: we can move this code in the Pipeline class.
+        title = html.Div(id='title',
+                         children = [html.Img(src='assets/MAT-Builder-logo.png', 
+                                              style={'width':'25%','height':'5%','float':'left'}),
+                                     html.Img(src='assets/loghi_mobidatalab.png', 
+                                              style={'width':'35%','height':'15%','float':'right'})],
+                         style = {'display':'inline-block','background-color':'white','padding':'1%'})
+             
+             
+        input_area = html.Div(id='inputs',
+                              children=[dcc.Tabs(id="tabs-inline", 
+                                                 children = children_tabs, 
+                                                 style = self.tabs_styles,
+                                                 value = 'None'),
+                                        html.Br(),
+                                        html.Div(id='display')],
+                              style={'float':'left','width':'40%'})
+                              
+                              
+        output_area = html.Div(style = {'float':'right','width':'50%'},
+                               children = [html.Br(),
+                                           html.Div(id='outputs')])
+        
+        
+        
+        # ### Here we arrange the layout of the individual components within the overall web interface ###
+        self.app.layout = html.Div([title,
+                                    input_area,
+                                    output_area])
+    
+    
+    
+    ### PUBLIC METHODS ###
     
     def setup_input_output_areas(self, name_module):
 
@@ -95,6 +205,7 @@ class Pipeline():
     
     
     def get_modules(self) : return self.pipeline
+
 
 
 class ModuleInterface(ABC) :
@@ -235,6 +346,12 @@ class preprocessing1(ModuleInterface):
         if button_state is not None :
         
             print(f"Eseguo if in get_input_and_execute del modulo {self.id_class}! {button_state}")
+            
+            # Check input.
+            if (speed is None) or (n_points is None):
+                outputs.append(html.H6(children='Error: some input values were not provided!'))
+                return None, outputs
+
 
             # Salva nei campi dell'istanza l'input passato 
             self.path = path
@@ -258,6 +375,7 @@ class preprocessing1(ModuleInterface):
                 
                 # Save the results of the preprocessing to a file.
                 self.output()
+        
         
         return None, outputs
         
@@ -428,14 +546,12 @@ class stops_and_moves(ModuleInterface):
         if button_state is not None :
         
             print(f"Eseguo if in get_input_and_execute del modulo {self.id_class}! {button_state}")
-
-            # Salva nei campi dell'istanza l'input passato 
-            self.duration = duration
-            self.radius = radius
             
-            self.stops = None
-            self.moves = None
-            
+            # Check input.
+            if (duration is None) or (radius is None):
+                outputs.append(html.H6(children='Error: some input values were not provided!'))
+                return None, outputs
+                
             if path is not None :
                 try :
                     self.preprocessed_trajs = pd.read_parquet(path)
@@ -443,7 +559,13 @@ class stops_and_moves(ModuleInterface):
                     outputs.append(html.H5("No file with the preprocessed trajectories found! Please, provide one!"))
                     return None, outputs
             else : self.preprocessed_trajs = self.prev_module.get_results()
-            
+                
+
+            # Salva nei campi dell'istanza l'input passato 
+            self.duration = duration
+            self.radius = radius
+            self.stops = None
+            self.moves = None
             
             # Esegui il codice core dell'istanza.
             self.core()
