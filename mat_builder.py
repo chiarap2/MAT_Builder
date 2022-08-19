@@ -1,5 +1,10 @@
 from dash import Dash
-from core.backend_new import Pipeline, Preprocessing, Segmentation, Enrichment
+
+from core.Preprocessing import Preprocessing
+from core.Segmentation import Segmentation
+from core.Enrichment import Enrichment
+
+from core.Pipeline import Pipeline
 
 
 ### MAIN application ###
