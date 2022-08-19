@@ -1,5 +1,5 @@
 from dash import Dash
-from core.backend_new import Pipeline
+from core.backend_new import Pipeline, Preprocessing, Segmentation, Enrichment
 
 
 ### MAIN application ###
@@ -18,7 +18,8 @@ def main() :
     # Object representing the pipeline to be executed.
     # TODO: separate the definition of the pipeline (i.e., the modules it must execute) from the definition of the class.
     #       We can do so by passing the list of modules here in the main.
-    pipeline = Pipeline(app)
+    modules_pipeline = [Preprocessing, Segmentation, Enrichment]
+    pipeline = Pipeline(app, modules_pipeline)
 
 
     app.run_server(debug=True)

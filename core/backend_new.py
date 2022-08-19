@@ -13,7 +13,6 @@ import pickle
 from sklearn.preprocessing import StandardScaler
 import geohash2
 import osmnx as ox
-from core.RDF_builder import RDFBuilder
 
 from dash import dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
@@ -23,6 +22,8 @@ import plotly.graph_objects as go
 
 from abc import ABC, abstractmethod
 from collections import OrderedDict
+
+from core.RDF_builder import RDFBuilder
 
 shapely.speedups.disable()       
         
@@ -35,7 +36,7 @@ class Pipeline():
 
     ### CLASS CONSTRUCTOR ###
 
-    def __init__(self, app):
+    def __init__(self, app, list_modules):
         '''
         The constructor of this class defines the modules that will be applied, and the order of application.
         '''
@@ -45,9 +46,9 @@ class Pipeline():
         
         # Define the modules of the pipeline and the order used to execute them.
         self.pipeline = OrderedDict()
-        self.pipeline[preprocessing1.id_class] = preprocessing1(app, self)
-        self.pipeline[stops_and_moves.id_class] = stops_and_moves(app, self)
-        self.pipeline[stop_move_enrichment.id_class] = stop_move_enrichment(app, self)
+        
+        # Instantiate the modules to be used in the pipeline.
+        for module in list_modules : self.pipeline[module.id_class] = module(app, self)
         
         
         # Make each module aware of the identifier of the module that comes next.
@@ -202,9 +203,6 @@ class Pipeline():
         
         
         return inputs, output_area
-    
-    
-    def get_modules(self) : return self.pipeline
 
 
 
@@ -250,7 +248,7 @@ class ModuleInterface(ABC) :
 
 
 
-class preprocessing1(ModuleInterface):
+class Preprocessing(ModuleInterface):
     '''
     `preprocessing1` is a subclass of `Preprocessing` to preprocess trajectories and allows users to:
     1) remove trajectories with a few number of points
@@ -431,7 +429,7 @@ class preprocessing1(ModuleInterface):
 
 
 
-class stops_and_moves(ModuleInterface):
+class Segmentation(ModuleInterface):
     '''
     `stops_and_moves` models a class which instances segment trajectories according to the stop and move paradigm.
     '''
@@ -746,7 +744,7 @@ class stops_and_moves(ModuleInterface):
 
 
 
-class stop_move_enrichment(ModuleInterface):
+class Enrichment(ModuleInterface):
     '''
     `stop_move_enrichment` is a class that models the semantic enrichment module. This class allows to:
     1) enrich moves with transportation mean
@@ -875,8 +873,9 @@ class stop_move_enrichment(ModuleInterface):
                                                           {"label": "shop", "value": "shop"},
                                                           {"label": "tourism", "value": "tourism"},
                                                           {"label":"no enrichment","value":"no"}],
-                                               value = "amenity",
-                                               style={'color':'#333'}))
+                                               value = ["amenity"],
+                                               multi = True,
+                                               style = {'color':'#333'}))
                                                
             web_components.append(html.Span(children = "... or upload your file containing a POI dataset (leave 'no' if no file is uploaded) "))
             web_components.append(dcc.Input(id = self.id_class + '-poi_file',
