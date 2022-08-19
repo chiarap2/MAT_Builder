@@ -216,7 +216,7 @@ class Enrichment(ModuleInterface):
         outputs = []        
         if button_state is not None :
         
-            print(f"Esecuzione get_input_and_execute del modulo {self.id_class}: {button_state}!")
+            print(f"Esecuzione get_input_and_execute del modulo {self.id_class}! {button_state}")
         
             ### Reset the state of the static variables...
             self.stops = pd.DataFrame()

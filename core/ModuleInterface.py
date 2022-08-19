@@ -2,18 +2,10 @@ from abc import ABC, abstractmethod
 
 
 class ModuleInterface(ABC) :
-
-    ### INTERFACE CONSTRUCTOR ###
-    
-    @abstractmethod
-    def __init__(self, app, pipeline) :
-        pass
-        
-        
-        
+ 
     ### INTERFACE METHODS ###
     
-    @abstractmethod   
+    @abstractmethod
     def register_prev_module(self, prev_module) :
         pass
     
@@ -23,10 +15,6 @@ class ModuleInterface(ABC) :
         
     @abstractmethod
     def get_input_and_execute(self) :
-        pass
-       
-    @abstractmethod
-    def core(self) :
         pass
         
     @abstractmethod
