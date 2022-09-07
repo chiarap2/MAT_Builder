@@ -24,15 +24,15 @@ enrichment processes.
 To use ```MAT-Builder``` with the graphical interface, run ```mat_builder.py```
 
 
-## **Demonstrator installation procedure**
+## **MAT-Builder installation procedure**
 
-The semantic enrichment demonstrator consists of a set of Python scripts (plus a set of additional assets) which make exclusively use of open-source libraries. In the following we illustrate the installation procedure needed to execute the semantic enrichment demonstrator. The installation procedure has been tested on Windows 10, Ubuntu (version > 20.x), and macOS.
+MAT-Builder consists of a set of Python scripts (plus a set of additional assets) which make exclusively use of open-source libraries. In the following we illustrate the installation procedure needed to execute MAT-Builder. The installation procedure has been tested on Windows 10, Ubuntu (version > 20.x), and macOS.
 
 1. The first step requires installing a Python distribution that includes a package manager. To this end we recommend installing [Anaconda](https://www.anaconda.com/products/distribution), a cross-platform Python package manager and environment-management system which satisfies the above criteria.
 
-2. Once Anaconda has been installed, the next step requires to set up a virtual environment containing the open-source libraries that our demonstrator requires during its execution. To this end we provide a YAML file, ```mat_builder.yml```, that can be used to set the environment up. More precisely, the user must first open an Anaconda powershell prompt. Then, the user must type in the prompt ```conda env create -f path\mat_builder.yml -n name_environment```, where ```path``` represents the path in which ```mat_builder.yml``` is located, while ```name_environment``` represents the name the user wants to assign to the virtual environment.
+2. Once Anaconda has been installed, the next step requires to set up a virtual environment containing the open-source libraries that MAT-Builder requires during its execution. To this end we provide a YAML file, ```mat_builder.yml```, that can be used to set the environment up. More precisely, the user must first open an Anaconda powershell prompt. Then, the user must type in the prompt ```conda env create -f path\mat_builder.yml -n name_environment```, where ```path``` represents the path in which ```mat_builder.yml``` is located, while ```name_environment``` represents the name the user wants to assign to the virtual environment.
 
-3.	Once the environment has been created, the user must activate it in the prompt by typing ```conda activate name_environment```. The user is now able to execute and use the demonstrator.
+3.	Once the environment has been created, the user must activate it in the prompt by typing ```conda activate name_environment```. The user will be now able to execute and use MAT-Builder.
 
 
 
