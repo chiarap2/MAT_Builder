@@ -24,7 +24,7 @@ enrichment processes.
 To use ```MAT-Builder``` with the graphical interface, run ```mat_builder.py```
 
 
-## **MAT-Builder installation procedure**
+## **Installation procedure**
 
 MAT-Builder consists of a set of Python scripts (plus a set of additional assets) which make exclusively use of open-source libraries. In the following we illustrate the installation procedure needed to execute MAT-Builder. The installation procedure has been tested on Windows 10, Ubuntu (version > 20.x), and macOS.
 
