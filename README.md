@@ -39,14 +39,14 @@ MAT-Builder consists of a set of Python scripts (plus a set of additional assets
 ### **Usage**
 ---
 
-To use ```MAT-Builder``` your trajectory dataset must have the following data:
+To use ```MAT-Builder``` the raw trajectory dataset must have the following data:
 - trajectory ID
 - user ID
 - latitude
 - longitude
 - timestamp
 
-``MAT-Builder`` is organized in module. Each module corresponds to a step of the ***semantic enrichment process*** (i.e., preprocessing, segmentation, and enrichment). Users can customize the entire process. 
+``MAT-Builder`` is organized in modules. Each module corresponds to a step of the ***semantic enrichment process*** (i.e., preprocessing, segmentation, and enrichment). Users can of course customize the entire process. 
 
 The ``preprocessing`` module allows users to:
 - remove outliers
