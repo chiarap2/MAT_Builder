@@ -106,12 +106,11 @@ class Enrichment(ModuleInterface):
         web_components = []
         
         
-        if(self.prev_module.get_results() is None) :
+        if self.prev_module.get_results() is None :
             web_components.append(html.H5(children = f"No data available from the {self.prev_module.id_class} module!"))
             web_components.append(html.H5(children = f"Please, execute it first!"))
         
         else :
-        
             # Input move enrichment with transportation means 
             web_components.append(html.H5(children = "Move enrichment"))
             web_components.append(html.Span(children = "Enrich moves with transportation means?"))
@@ -150,7 +149,7 @@ class Enrichment(ModuleInterface):
                                                
             web_components.append(html.Span(children = "... or upload your file containing a POI dataset (leave 'no' if no file is uploaded) "))
             web_components.append(dcc.Input(id = self.id_class + '-poi_file',
-                                            value = "no",
+                                            value = "./data/Rome/poi/pois.parquet",
                                             type = 'text',
                                             placeholder = 'Path to the POI dataset...'))   
             web_components.append(html.Br())
@@ -169,7 +168,7 @@ class Enrichment(ModuleInterface):
             web_components.append(html.H5(children = "Enrich trajectory users with social media posts: "))
             web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done: "))
             web_components.append(dcc.Input(id = self.id_class + '-social_en',
-                                            value = 'no',
+                                            value = './data/tweets/tweets_rome.parquet',
                                             type = 'text',
                                             placeholder = 'Path to file containing the posts...'))
             web_components.append(html.Br())
@@ -180,7 +179,7 @@ class Enrichment(ModuleInterface):
             web_components.append(html.H5(children = "Enrich trajectory users with weather information: "))
             web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done):"))
             web_components.append(dcc.Input(id = self.id_class + '-weather_en',
-                                            value = 'no',
+                                            value = './data/weather/weather_conditions.parquet',
                                             type = 'text',
                                             placeholder = 'Path to file containing weather information...'))
             web_components.append(html.Br())
