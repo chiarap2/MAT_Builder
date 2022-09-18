@@ -81,7 +81,7 @@ class Preprocessing(ModuleInterface):
         web_components.append(html.Br())
         web_components.append(html.Br())
         
-        web_components.append(html.Span(children = "Minimum number of samples a trajectory must have: "))
+        web_components.append(html.Span(children = "Minimum number of samples: "))
         web_components.append(dcc.Input(id = self.id_class + '-n_points',
                                         value = 3000,
                                         type = 'number',

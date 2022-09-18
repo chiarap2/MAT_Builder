@@ -113,7 +113,7 @@ class Enrichment(ModuleInterface):
         else :
             # Input move enrichment with transportation means 
             web_components.append(html.H5(children = "Move enrichment"))
-            web_components.append(html.Span(children = "Enrich moves with transportation means?"))
+            web_components.append(html.Span(children = "Add transportation means to moves?"))
             web_components.append(dcc.Dropdown(id = self.id_class + '-move_en',
                                                options = [{"label": "yes", "value": "yes"},
                                                           {"label":"no","value":"no"}],
@@ -123,7 +123,7 @@ class Enrichment(ModuleInterface):
             
             
             # Input stop enrichment with POIs 
-            web_components.append(html.H5(children = "Occasional stop enrichment with POIs"))
+            web_components.append(html.H5(children = "Add POIs to occasional stops"))
             web_components.append(html.Span(children = "Insert the name of the city (to download PoIs from OpenStreetMap): "))
             web_components.append(dcc.Input(id = self.id_class + '-place',
                                             value = "Rome, Italy",
@@ -176,7 +176,7 @@ class Enrichment(ModuleInterface):
             
             
             # Input weather information enrichment
-            web_components.append(html.H5(children = "Enrich trajectory users with weather information: "))
+            web_components.append(html.H5(children = "Enrich trajectories with weather information: "))
             web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done):"))
             web_components.append(dcc.Input(id = self.id_class + '-weather_en',
                                             value = './data/weather/weather_conditions.parquet',
