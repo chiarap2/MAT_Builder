@@ -257,7 +257,7 @@ class RDFBuilder() :
                     self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
                     self.g.add((poi, self.STEP.hasOSMValue, Literal(str(osm))))
                     self.g.add((poi, self.STEP.hasCategory, Literal(str(cat))))
-                    if not pd.isna(wd): self.g.add((poi, self.STEP.hasWDValue, URIRef("www.wikidata.org/wiki/" + str(wd))))
+                    if not pd.isna(wd): self.g.add((poi, self.STEP.hasWDValue, URIRef("http://www.wikidata.org/wiki/" + str(wd))))
                     self.g.add((stop_desc, self.STEP.hasPOI, poi))
 
             # Spatiotemporal extent.
