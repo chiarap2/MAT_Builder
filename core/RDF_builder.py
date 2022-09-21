@@ -200,7 +200,7 @@ class RDFBuilder() :
         df_occasional_stops['leaving_datetime'] = pd.to_datetime(df_occasional_stops['leaving_datetime'], utc = True)
         #print(df_occasional_stops.info())
 
-        view_stop_data = df_occasional_stops[['stop_id', 'uid', 'tid', 'datetime', 'leaving_datetime', 'osmid', 'wikidata', 'category']]
+        view_stop_data = df_occasional_stops[['stop_id', 'uid', 'tid', 'datetime', 'leaving_datetime', 'osmid', 'element_type', 'name', 'wikidata', 'category']]
         #print(view_stop_data)
         print(f"Number of occasional stops: {view_stop_data['stop_id'].nunique()}")
         
@@ -217,7 +217,7 @@ class RDFBuilder() :
             tid = group['tid'].iloc[0]
             start = group['datetime'].iloc[0]
             end = group['leaving_datetime'].iloc[0]
-            list_POI = group[['osmid', 'wikidata', 'category']]
+            list_POI = group[['osmid', 'element_type', 'name', 'wikidata', 'category']]
 
             # print(f"{key} -- {uid} -- {tid} -- {start} -- {end}")
             # print(list_POI)
@@ -251,11 +251,13 @@ class RDFBuilder() :
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
 
             # Link this Occasional Stop with all the POIs that may be associated with it.
-            for osm, wd, cat in zip(list_POI['osmid'], list_POI['wikidata'], list_POI['category']) :
+            for osm, type, name, wd, cat in zip(list_POI['osmid'], list_POI['element_type'], list_POI['name'], list_POI['wikidata'], list_POI['category']) :
                 if not pd.isna(osm) :
                     poi = URIRef('http://example.org/poi_' + str(osm) + '/')
                     self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
                     self.g.add((poi, self.STEP.hasOSMValue, Literal(str(osm))))
+                    self.g.add((poi, self.STEP.hasOSMName, Literal(str(name))))
+                    self.g.add((poi, self.STEP.hasOSMType, Literal(str(type))))
                     self.g.add((poi, self.STEP.hasCategory, Literal(str(cat))))
                     if not pd.isna(wd): self.g.add((poi, self.STEP.hasWDValue, URIRef("http://www.wikidata.org/entity/" + str(wd))))
                     self.g.add((stop_desc, self.STEP.hasPOI, poi))

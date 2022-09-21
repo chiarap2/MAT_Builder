@@ -534,11 +534,16 @@ class Enrichment(ModuleInterface):
             
             # duplicate geometry column because we loose it during the sjoin_nearest
             s_df = semantic_df.copy()
+            
+            # Filter out the POIs without a name!
+            s_df = s_df.loc[s_df['name'].notna(), :]
+            
             s_df['geometry_'+suffix] = s_df['geometry']
+            s_df['element_type'] = s_df['element_type'].astype(str)
             s_df['osmid'] = s_df['osmid'].astype(str)
             
             #print(f"Stampa df stop occasionali: {stop.info()}")
-            #print(f"Stampa df POIs: {s_df.info()}")
+            print(f"Stampa df POIs: {s_df.info()}")
             
             # now we can use sjoin_nearest to obtain the results we want
             mats = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
@@ -572,7 +577,7 @@ class Enrichment(ModuleInterface):
                     # Immediately return the empty dataframe if it doesn't contain any suitable POI...
                     if poi.empty : 
                         print("No POI found...")
-                        new_cols = ['osmid', 'wikidata', 'geometry', 'category']
+                        new_cols = ['osmid', 'element_type', 'name', 'wikidata', 'geometry', 'category']
                         poi = poi.reindex(poi.columns.union(new_cols), axis=1)
                         return poi
                     
@@ -611,7 +616,7 @@ class Enrichment(ModuleInterface):
 
 
 
-        print("Executing occasional stop enrichment...")
+        print("Executing occasional stop augmentation with POIs...")
 
         occasional_stops = stops[~stops['stop_id'].isin(systematic_stops['stop_id'])]
         self.occasional = occasional_stops
@@ -636,7 +641,7 @@ class Enrichment(ModuleInterface):
 
         # Calling functions internal to this method...
         o_stops = preparing_stops(occasional_stops, self.max_distance)    
-        mat = semantic_enrichment(o_stops, gdf_[['osmid','wikidata','geometry','category']], 'poi')
+        mat = semantic_enrichment(o_stops, gdf_[['element_type','osmid','name','wikidata','geometry','category']], 'poi')
 
         ######## PROVA ###########
         #mat.set_index(['stop_id','lat','lng'],inplace=True)
