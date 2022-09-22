@@ -5,7 +5,7 @@ import math
 from rdflib import Graph, Namespace
 from rdflib import Literal, URIRef, BNode
 from rdflib import RDF
-from rdflib.namespace import FOAF, TIME, XSD
+from rdflib.namespace import FOAF, TIME, XSD, RDFS
 
 
 class RDFBuilder() :     
@@ -198,9 +198,9 @@ class RDFBuilder() :
         
         df_occasional_stops['datetime'] = pd.to_datetime(df_occasional_stops['datetime'], utc = True)
         df_occasional_stops['leaving_datetime'] = pd.to_datetime(df_occasional_stops['leaving_datetime'], utc = True)
-        #print(df_occasional_stops.info())
+        print(f"Dataframe of the occasional stops used to generate RDF triples: {df_occasional_stops.info()}")
 
-        view_stop_data = df_occasional_stops[['stop_id', 'uid', 'tid', 'datetime', 'leaving_datetime', 'osmid', 'element_type', 'name', 'wikidata', 'category']]
+        view_stop_data = df_occasional_stops[['stop_id', 'uid', 'tid', 'datetime', 'leaving_datetime', 'osmid', 'element_type', 'name', 'wikidata', 'category', 'distance']]
         #print(view_stop_data)
         print(f"Number of occasional stops: {view_stop_data['stop_id'].nunique()}")
         
@@ -217,7 +217,7 @@ class RDFBuilder() :
             tid = group['tid'].iloc[0]
             start = group['datetime'].iloc[0]
             end = group['leaving_datetime'].iloc[0]
-            list_POI = group[['osmid', 'element_type', 'name', 'wikidata', 'category']]
+            list_POI = group[['osmid', 'element_type', 'name', 'wikidata', 'category', 'distance']]
 
             # print(f"{key} -- {uid} -- {tid} -- {start} -- {end}")
             # print(list_POI)
@@ -248,17 +248,18 @@ class RDFBuilder() :
             # Semantic description (Occasional Stop) node.
             stop_desc = URIRef(URI_episode + 'desc/')
             self.g.add((stop_desc, RDF.type, self.STEP.OccasionalStop))
+            self.g.add((stop_desc, RDFS.subClassOf, self.STEP.Stop))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
 
             # Link this Occasional Stop with all the POIs that may be associated with it.
-            for osm, type, name, wd, cat in zip(list_POI['osmid'], list_POI['element_type'], list_POI['name'], list_POI['wikidata'], list_POI['category']) :
+            for osm, type, name, wd, cat, distance in zip(list_POI['osmid'], list_POI['element_type'], list_POI['name'], list_POI['wikidata'], list_POI['category'], list_POI['distance']) :
                 if not pd.isna(osm) :
                     poi = URIRef('http://example.org/poi_' + str(osm) + '/')
                     self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
                     self.g.add((poi, self.STEP.hasOSMValue, Literal(str(osm))))
                     self.g.add((poi, self.STEP.hasOSMName, Literal(str(name))))
                     self.g.add((poi, self.STEP.hasOSMType, Literal(str(type))))
-                    self.g.add((poi, self.STEP.hasCategory, Literal(str(cat))))
+                    self.g.add((poi, self.STEP.hasOSMCategory, Literal(str(cat))))
                     if not pd.isna(wd): self.g.add((poi, self.STEP.hasWDValue, URIRef("http://www.wikidata.org/entity/" + str(wd))))
                     self.g.add((stop_desc, self.STEP.hasPOI, poi))
 
@@ -324,6 +325,7 @@ class RDFBuilder() :
             # Semantic description node.
             stop_desc = URIRef(URI_episode + 'desc/')
             self.g.add((stop_desc, RDF.type, self.dic_sys_stop[type_stop]))
+            self.g.add((stop_desc, RDFS.subClassOf, self.STEP.Stop))
             self.g.add((stop_desc, self.STEP.hasStartHour, Literal(int(start_hour))))
             self.g.add((stop_desc, self.STEP.hasEndHour, Literal(int(end_hour))))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
@@ -379,6 +381,7 @@ class RDFBuilder() :
             # Semantic description node.
             move_desc = URIRef(URI_episode + 'desc/')
             self.g.add((move_desc, RDF.type, self.dic_moves[type_move]))
+            self.g.add((move_desc, RDFS.subClassOf, self.STEP.Move))
             self.g.add((episode, self.STEP.hasSemanticDescription, move_desc))
 
             # Spatiotemporal extent.
