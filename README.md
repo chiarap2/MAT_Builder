@@ -23,17 +23,30 @@ enrichment processes.
 
 To use ```MAT-Builder``` with the graphical interface, run ```mat_builder.py```
 
+
+## **Installation procedure**
+
+MAT-Builder consists of a set of Python scripts (plus a set of additional assets) which make exclusively use of open-source libraries. In the following we illustrate the installation procedure needed to execute MAT-Builder. The installation procedure has been tested on Windows 10, Ubuntu (version > 20.x), and macOS.
+
+1. The first step requires installing a Python distribution that includes a package manager. To this end we recommend installing [Anaconda](https://www.anaconda.com/products/distribution), a cross-platform Python package manager and environment-management system which satisfies the above criteria.
+
+2. Once Anaconda has been installed, the next step requires to set up a virtual environment containing the open-source libraries that MAT-Builder requires during its execution. To this end we provide a YAML file, ```mat_builder.yml```, that can be used to set the environment up. More precisely, the user must first open an Anaconda powershell prompt. Then, the user must type in the prompt ```conda env create -f path\mat_builder.yml -n name_environment```, where ```path``` represents the path in which ```mat_builder.yml``` is located, while ```name_environment``` represents the name the user wants to assign to the virtual environment.
+
+3.	Once the environment has been created, the user must activate it in the prompt by typing ```conda activate name_environment```. The user will be now able to execute and use MAT-Builder.
+
+
+
 ### **Usage**
 ---
 
-To use ```MAT-Builder``` your trajectory dataset must have the following data:
+To use ```MAT-Builder``` the raw trajectory dataset must have the following data:
 - trajectory ID
 - user ID
 - latitude
 - longitude
 - timestamp
 
-``MAT-Builder`` is organized in module. Each module corresponds to a step of the ***semantic enrichment process*** (i.e., preprocessing, segmentation, and enrichment). Users can customize the entire process. 
+``MAT-Builder`` is organized in modules. Each module corresponds to a step of the ***semantic enrichment process*** (i.e., preprocessing, segmentation, and enrichment). Users can of course customize the entire process. 
 
 The ``preprocessing`` module allows users to:
 - remove outliers
@@ -50,13 +63,6 @@ The ```Enrichment``` module allows practioners to enrich different "entities" of
 - **Move enrichment**: users can enrich moves with the transportation mean
 - **Trajectory enrichment**: users can enrich the entire trajectory with the weather conditions that must have an ID, the Trajectory ID and the timestamp. 
 - **User enrichment** : users can enrich the 'users entity' with the social media posts. These data must have an ID, the user ID and the timestamp. If social media posts are geolocated, the enrichment could be based on spatial information (such as for occasional stops).
-
-
-### **Requirement**
----
-To run MAT-Builder install requirements.
-
-```pip install requirements.txt```
 
 ### **Citing us**
 ---
