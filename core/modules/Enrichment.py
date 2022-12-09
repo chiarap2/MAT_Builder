@@ -11,6 +11,7 @@ from sklearn.preprocessing import StandardScaler
 import geohash2
 import osmnx as ox
 
+from dash import Dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 
@@ -18,6 +19,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from core.ModuleInterface import ModuleInterface
+from core.Pipeline import Pipeline
 from core.RDF_builder import RDFBuilder
 
 
@@ -40,7 +42,7 @@ class Enrichment(ModuleInterface):
 
     ### CLASS CONSTRUCTOR ###
     
-    def __init__(self, app, pipeline) :
+    def __init__(self, app : Dash, pipeline : Pipeline) :
     
         self.app = app
         self.pipeline = pipeline
@@ -95,7 +97,7 @@ class Enrichment(ModuleInterface):
     
     ### CLASS PUBLIC METHODS ###
     
-    def register_prev_module(self, prev_module) :
+    def register_prev_module(self, prev_module : ModuleInterface) :
         
         print(f"Registering prev module {prev_module} in module {self.id_class}")
         self.prev_module = prev_module

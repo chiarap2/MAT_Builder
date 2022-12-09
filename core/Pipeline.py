@@ -1,5 +1,7 @@
 from collections import OrderedDict
+from . import ModuleInterface
 
+from dash import Dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 
@@ -13,7 +15,7 @@ class Pipeline():
 
     ### CLASS CONSTRUCTOR ###
 
-    def __init__(self, app, list_modules):
+    def __init__(self, app : Dash, list_modules : list[ModuleInterface]):
         '''
         The constructor of this class defines the modules that will be applied, and the order of application.
         '''
@@ -155,7 +157,7 @@ class Pipeline():
     
     ### PUBLIC METHODS ###
     
-    def setup_input_output_areas(self, name_module):
+    def setup_input_output_areas(self, name_module : str):
 
         print(f"show_input invoked! Tab: {name_module}")
         
