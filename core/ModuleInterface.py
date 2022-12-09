@@ -1,12 +1,19 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 
 
 class ModuleInterface(ABC) :
+
+   ### STATIC FIELDS ###
+    
+    id_class = 'ModuleInterface'
+    
+    
  
     ### INTERFACE METHODS ###
     
     @abstractmethod
-    def register_prev_module(self, prev_module) :
+    def register_prev_module(self, prev_module : ModuleInterface) :
         pass
     
     @abstractmethod   

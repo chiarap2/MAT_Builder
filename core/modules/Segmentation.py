@@ -5,9 +5,11 @@ import numpy as np
 import skmob
 from skmob.preprocessing import detection
 
+from dash import Dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 
+from core.Pipeline import Pipeline
 from core.ModuleInterface import ModuleInterface
 
 
@@ -25,7 +27,7 @@ class Segmentation(ModuleInterface):
 
     ### CLASS CONSTRUCTOR ###
     
-    def __init__(self, app, pipeline) :
+    def __init__(self, app : Dash, pipeline : Pipeline) :
         
         self.app = app
         self.pipeline = pipeline
@@ -61,7 +63,7 @@ class Segmentation(ModuleInterface):
         
     ### CLASS PUBLIC METHODS ###
     
-    def register_prev_module(self, prev_module) :
+    def register_prev_module(self, prev_module : ModuleInterface) :
         
         print(f"Registering prev module {prev_module} in module {self.id_class}")
         self.prev_module = prev_module  

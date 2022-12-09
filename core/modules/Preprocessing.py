@@ -5,11 +5,13 @@ import skmob
 from skmob.preprocessing import filtering, compression
 from ptrail.core.TrajectoryDF import PTRAILDataFrame
 
+from dash import Dash
 from dash import dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 
 import plotly.express as px
 
+from core.Pipeline import Pipeline
 from core.ModuleInterface import ModuleInterface
 
 
@@ -30,7 +32,7 @@ class Preprocessing(ModuleInterface):
 
     ### CLASS CONSTRUCTOR ###
     
-    def __init__(self, app, pipeline):
+    def __init__(self, app : Dash, pipeline : Pipeline):
 
         ### Here we register the Dash application ###
         self.app = app
@@ -55,7 +57,7 @@ class Preprocessing(ModuleInterface):
 
     ### CLASS METHODS ###
     
-    def register_prev_module(self, prev_module) :
+    def register_prev_module(self, prev_module : ModuleInterface) :
         
         print(f"Registering prev module {prev_module} in module {self.id_class}")
         self.prev_module = prev_module     
@@ -81,7 +83,7 @@ class Preprocessing(ModuleInterface):
         web_components.append(html.Br())
         web_components.append(html.Br())
         
-        web_components.append(html.Span(children = "Minimum number of samples a trajectory must have: "))
+        web_components.append(html.Span(children = "Minimum number of samples: "))
         web_components.append(dcc.Input(id = self.id_class + '-n_points',
                                         value = 3000,
                                         type = 'number',
