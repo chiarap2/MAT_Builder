@@ -18,8 +18,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 
 from core.InteractiveModuleInterface import InteractiveModuleInterface
+from core.InteractivePipeline import InteractivePipeline
 from core.RDF_builder import RDFBuilder
-
 
 
 class InteractiveEnrichment(InteractiveModuleInterface):
@@ -40,7 +40,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
     ### CLASS CONSTRUCTOR ###
     
-    def __init__(self, app, pipeline) :
+    def __init__(self, app : Dash, pipeline : InteractivePipeline) :
     
         self.app = app
         self.pipeline = pipeline
@@ -95,7 +95,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
     
     ### CLASS PUBLIC METHODS ###
     
-    def register_prev_module(self, prev_module) :
+    def register_prev_module(self, prev_module : InteractiveModuleInterface) :
         
         print(f"Registering prev module {prev_module} in module {self.id_class}")
         self.prev_module = prev_module
@@ -106,15 +106,14 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         web_components = []
         
         
-        if(self.prev_module.get_results() is None) :
+        if self.prev_module.get_results() is None :
             web_components.append(html.H5(children = f"No data available from the {self.prev_module.id_class} module!"))
             web_components.append(html.H5(children = f"Please, execute it first!"))
         
         else :
-        
             # Input move enrichment with transportation means 
             web_components.append(html.H5(children = "Move enrichment"))
-            web_components.append(html.Span(children = "Enrich moves with transportation means?"))
+            web_components.append(html.Span(children = "Add transportation means to moves?"))
             web_components.append(dcc.Dropdown(id = self.id_class + '-move_en',
                                                options = [{"label": "yes", "value": "yes"},
                                                           {"label":"no","value":"no"}],
@@ -124,7 +123,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             
             
             # Input stop enrichment with POIs 
-            web_components.append(html.H5(children = "Occasional stop enrichment with POIs"))
+            web_components.append(html.H5(children = "Add POIs to occasional stops"))
             web_components.append(html.Span(children = "Insert the name of the city (to download PoIs from OpenStreetMap): "))
             web_components.append(dcc.Input(id = self.id_class + '-place',
                                             value = "Rome, Italy",
@@ -150,7 +149,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                                                
             web_components.append(html.Span(children = "... or upload your file containing a POI dataset (leave 'no' if no file is uploaded) "))
             web_components.append(dcc.Input(id = self.id_class + '-poi_file',
-                                            value = "no",
+                                            value = "./data/Rome/poi/pois.parquet",
                                             type = 'text',
                                             placeholder = 'Path to the POI dataset...'))   
             web_components.append(html.Br())
@@ -169,7 +168,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             web_components.append(html.H5(children = "Enrich trajectory users with social media posts: "))
             web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done: "))
             web_components.append(dcc.Input(id = self.id_class + '-social_en',
-                                            value = 'no',
+                                            value = './data/tweets/tweets_rome.parquet',
                                             type = 'text',
                                             placeholder = 'Path to file containing the posts...'))
             web_components.append(html.Br())
@@ -177,10 +176,10 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             
             
             # Input weather information enrichment
-            web_components.append(html.H5(children = "Enrich trajectory users with weather information: "))
+            web_components.append(html.H5(children = "Enrich trajectories with weather information: "))
             web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done):"))
             web_components.append(dcc.Input(id = self.id_class + '-weather_en',
-                                            value = 'no',
+                                            value = './data/weather/weather_conditions.parquet',
                                             type = 'text',
                                             placeholder = 'Path to file containing weather information...'))
             web_components.append(html.Br())
@@ -535,11 +534,16 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             
             # duplicate geometry column because we loose it during the sjoin_nearest
             s_df = semantic_df.copy()
+            
+            # Filter out the POIs without a name!
+            s_df = s_df.loc[s_df['name'].notna(), :]
+            
             s_df['geometry_'+suffix] = s_df['geometry']
+            s_df['element_type'] = s_df['element_type'].astype(str)
             s_df['osmid'] = s_df['osmid'].astype(str)
             
             #print(f"Stampa df stop occasionali: {stop.info()}")
-            #print(f"Stampa df POIs: {s_df.info()}")
+            print(f"Stampa df POIs: {s_df.info()}")
             
             # now we can use sjoin_nearest to obtain the results we want
             mats = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
@@ -573,7 +577,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                     # Immediately return the empty dataframe if it doesn't contain any suitable POI...
                     if poi.empty : 
                         print("No POI found...")
-                        new_cols = ['osmid', 'wikidata', 'geometry', 'category']
+                        new_cols = ['osmid', 'element_type', 'name', 'wikidata', 'geometry', 'category']
                         poi = poi.reindex(poi.columns.union(new_cols), axis=1)
                         return poi
                     
@@ -612,7 +616,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
 
 
-        print("Executing occasional stop enrichment...")
+        print("Executing occasional stop augmentation with POIs...")
 
         occasional_stops = stops[~stops['stop_id'].isin(systematic_stops['stop_id'])]
         self.occasional = occasional_stops
@@ -637,7 +641,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
         # Calling functions internal to this method...
         o_stops = preparing_stops(occasional_stops, self.max_distance)    
-        mat = semantic_enrichment(o_stops, gdf_[['osmid','wikidata','geometry','category']], 'poi')
+        mat = semantic_enrichment(o_stops, gdf_[['element_type','osmid','name','wikidata','geometry','category']], 'poi')
 
         ######## PROVA ###########
         #mat.set_index(['stop_id','lat','lng'],inplace=True)

@@ -1,7 +1,14 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 
 
 class ModuleInterface(ABC) :
+
+   ### STATIC FIELDS ###
+    
+    id_class = 'ModuleInterface'
+    
+    
  
     ### INTERFACE METHODS ###
         

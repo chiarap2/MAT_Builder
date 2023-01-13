@@ -10,6 +10,7 @@ from dash.dependencies import Input, Output, State, MATCH, ALL
 
 import plotly.express as px
 
+from core.Pipeline import Pipeline
 from core.ModuleInterface import ModuleInterface
 
 
@@ -26,7 +27,6 @@ class Preprocessing(ModuleInterface):
     def core(self) -> None :
 
         self.df = None
-
 
         if self.path[-3:] == 'csv':
             gdf = pd.read_csv(self.path)

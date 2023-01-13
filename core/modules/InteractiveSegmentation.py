@@ -25,7 +25,7 @@ class InteractiveSegmentation(InteractiveModuleInterface):
 
     ### CLASS CONSTRUCTOR ###
     
-    def __init__(self, app, pipeline) :
+    def __init__(self, app : Dash, pipeline : Pipeline) :
         
         self.app = app
         self.pipeline = pipeline
@@ -61,7 +61,7 @@ class InteractiveSegmentation(InteractiveModuleInterface):
         
     ### CLASS PUBLIC METHODS ###
     
-    def register_prev_module(self, prev_module) :
+    def register_prev_module(self, prev_module : InteractiveModuleInterface) :
         
         print(f"Registering prev module {prev_module} in module {self.id_class}")
         self.prev_module = prev_module  

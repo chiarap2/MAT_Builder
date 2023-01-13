@@ -7,7 +7,6 @@ from dash.dependencies import Input, Output, State, MATCH, ALL
 
 
 class InteractivePipeline():
-
     '''
     Class `Pipeline` models an entity that contains a list of modules that should be ran sequentially -- for instance,  `preprocessing`, `segmentation`, and `enrichment`.
     '''
@@ -156,7 +155,7 @@ class InteractivePipeline():
     
     ### PUBLIC METHODS ###
     
-    def setup_input_output_areas(self, name_module):
+    def setup_input_output_areas(self, name_module : str):
 
         print(f"show_input invoked! Tab: {name_module}")
         

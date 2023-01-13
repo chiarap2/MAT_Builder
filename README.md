@@ -64,13 +64,6 @@ The ```Enrichment``` module allows practioners to enrich different "entities" of
 - **Trajectory enrichment**: users can enrich the entire trajectory with the weather conditions that must have an ID, the Trajectory ID and the timestamp. 
 - **User enrichment** : users can enrich the 'users entity' with the social media posts. These data must have an ID, the user ID and the timestamp. If social media posts are geolocated, the enrichment could be based on spatial information (such as for occasional stops).
 
-
-### **Requirement**
----
-To run MAT-Builder install requirements.
-
-```pip install requirements.txt```
-
 ### **Citing us**
 ---
 If you use MAT-Builder, please cite the following paper:
