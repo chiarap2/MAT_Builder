@@ -1,7 +1,7 @@
 from dash import Dash
 
 from core.modules import *
-from core.Pipeline import Pipeline
+from core.InteractivePipeline import InteractivePipeline
 
 
 ### MAIN application ###
@@ -20,11 +20,11 @@ def main() :
     # Object representing the pipeline to be executed.
     # TODO: separate the definition of the pipeline (i.e., the modules it must execute) from the definition of the class.
     #       We can do so by passing the list of modules here in the main.
-    modules_pipeline = [Preprocessing,
-                        Segmentation,
-                        Enrichment]
+    modules_pipeline = [InteractivePreprocessing,
+                        InteractiveSegmentation,
+                        InteractiveEnrichment]
                         
-    pipeline = Pipeline(app, modules_pipeline)
+    pipeline = InteractivePipeline(app, modules_pipeline)
 
 
     app.run_server(debug=True)

@@ -5,13 +5,13 @@ import numpy as np
 import skmob
 from skmob.preprocessing import detection
 
-from dash import dcc, html
+from dash import Dash, dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 
-from core.ModuleInterface import ModuleInterface
+from core.InteractiveModuleInterface import InteractiveModuleInterface
 
 
-class Segmentation(ModuleInterface):
+class InteractiveSegmentation(InteractiveModuleInterface):
     '''
     `stops_and_moves` models a class which instances segment trajectories according to the stop and move paradigm.
     '''

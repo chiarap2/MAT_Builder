@@ -1,11 +1,12 @@
 from collections import OrderedDict
+from . import InteractiveModuleInterface
 
-from dash import dcc, html
+from dash import Dash, dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 
 
 
-class Pipeline():
+class InteractivePipeline():
 
     '''
     Class `Pipeline` models an entity that contains a list of modules that should be ran sequentially -- for instance,  `preprocessing`, `segmentation`, and `enrichment`.
@@ -13,7 +14,7 @@ class Pipeline():
 
     ### CLASS CONSTRUCTOR ###
 
-    def __init__(self, app, list_modules):
+    def __init__(self, app, list_modules : list[InteractiveModuleInterface]):
         '''
         The constructor of this class defines the modules that will be applied, and the order of application.
         '''

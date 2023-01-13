@@ -11,18 +11,18 @@ from sklearn.preprocessing import StandardScaler
 import geohash2
 import osmnx as ox
 
-from dash import dcc, html
+from dash import Dash, dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 
 import plotly.express as px
 import plotly.graph_objects as go
 
-from core.ModuleInterface import ModuleInterface
+from core.InteractiveModuleInterface import InteractiveModuleInterface
 from core.RDF_builder import RDFBuilder
 
 
 
-class Enrichment(ModuleInterface):
+class InteractiveEnrichment(InteractiveModuleInterface):
     '''
     `stop_move_enrichment` is a class that models the semantic enrichment module. This class allows to:
     1) enrich moves with transportation mean
