@@ -13,11 +13,19 @@ class ModuleInterface(ABC) :
     ### INTERFACE METHODS ###
         
     @abstractmethod
-    def execute(self, dic_params : dict) :
+    def execute(self, dic_params : dict) -> bool:
         pass
         
     @abstractmethod
     def get_results(self) -> dict :
+        pass
+
+    @abstractmethod
+    def get_params_input(self) -> list[str] :
+        pass
+
+    @abstractmethod
+    def get_params_output(self) -> list[str] :
         pass
 
     @abstractmethod

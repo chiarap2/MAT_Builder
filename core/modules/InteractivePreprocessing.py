@@ -44,7 +44,7 @@ class InteractivePreprocessing(InteractiveModuleInterface):
     def __init__(self, app : Dash, pipeline : list[InteractiveModuleInterface]):
 
         ### Here we register the Dash application ###
-        self.preprocessing = Preprocessing()
+        self.preprocessing : Preprocessing = Preprocessing()
         self.app = app
         self.pipeline = pipeline
         self.prev_module = None
@@ -141,6 +141,9 @@ class InteractivePreprocessing(InteractiveModuleInterface):
                 results.to_parquet(self.path_output)
         
         return None, outputs
+
+    def get_results(self) -> dict :
+        return self.preprocessing.get_results()
         
     def reset_state(self) :
         

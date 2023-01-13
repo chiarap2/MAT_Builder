@@ -8,7 +8,8 @@ from dash.dependencies import Input, Output, State, MATCH, ALL
 
 class InteractivePipeline():
     '''
-    Class `Pipeline` models an entity that contains a list of modules that should be ran sequentially -- for instance,  `preprocessing`, `segmentation`, and `enrichment`.
+    Class `InteractivePipeline` models an entity that contains a list of modules that should be run
+    sequentially -- for instance,  `preprocessing`, `segmentation`, and `enrichment`.
     '''
 
     ### CLASS CONSTRUCTOR ###
@@ -58,8 +59,11 @@ class InteractivePipeline():
     ### PROTECTED METHODS ###
     
     def _setup_css_styles(self) :
+        '''
+        This function defines the CSS style to be used for the UI.
+        '''
     
-    # CSS style parameters declarations/definitions #
+        # CSS style parameters declarations/definitions #
 
         # Here we define the styles to be applied to the tabs...
         self.tabs_styles = \

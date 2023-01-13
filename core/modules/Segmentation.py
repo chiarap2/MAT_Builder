@@ -1,0 +1,158 @@
+import geopandas as gpd
+import pandas as pd
+import numpy as np
+
+import skmob
+from skmob.preprocessing import detection
+
+from dash import Dash, dcc, html
+from dash.dependencies import Input, Output, State, MATCH, ALL
+
+from core.ModuleInterface import ModuleInterface
+
+
+class InteractiveSegmentation(ModuleInterface):
+    '''
+    `stops_and_moves` models a class which instances segment trajectories according to the stop and move paradigm.
+    '''
+
+
+    ### PUBLIC CLASS CONSTRUCTOR ###
+    
+    def __init__(self) :
+        
+        self.stops = None
+        self.moves = None
+        self.path_pre_traj = './data/temp_dataset/traj_cleaned.parquet'
+        self.preprocessed_trajs = None
+        
+        
+
+    ### CLASS PUBLIC METHODS ###
+    def execute(self, dic_params: dict) -> bool:
+
+        # Salva nei campi dell'istanza l'input passato
+        self.trajectories = dic_params['trajectories']
+        self.duration = dic_params['duration']
+        self.radius = dic_params['radius']
+
+
+        # Esegui il codice core dell'istanza.
+        self.stops = None
+        self.moves = None
+        return self.core()
+
+
+    def core(self) -> bool:
+        
+        tdf = skmob.TrajDataFrame(self.preprocessed_trajs)
+
+
+        ### stop detection ###
+        stdf = detection.stops(tdf,
+                               stop_radius_factor = 0.5, 
+                               minutes_for_a_stop = self.duration, 
+                               spatial_radius_km = self.radius, 
+                               leaving_time = True)
+        self.stops = stdf
+
+
+        ### move detection ###
+        trajs = tdf.copy()
+        starts = stdf.copy()
+        ends = stdf.copy()
+
+        trajs.set_index(['tid','datetime'], inplace = True)
+        starts.set_index(['tid','datetime'], inplace = True)
+        ends.set_index(['tid','leaving_datetime'], inplace = True)
+
+        traj_ids = trajs.index
+        start_ids = starts.index
+        end_ids = ends.index
+
+        # some datetime into stdf are approximated. In order to retrieve moves, we have to check the exact datime into 
+        # trajectory dataframe. We use `isin()` method to reduce time computation
+        traj_df = pd.DataFrame(traj_ids, columns=['trajs'])
+        start_df = pd.DataFrame(start_ids, columns=['start'])
+        end_df = pd.DataFrame(end_ids, columns=['end'])
+
+        start_df['is_in_traj'] = start_df['start'].isin(traj_df['trajs'])
+        end_df['is_in_traj'] = end_df['end'].isin(traj_df['trajs'])
+
+        start_df['end'] = end_df['end']
+        start_df['is_in_traj_end'] = end_df['is_in_traj']
+
+        # remove stops which aren't into tdf
+        start_df = start_df[(start_df['is_in_traj']!=False)|(start_df['is_in_traj_end']!=False)]
+
+        # save index of incomplete stops and convert them into MultiIndex
+        incomplete_end = start_df['end'][(start_df['is_in_traj']==False)&(start_df['is_in_traj_end']==True)] 
+        incomplete_start = start_df['start'][(start_df['is_in_traj']==True)&(start_df['is_in_traj_end']==False)]
+
+        if not incomplete_end.empty:
+            incomplete_end = pd.MultiIndex.from_tuples(incomplete_end)
+
+        if not incomplete_start.empty:
+            incomplete_start = pd.MultiIndex.from_tuples(incomplete_start)
+
+        # save complete index
+        start_df = start_df[(start_df['is_in_traj']==True)&(start_df['is_in_traj_end']==True)] 
+        
+        new_start = pd.MultiIndex.from_tuples(start_df['start'])
+        new_end = pd.MultiIndex.from_tuples(start_df['end'])
+        new_start.set_names(['tid','datetime'],inplace=True)
+        new_end.set_names(['tid','datetime'],inplace=True)
+        
+        # set start and end of stops (using two columns in order to avoid overlaps)
+        trajs['start_stop'] = np.nan
+        trajs['start_stop'].loc[new_start] = 1
+        trajs['end_stop'] = np.nan
+        trajs['end_stop'].loc[new_end] = 1  
+
+        trajs.reset_index(inplace=True)
+        start_idx = trajs[trajs['start_stop']==1].index.to_list()
+        end_idx = trajs[trajs['end_stop']==1].index.to_list()
+
+        # set incomplete index
+        starts_ = [traj_ids.get_loc(e).start - 1 for e in incomplete_end]
+        ends_ = [traj_ids.get_loc(s).start + 1 for s in incomplete_start]
+
+        if starts_ != []:
+            start_idx = start_idx + starts_
+    
+        if ends_ != []:
+            end_idx = end_idx + ends_
+
+        trajs['move_id'] = np.nan
+        
+        i = 1
+        for s,e in zip(start_idx,end_idx):
+            trajs['move_id'][s:e+1] = i
+            i += 1
+
+        trajs['move_id'].ffill(inplace=True)
+        trajs['move_id'].fillna(0,inplace=True)
+
+        trajs['move_id'][(trajs['start_stop']==1)|(trajs['end_stop']==1)] = -1
+
+        moves = trajs[trajs['move_id']!=-1]
+        self.moves = moves.copy()
+
+        del end_df, start_df, traj_df
+
+        return True
+
+    def get_results(self) -> dict :
+    
+        return {'stops' : self.stops.copy(),
+                'moves' : self.moves.copy()}
+
+    def get_params_input(self) -> list[str] :
+        return ['trajectories', 'duration' 'radius']
+
+    def get_params_output(self) -> list[str] :
+        return ['stops', 'moves']
+            
+    def reset_state(self) :
+        self.stops = None
+        self.moves = None

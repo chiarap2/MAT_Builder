@@ -18,7 +18,7 @@ class InteractiveModuleInterface(ABC) :
         pass
         
     @abstractmethod
-    def get_results(self) :
+    def get_results(self) -> dict:
         pass
         
     @abstractmethod

@@ -5,26 +5,21 @@ import skmob
 from skmob.preprocessing import filtering, compression
 from ptrail.core.TrajectoryDF import PTRAILDataFrame
 
-from dash import Dash, dcc, html
-from dash.dependencies import Input, Output, State, MATCH, ALL
-
-import plotly.express as px
-
-from core.Pipeline import Pipeline
 from core.ModuleInterface import ModuleInterface
 
 
-class Preprocessing(ModuleInterface):
+class Preprocessing(ModuleInterface) :
 
     ### PUBLIC CLASS CONSTRUCTOR ###
 
-    def __init__(self):
+    def __init__(self) :
         self.df = None
+
 
 
     ### PUBLIC CLASS METHODS ###
 
-    def core(self) -> None :
+    def core(self) -> bool :
 
         self.df = None
 
@@ -33,7 +28,7 @@ class Preprocessing(ModuleInterface):
         elif self.path[-7:] == 'parquet':
             gdf = pd.read_parquet(self.path)
         else:
-            return
+            return False
 
 
         # ## PREPROCESSING
@@ -46,23 +41,18 @@ class Preprocessing(ModuleInterface):
         df = pd.DataFrame(gdf)
 
         # now create a TrajDataFrame from the pandas DataFrame
-        tdf = skmob.TrajDataFrame(df, latitude='lat', longitude='lon', datetime='time', user_id='user',
-                                  trajectory_id='traj_id')
-        ftdf = filtering.filter(tdf, max_speed_kmh=self.kmh)
-        ctdf = compression.compress(ftdf, spatial_radius_km=0.2)
+        tdf = skmob.TrajDataFrame(df, latitude = 'lat', longitude = 'lon',
+                                  datetime = 'time', user_id = 'user', trajectory_id = 'traj_id')
+        ftdf = filtering.filter(tdf, max_speed_kmh = self.kmh)
+        ctdf = compression.compress(ftdf, spatial_radius_km = 0.2)
 
         self.df = ctdf
+        return True
 
-    def get_num_users(self) :
-        return str(len(self.df.uid.unique()))
-
-    def get_num_trajs(self):
-        return str(len(self.df.tid.unique()))
-
-    def output(self):
+    def output(self) :
         self.df.to_parquet(self.path_output)
 
-    def execute(self, dic_params: dict) :
+    def execute(self, dic_params: dict) -> bool :
 
         # Salva nei campi dell'istanza l'input passato
         self.path = dic_params['path']
@@ -70,10 +60,16 @@ class Preprocessing(ModuleInterface):
         self.num_point = dic_params['n_points']
 
         # Esegui il codice core dell'istanza.
-        self.core()
+        return self.core()
 
     def get_results(self) -> dict :
-        return {'traj_preprocessed': self.df.copy()}
+        return {'preprocessed_trajectories': self.df.copy()}
+
+    def get_params_input(self) -> list[str] :
+        return ['path', 'speed' 'n_points']
+
+    def get_params_output(self) -> list[str] :
+        return ['preprocessed_trajectories']
 
     def reset_state(self) :
         self.df = None
