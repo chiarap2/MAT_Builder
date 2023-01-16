@@ -11,9 +11,9 @@ from dash.dependencies import Input, Output, State, MATCH, ALL
 from core.ModuleInterface import ModuleInterface
 
 
-class InteractiveSegmentation(ModuleInterface):
+class Segmentation(ModuleInterface):
     '''
-    `stops_and_moves` models a class which instances segment trajectories according to the stop and move paradigm.
+    InteractiveSegmentation models a class which instances segment trajectories according to the stop and move paradigm.
     '''
 
 
@@ -24,7 +24,6 @@ class InteractiveSegmentation(ModuleInterface):
         self.stops = None
         self.moves = None
         self.path_pre_traj = './data/temp_dataset/traj_cleaned.parquet'
-        self.preprocessed_trajs = None
         
         
 
@@ -44,8 +43,9 @@ class InteractiveSegmentation(ModuleInterface):
 
 
     def core(self) -> bool:
-        
-        tdf = skmob.TrajDataFrame(self.preprocessed_trajs)
+
+        # Load the trajectories into a skmob's TrajDataFrame, which in turn allows to perform the stop and move detection.
+        tdf = skmob.TrajDataFrame(self.trajectories)
 
 
         ### stop detection ###
@@ -125,10 +125,8 @@ class InteractiveSegmentation(ModuleInterface):
 
         trajs['move_id'] = np.nan
         
-        i = 1
-        for s,e in zip(start_idx,end_idx):
-            trajs['move_id'][s:e+1] = i
-            i += 1
+        for i, (s, e) in enumerate(zip(start_idx,end_idx), 1):
+            trajs['move_id'][s: e+1] = i
 
         trajs['move_id'].ffill(inplace=True)
         trajs['move_id'].fillna(0,inplace=True)
