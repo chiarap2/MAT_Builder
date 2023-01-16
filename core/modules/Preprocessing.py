@@ -14,7 +14,7 @@ class Preprocessing(ModuleInterface) :
     ### PUBLIC CLASS CONSTRUCTOR ###
 
     def __init__(self) :
-        self.df = None
+        self._df = None
 
 
 
@@ -22,7 +22,7 @@ class Preprocessing(ModuleInterface) :
 
     def core(self) -> bool :
 
-        self.df = None
+        self._df = None
 
         if self.path[-3:] == 'csv':
             gdf = pd.read_csv(self.path)
@@ -47,11 +47,11 @@ class Preprocessing(ModuleInterface) :
         ftdf = filtering.filter(tdf, max_speed_kmh = self.kmh)
         ctdf = compression.compress(ftdf, spatial_radius_km = 0.2)
 
-        self.df = ctdf
+        self._df = ctdf
         return True
 
     def output(self) :
-        self.df.to_parquet(self.path_output)
+        self._df.to_parquet(self.path_output)
 
     def execute(self, dic_params: dict) -> bool :
 
@@ -63,8 +63,8 @@ class Preprocessing(ModuleInterface) :
         # Esegui il codice core dell'istanza.
         return self.core()
 
-    def get_results(self) -> Optional[dict]:
-        return {'preprocessed_trajectories': self.df.copy() if self.df is not None else None}
+    def get_results(self) -> dict:
+        return {'preprocessed_trajectories': self._df.copy() if self._df is not None else None}
 
     def get_params_input(self) -> list[str] :
         return ['path', 'speed' 'n_points']
@@ -73,4 +73,4 @@ class Preprocessing(ModuleInterface) :
         return ['preprocessed_trajectories']
 
     def reset_state(self) :
-        self.df = None
+        self._df = None

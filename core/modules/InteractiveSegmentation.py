@@ -115,7 +115,7 @@ class InteractiveSegmentation(InteractiveModuleInterface):
         web_components = []
         
         # Here we manage the case where no data is available from the previous module.
-        if(self.prev_module is None or self.prev_module.get_results()['preprocessed_trajectories'] is None) :
+        if(self.prev_module is None) or (next(iter(self.prev_module.get_results().values())) is None) :
             web_components.append(html.Span(children = f"No preprocessed trajectories available!"))
             web_components.append(html.Br())
             web_components.append(html.Span(children = f"Please, provide a file containing them: "))

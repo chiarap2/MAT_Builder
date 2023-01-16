@@ -24,7 +24,7 @@ from core.RDF_builder import RDFBuilder
 
 class InteractiveEnrichment(InteractiveModuleInterface):
     '''
-    `stop_move_enrichment` is a class that models the semantic enrichment module. This class allows to:
+    `InteractiveEnrichment` is a class that models the semantic enrichment module. This class allows to:
     1) enrich moves with transportation mean
     2) enrich stops labeling them as occasional and systematic ones
         2.a) occasional stops are enriched with PoIs, weather, etc.
@@ -106,9 +106,9 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         web_components = []
         
         
-        if self.prev_module.get_results() is None :
-            web_components.append(html.H5(children = f"No data available from the {self.prev_module.id_class} module!"))
-            web_components.append(html.H5(children = f"Please, execute it first!"))
+        if (self.prev_module is None) or (next(iter(self.prev_module.get_results().values())) is None) :
+            web_components.append(html.H5(children = f"No stop and moves data available!"))
+            web_components.append(html.H5(children = f"Please, execute the segmentation module first!"))
         
         else :
             # Input move enrichment with transportation means 

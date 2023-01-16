@@ -143,8 +143,8 @@ class Segmentation(ModuleInterface):
 
     def get_results(self) -> dict :
     
-        return {'stops' : self.stops.copy(),
-                'moves' : self.moves.copy()}
+        return {'stops' : self.stops.copy() if self.stops is not None else None,
+                'moves' : self.moves.copy() if self.moves is not None else None}
 
     def get_params_input(self) -> list[str] :
         return ['trajectories', 'duration' 'radius']

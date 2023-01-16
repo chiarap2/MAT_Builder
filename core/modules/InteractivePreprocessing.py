@@ -16,10 +16,8 @@ from .Preprocessing import Preprocessing
 
 class InteractivePreprocessing(InteractiveModuleInterface):
     '''
-    `preprocessing1` is a subclass of `Preprocessing` to preprocess trajectories and allows users to:
-    1) remove trajectories with a few number of points
-    2) remove outliers
-    3) compress trajectories
+    `InteractivePreprocessing` acts as a graphical wrapper of a `Preprocessing` instance. To be used within an
+    'InteractivePipeline' object.
     '''
 
 
@@ -29,7 +27,7 @@ class InteractivePreprocessing(InteractiveModuleInterface):
 
 
 
-    ### PRIVATE CLASS METHODS ###
+    ### PROTECTED CLASS METHODS ###
 
     def _get_num_users(self, df):
         return str(len(df.uid.unique()))
