@@ -1,5 +1,6 @@
 import geopandas as gpd
 import pandas as pd
+from typing import Optional
 
 import skmob
 from skmob.preprocessing import filtering, compression
@@ -62,8 +63,8 @@ class Preprocessing(ModuleInterface) :
         # Esegui il codice core dell'istanza.
         return self.core()
 
-    def get_results(self) -> dict :
-        return {'preprocessed_trajectories': self.df.copy()}
+    def get_results(self) -> Optional[dict]:
+        return {'preprocessed_trajectories': self.df.copy() if self.df is not None else None}
 
     def get_params_input(self) -> list[str] :
         return ['path', 'speed' 'n_points']

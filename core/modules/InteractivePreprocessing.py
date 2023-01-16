@@ -11,7 +11,7 @@ from dash.dependencies import Input, Output, State, MATCH, ALL
 import plotly.express as px
 
 from core.InteractiveModuleInterface import InteractiveModuleInterface
-from . import Preprocessing
+from .Preprocessing import Preprocessing
 
 
 class InteractivePreprocessing(InteractiveModuleInterface):
@@ -32,10 +32,10 @@ class InteractivePreprocessing(InteractiveModuleInterface):
     ### PRIVATE CLASS METHODS ###
 
     def _get_num_users(self, df):
-        return str(len(self.df.uid.unique()))
+        return str(len(df.uid.unique()))
 
     def _get_num_trajs(self, df):
-        return str(len(self.df.tid.unique()))
+        return str(len(df.tid.unique()))
 
 
 
@@ -119,11 +119,13 @@ class InteractivePreprocessing(InteractiveModuleInterface):
 
 
             # Salva nei campi dell'istanza l'input passato 
-            dic_params = {'path' : path, 'speed' : speed, n_points : n_points}
+            dic_params = {'path' : path,
+                          'speed' : speed,
+                          'n_points' : n_points}
             
             # Esegui il codice core dell'istanza.
-            self.preprocessing(dic_params)
-            results = self.preprocessing.get_results()['traj_preprocessed']
+            self.preprocessing.execute(dic_params)
+            results = self.preprocessing.get_results()['preprocessed_trajectories']
             
             # Manage the output to show in the web interface.
             if results is None :
@@ -133,7 +135,7 @@ class InteractivePreprocessing(InteractiveModuleInterface):
                 outputs.append(html.H6(children='Dataset statistics'))
                 outputs.append(html.Hr())
                 outputs.append(html.P(children='Tot. users: {} \t\t\t Tot. trajectories: {}'.format(self._get_num_users(results), self._get_num_trajs(results))))
-                outputs.append(dcc.Graph(figure = px.histogram(self.df.groupby('tid').datetime.first(),
+                outputs.append(dcc.Graph(figure = px.histogram(results.groupby('tid').datetime.first(),
                                          x = 'datetime',
                                          title = 'Distribution of trajectories over time')))
                 

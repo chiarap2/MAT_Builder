@@ -21,8 +21,8 @@ def main() :
     # TODO: separate the definition of the pipeline (i.e., the modules it must execute) from the definition of the class.
     #       We can do so by passing the list of modules here in the main.
     modules_pipeline = [InteractivePreprocessing,
-                        InteractiveSegmentation,
-                        InteractiveEnrichment]
+                        InteractiveSegmentation]
+                        #InteractiveEnrichment]
                         
     pipeline = InteractivePipeline(app, modules_pipeline)
 

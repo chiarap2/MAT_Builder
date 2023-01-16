@@ -1,6 +1,7 @@
 import geopandas as gpd
 import pandas as pd
 import numpy as np
+from typing import Optional
 
 import skmob
 from skmob.preprocessing import detection
@@ -13,7 +14,7 @@ from core.ModuleInterface import ModuleInterface
 
 class Segmentation(ModuleInterface):
     '''
-    InteractiveSegmentation models a class which instances segment trajectories according to the stop and move paradigm.
+    Segmentation models a class which instances segment trajectories according to the stop and move paradigm.
     '''
 
 

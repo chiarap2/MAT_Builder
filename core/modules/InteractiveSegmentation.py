@@ -10,7 +10,7 @@ from dash.dependencies import Input, Output, State, MATCH, ALL
 
 from core.InteractiveModuleInterface import InteractiveModuleInterface
 from core.InteractivePipeline import InteractivePipeline
-from . import Segmentation
+from .Segmentation import Segmentation
 
 
 class InteractiveSegmentation(InteractiveModuleInterface):
@@ -115,8 +115,8 @@ class InteractiveSegmentation(InteractiveModuleInterface):
         web_components = []
         
         # Here we manage the case where no data is available from the previous module.
-        if(self.prev_module.get_results() is None) :
-            web_components.append(html.Span(children = f"No preprocessed trajectories available from the {self.prev_module.id_class} module!"))
+        if(self.prev_module is None or self.prev_module.get_results()['preprocessed_trajectories'] is None) :
+            web_components.append(html.Span(children = f"No preprocessed trajectories available!"))
             web_components.append(html.Br())
             web_components.append(html.Span(children = f"Please, provide a file containing them: "))
             web_components.append(dcc.Input(id = self.id_class + '-path',
@@ -210,3 +210,5 @@ class InteractiveSegmentation(InteractiveModuleInterface):
     
         print(f"Resetting state of the module {self.id_class}")
         self.segmentation.reset_state()
+        self.stops = None
+        self.moves = None
