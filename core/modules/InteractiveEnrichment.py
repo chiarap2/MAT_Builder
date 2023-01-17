@@ -3,14 +3,6 @@ import pandas as pd
 import numpy as np
 import math
 
-from ptrail.core.TrajectoryDF import PTRAILDataFrame
-from ptrail.features.kinematic_features import KinematicFeatures as spatial
-
-import pickle
-from sklearn.preprocessing import StandardScaler
-import geohash2
-import osmnx as ox
-
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 
@@ -19,7 +11,7 @@ import plotly.graph_objects as go
 
 from core.InteractiveModuleInterface import InteractiveModuleInterface
 from core.InteractivePipeline import InteractivePipeline
-from core.RDF_builder import RDFBuilder
+from .Enrichment import Enrichment
 
 
 class InteractiveEnrichment(InteractiveModuleInterface):
@@ -41,10 +33,13 @@ class InteractiveEnrichment(InteractiveModuleInterface):
     ### CLASS CONSTRUCTOR ###
     
     def __init__(self, app : Dash, pipeline : InteractivePipeline) :
-    
+
         self.app = app
         self.pipeline = pipeline
         self.prev_module = None
+
+        self.enrichment = Enrichment()
+        self.results_enrichment = None
     
     
         ### Here we define and register all the callbacks that must be managed by the instance of this class ###
@@ -203,7 +198,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         
     def get_input_and_execute(self,
                               move_enrichment,
-                              place,
+                              poi_place,
                               poi_categories,
                               path_poi,
                               max_dist,
@@ -216,55 +211,21 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         if button_state is not None :
         
             print(f"Esecuzione get_input_and_execute del modulo {self.id_class}! {button_state}")
-        
-            ### Reset the state of the static variables...
-            self.stops = pd.DataFrame()
-            self.moves = pd.DataFrame()
-            self.mats = gpd.GeoDataFrame()
 
-
-            # Input parsing...
-            if move_enrichment == 'yes':
-                self.enrich_moves = True
-                self.moves = pd.read_parquet('data/temp_dataset/moves.parquet')
-            else:
-                self.enrich_moves = False
-
-            self.place = place
-
-            if poi_categories == ['no']:
-                self.list_pois = []
-            else:
-                self.list_pois = poi_categories
-
-            if path_poi == 'no':
-                self.upload_stops = 'no'
-            else:
-                self.upload_stops = path_poi
-
-            self.semantic_granularity = 80
-            self.max_distance = max_dist
-
-            # Variabili gestione arricchimento social media post.
-            if social_enrichment == 'no':
-                self.tweet_user = False
-            else:
-                self.tweet_user = True
-                self.upload_users = social_enrichment
-
-            # Variabili gestione arricchimento weather information.
-            if weather_enrichment == 'no':
-                self.weather = False
-            else:
-                self.weather = True
-                self.upload_trajs = weather_enrichment
-            
-            # Variabili gestione scrittura grafo RDF.
-            self.rdf = 'yes' if create_rdf == 'yes' else 'no'
-            
-            
             # Esegui il core dell'istanza.
-            self.core()
+            prev_results = self.prev_module.get_results()
+            dic_params = {'moves' : prev_results['moves'],
+                          'move_enrichment' : move_enrichment,
+                          'stops' : prev_results['stops'],
+                          'poi_place' : poi_place,
+                          'poi_categories' : poi_categories,
+                          'path_poi' : path_poi,
+                          'max_dist' : max_dist,
+                          'social_enrichment' : social_enrichment,
+                          "weather_enrichment" : weather_enrichment,
+                          'create_rdf' : create_rdf}
+            self.enrichment.execute(dic_params)
+            self.results_enrichment = self.enrichment.get_results()
             
             
             # Inizializza il dropdown con la lista di utenti da mostrare nell'area di output dell'interfaccia web.
@@ -283,512 +244,6 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         # Ritorna gli output finali per l'interfaccia web.
         return None, outputs
 
-
-    def core(self):
-    
-        print("Executing the core of the semantic enrichment module...")
-
-
-        #################################
-        ### ---- MOVE ENRICHMENT ---- ###
-        #################################
-
-        moves = self.moves
-        if self.enrich_moves == True:
-            print("Executing move enrichment...")
-            
-            # add speed, acceleration, distance info using PTRAIL
-            df = PTRAILDataFrame(moves, latitude='lat', longitude='lng', datetime='datetime', traj_id='tid')
-            speed = spatial.create_speed_column(df)
-            bearing = spatial.create_bearing_rate_column(speed)
-            acceleration = spatial.create_jerk_column(bearing)
-
-            # save acceleration
-        
-            # load random forest classifier
-            model = pickle.load(open('models/best_rf.sav', 'rb'))
-
-            # preparing input for transport mode detection
-            acceleration.reset_index(inplace=True)
-            acceleration.set_index(['traj_id','move_id'],inplace=True)
-
-            acceleration2 = acceleration.copy()
-
-            acceleration['tot_distance'] = acceleration.groupby(['traj_id','move_id']).apply(lambda x: x['Distance'].sum())
-            acceleration = acceleration.groupby(['traj_id','move_id']).mean()
-            acceleration[['max_bearing','max_bearing_rate','max_speed','max_acceleration','max_jerk']] = acceleration2.groupby(['traj_id','move_id']).apply(lambda x: x[['Bearing', 'Bearing_Rate', 'Speed', 'Acceleration', 'Jerk']].max())
-
-            col_to_train = ['Bearing', 'Bearing_Rate', 'Speed', 'Acceleration', 'Jerk','tot_distance','max_bearing','max_bearing_rate','max_speed','max_acceleration','max_jerk']
-            col = acceleration.columns.to_list()
-            col_to_drop = [c for c in col if c not in col_to_train]
-            acceleration.drop(columns=col_to_drop, inplace=True)
-            acceleration.fillna(0,inplace=True)
-
-            scaler = StandardScaler()
-            scaled = scaler.fit_transform(acceleration)
-
-            transport_pred = model.predict(scaled)
-            acceleration['label'] = transport_pred
-
-            # transport label:
-            # 0: walk
-            # 1: bike
-            # 2: bus
-            # 3: car
-            # 4: subway
-            # 5: train
-            # 6: taxi
-
-            moves.set_index(['tid','move_id'],inplace=True)
-            moves_index = moves.index
-            acceleration_index = acceleration.index
-            moves.loc[moves_index.isin(acceleration_index),'label'] = acceleration.loc[acceleration_index.isin(moves_index),'label']
-            
-            self.moves = moves
-            moves.to_parquet('data/enriched_moves.parquet')
-
-
-
-        ############################################
-        ### ---- SYSTEMATIC STOP ENRICHMENT ---- ###
-        ############################################
-        
-        print("Executing systematic stop enrichment...")
-
-        self.stops = pd.read_parquet('data/temp_dataset/stops.parquet')
-
-        stops = self.stops.copy()
-        stops.reset_index(inplace=True)
-        stops.rename(columns={'index':'stop_id'},inplace=True)
-        stops['pos_hashed'] = stops[['lat','lng']].apply(lambda x: geohash2.encode(x[0],x[1],7),raw=True,axis=1)
-        stops['frequency'] = 0
-
-        def compute_freq(x):
-            freqs = x.groupby('pos_hashed').count()['frequency']
-            return freqs
-
-        systematic_sp = pd.DataFrame(stops.groupby('uid').apply(lambda x: compute_freq(x)))
-        sp = stops.copy()
-        sp.set_index(['uid','pos_hashed'],inplace=True)
-        sp['frequency'] = systematic_sp['frequency']
-        sp.reset_index(inplace=True)
-        systematic_stops = sp[sp['frequency'] > 2]
-        
-        # 1 - case where systematic stops have been found...
-        if(systematic_stops.shape[0] != 0) :
-            systematic_stops['start_time'] = systematic_stops['datetime'].dt.hour
-            systematic_stops['end_time'] = systematic_stops['leaving_datetime'].dt.hour
-            systematic_stops.reset_index(inplace=True,drop=True)
-
-            #global freq
-            freq = pd.DataFrame(np.zeros((len(systematic_stops),24)))
-            freq['uid'] = systematic_stops['uid']
-            freq['location'] = systematic_stops['pos_hashed']
-            freq.drop_duplicates(['uid','location'],inplace=True)
-
-            def update_hour(x):
-                
-                start_col = x[-2]
-                end_col = x[-1]
-                
-                start_raw = freq[(freq['uid']==x[0])&(freq['location']==x[1])].first_valid_index()
-                if start_raw != None:
-                    end_raw = start_raw+1
-                    
-                    if start_col<end_col:
-                        
-                        freq.loc[start_raw:end_raw,start_col:end_col] += 1
-                    
-                    elif start_col==end_col:
-                        
-                        freq.loc[start_raw:end_raw,start_col] += 1
-                        
-                    else:
-                        
-                        freq.loc[start_raw:end_raw,start_col:23] += 1
-                        freq.loc[start_raw:end_raw,0:end_col] += 1
-
-            systematic_stops.apply(lambda x: update_hour(x),raw=True,axis=1)
-
-            hours = [i for i in range(0,24)]
-            freq['sum'] = freq[hours].sum(axis=1)
-            freq['tot'] = freq.groupby('uid')['sum'].sum()
-            freq['importance'] = freq['sum'] / freq['tot']
-
-            freq.set_index(['uid','location'],inplace=True)
-            freq.drop(columns=['sum','tot'],inplace=True)
-
-            freq['night'] = freq[[23,0,1,2,3,4,5]].sum(axis=1)
-            freq['morning'] = freq[[6,7,8,9,10,11,12]].sum(axis=1)
-            freq['afternoon'] = freq[[13,14,15,16,17,18]].sum(axis=1)
-            freq['evening'] = freq[[19,20,21,22]].sum(axis=1)
-
-            largest = pd.DataFrame(freq.groupby('uid')['importance'].nlargest(2))
-            largest_index = largest.index.droplevel(0)
-            freq['home'] = 0
-            freq['work'] = 0
-            freq['other'] = 0
-
-            w_home = [0.6,0.1,0.1,0.4]
-            w_work = [0.1,0.6,0.4,0.1]
-        
-            freq['p_home'] = (freq[['night','morning','afternoon','evening']].loc[largest_index] * w_home).sum(axis=1)
-            freq['p_work'] = (freq[['night','morning','afternoon','evening']].loc[largest_index] * w_work).sum(axis=1)
-            freq['home'] = freq['p_home'] / freq[['p_home','p_work']].sum(axis=1)
-            freq['work'] = freq['p_work'] / freq[['p_home','p_work']].sum(axis=1)
-            freq['other'].loc[~freq.index.isin(largest_index)] = 1
-            freq['home'].fillna(0,inplace=True)
-            freq['work'].fillna(0,inplace=True)
-
-            systematic_stops.set_index(['uid','pos_hashed'],inplace=True)
-            systematic_stops['home'] = 0
-            systematic_stops['work'] = 0
-            systematic_stops['other'] = 0
-            systematic_stops['home'].loc[systematic_stops.index.isin(freq.index)] = freq['home'].loc[freq.index.isin(systematic_stops.index)]
-            systematic_stops['work'].loc[systematic_stops.index.isin(freq.index)] = freq['work'].loc[freq.index.isin(systematic_stops.index)]
-            systematic_stops['other'].loc[systematic_stops.index.isin(freq.index)] = freq['other'].loc[freq.index.isin(systematic_stops.index)]
-            systematic_stops.reset_index(inplace=True)
-            
-        # 2 - case where no systematic stops have been found...adapt the empty dataframe
-        #     for the code that will use it.
-        else :
-            new_cols = ['home', 'work', 'other', 'start_time', 'end_time']
-            systematic_stops = systematic_stops.reindex(systematic_stops.columns.union(new_cols), axis=1)
-            
-        # Write out the dataframe...
-        self.systematic = systematic_stops
-        self.systematic.to_parquet('data/systematic_stops.parquet')
-        
-        
-        
-        ############################################
-        ### ---- OCCASIONAL STOP ENRICHMENT ---- ###
-        ############################################
-
-        def select_columns(gdf, threshold=80.0):
-            """
-            A function to select columns of a GeoDataFrame that have a percentage of null values
-            lower than a given threshold.
-            Returns a GeoDataFrame
-
-            -----------------------------
-            gdf: a GeoDataFrame
-
-            threshold: default 80.0
-                a float representing the maxium percentage of null values in a column.
-            """
-            
-            # list of columns
-            cols = gdf.columns
-            # print(f"Initial set of POI columns...{cols}")
-            
-            # list of columns to delete
-            del_cols = []
-            for c in cols:
-
-                # check if column contains only null value
-                if(gdf[c].isnull().all()):
-                    # save the empty column
-                    del_cols.append(c)
-                    continue
-
-                # control only columns with at least one null value
-                if(gdf[c].isnull().any()):
-
-                    # compute number of null values
-                    null_vals = gdf[c].isnull().value_counts()[1]
-                    # compute percentage w.r.t. total number of sample
-                    perc = null_vals/len(gdf[c])*100
-
-                    # save only columns that have a perc of null values lower than the given threshold
-                    if(threshold <= perc):
-                        del_cols.append(c)
-
-        
-            # Now, drop the selected columns MINUS 'osmid' and 'wikidata' 
-            del_cols = list(set(del_cols) - set(['osmid', 'wikidata']))
-            gdf = gdf.drop(columns = del_cols)
-
-            # print(f"POI dataframe info: {gdf.info()}")
-            return gdf
-
-
-
-        def preparing_stops(stop,max_distance):
-    
-            # buffer stop points -> convert their geometries from points into polygon 
-            # (we set the radius of polygon = to the radius of sjoin) 
-            stops = gpd.GeoDataFrame(stop, geometry=gpd.points_from_xy(stop.lng, stop.lat))
-            stops.set_crs('epsg:4326',inplace=True)
-            stops.to_crs('epsg:3857',inplace=True)
-            stops['geometry_stop'] = stops['geometry']
-            stops['geometry'] = stops['geometry_stop'].buffer(max_distance)
-
-            return stops
-
-
-
-        def semantic_enrichment(stop, semantic_df, suffix):
-        
-            #print("DEBUG enrichment occasional stops...")
-            
-            # duplicate geometry column because we loose it during the sjoin_nearest
-            s_df = semantic_df.copy()
-            
-            # Filter out the POIs without a name!
-            s_df = s_df.loc[s_df['name'].notna(), :]
-            
-            s_df['geometry_'+suffix] = s_df['geometry']
-            s_df['element_type'] = s_df['element_type'].astype(str)
-            s_df['osmid'] = s_df['osmid'].astype(str)
-            
-            #print(f"Stampa df stop occasionali: {stop.info()}")
-            print(f"Stampa df POIs: {s_df.info()}")
-            
-            # now we can use sjoin_nearest to obtain the results we want
-            mats = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
-            
-            # compute the distance between the stop point and the POI geometry
-            #mats['distance_'+suffix] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
-            mats['distance'] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
-            
-            # sort by distance
-            #mats = mats.sort_values(['stop_id','distance_'+suffix])
-            mats = mats.sort_values(['tid','stop_id','distance'])
-            
-            #print(f"Stampa df risultati: {mats.info()}")
-            return mats
-
-
-
-        def download_poi_osm(list_pois, place, semantic_granularity) :
-        
-            # Here we download the POIs from OSM if the list of types of POIs is not empty.
-            gdf_ = gpd.GeoDataFrame()
-            if list_pois != [] :
-            
-                for key in list_pois:
-
-                    # downloading POI
-                    print(f"Downloading {key} POIs from OSM...")
-                    poi = ox.geometries_from_place(place, tags={key:True})
-                    print(f"Download completed! Dataframe with the downloaded POIs: {poi}")
-                    
-                    # Immediately return the empty dataframe if it doesn't contain any suitable POI...
-                    if poi.empty : 
-                        print("No POI found...")
-                        new_cols = ['osmid', 'element_type', 'name', 'wikidata', 'geometry', 'category']
-                        poi = poi.reindex(poi.columns.union(new_cols), axis=1)
-                        return poi
-                    
-                    
-                    # convert list into string in order to save poi into parquet
-                    if 'nodes' in poi.columns:
-                        poi['nodes'] = poi['nodes'].astype(str)
-
-                    if 'ways' in poi.columns:
-                        poi['ways'] = poi['ways'].astype(str)
-
-                    poi.reset_index(inplace=True)
-                    poi.rename(columns={key: 'category'}, inplace=True)
-                    poi['category'].replace({'yes': key}, inplace=True)
-
-                    if poi.crs is None:
-                        poi.set_crs('epsg:4326',inplace=True)
-                        poi.to_crs('epsg:3857',inplace=True)
-                    else:
-                        poi.to_crs('epsg:3857',inplace=True)
-                    
-                    # Now drop the columns with too many missing values...
-                    poi = select_columns(poi, semantic_granularity)
-                    
-                    # Now write out this subset of POIs to a file. 
-                    poi.to_parquet('data/poi/' + key + '.parquet')
-
-                    # And finally, concatenate this subset of POIs to the other POIs
-                    # that have been added to the main dataframe so far.
-                    gdf_ = pd.concat([gdf_, poi])
-            
-            
-                # print(f"A few info on the POIs downloaded from OSM: {gdf_.info()}")
-                gdf_.to_parquet('data/poi/pois.parquet')
-                return gdf_
-
-
-
-        print("Executing occasional stop augmentation with POIs...")
-
-        occasional_stops = stops[~stops['stop_id'].isin(systematic_stops['stop_id'])]
-        self.occasional = occasional_stops
-        
-
-        # Get a POI dataset, either from OSM or from a file. 
-        gdf_ = None
-        if self.upload_stops == 'no' :
-            print(f"Downloading POIs from OSM for the location of {self.place}. Selected types of POIs: {self.list_pois}")
-            gdf_ = download_poi_osm(self.list_pois, self.place, self.semantic_granularity)
-        else :    
-            print(f"Using a POI file: {self.upload_stops}!")
-            gdf_ = gpd.read_parquet(self.upload_stops)
-
-            if gdf_.crs is None:
-                gdf_.set_crs('epsg:4326', inplace=True)
-                gdf_.to_crs('epsg:3857', inplace=True)
-            else:
-                gdf_.to_crs('epsg:3857', inplace=True)
-        print(f"A few info on the POIs that will be used to enrich the occasional stops: {gdf_.info()}")
-
-
-        # Calling functions internal to this method...
-        o_stops = preparing_stops(occasional_stops, self.max_distance)    
-        mat = semantic_enrichment(o_stops, gdf_[['element_type','osmid','name','wikidata','geometry','category']], 'poi')
-
-        ######## PROVA ###########
-        #mat.set_index(['stop_id','lat','lng'],inplace=True)
-        self.mats = mat.copy()
-        self.mats.to_parquet('data/enriched_occasional.parquet')
-        
-        
-        
-        ####################################
-        ### ---- WEATHER ENRICHMENT ---- ###
-        ####################################       
-
-        def move_weather_enrichment(moves, weather) :        
-
-            res = moves.copy()
-            if weather is not None :
-                
-                res['DATE'] = (res['datetime'].dt.date).astype(str)
-                res = res.merge(weather, on = 'DATE', how = 'left')
-                res.drop(columns = ['DATE'])
-                res.rename(columns = {'TAVG_C' : 'temperature', 'DESCRIPTION' : 'w_conditions'}, inplace = True)
-                
-                # The merge has eliminated the old multilevel index on moves...let's restore it. 
-                res = res.set_index(moves.index) 
-
-            # If weather conditions are not available then set NA values in the appropriate columns.
-            else :
-                res['temperature'] = pd.NA
-                res['w_conditions'] = pd.NA
-
-            return(res)
-        
-        
-        def weather_enrichment(traj_cleaned, weather) :
-            
-            traj_cleaned['DATE'] = (traj_cleaned['datetime'].dt.date).astype(str)
-            
-            # Per ogni traiettoria, trova il primo ed ultimo sample in ogni giornata coperta dalla traiettoria.
-            gb = traj_cleaned.groupby(['tid', 'DATE'])
-            traj_day = gb.first().reset_index()
-            end_traj_day = gb.last().reset_index()
-
-            # Adesso joina i due dataframe.
-            traj_day['end_lat'] = end_traj_day['lat']
-            traj_day['end_lng'] = end_traj_day['lng']
-            traj_day['end_datetime'] = end_traj_day['datetime']
-            print(traj_day)
-            print(traj_day.info())
-            
-            # For each trajectory and day covered by the trajectory, find whether we can associate weather information.
-            weather_enrichment = traj_day.merge(weather, on = 'DATE', how = 'inner')
-
-            weather_enrichment['datetime'] = pd.to_datetime(weather_enrichment['datetime'], utc = True)
-            weather_enrichment['end_datetime'] = pd.to_datetime(weather_enrichment['end_datetime'], utc = True)
-
-            print(weather_enrichment)
-            print(weather_enrichment.info())
-
-            return(weather_enrichment)
-        
-            
-            
-        df_weather_enrichment = None
-        print(f"Valore self.weather: {self.weather}")
-        if self.weather :
-            print("Adding weather info to the trajectories...")
-
-            traj_cleaned = pd.read_parquet('./data/temp_dataset/traj_cleaned.parquet')
-            weather = pd.read_parquet(self.upload_trajs)
-            
-            df_weather_enrichment = weather_enrichment(traj_cleaned, weather)
-            df_weather_enrichment.to_parquet('./data/weather_enrichment.parquet')
-        
-            # Set up the moves dataframe to have temperature and weather conditions (needed later on by
-            # the component plotting the trajectories).
-            self.moves = move_weather_enrichment(self.moves, weather)
-        else :
-            self.moves = move_weather_enrichment(self.moves, None)
-        
-        
-        
-        ##############################################
-        ### ---- SOCIAL MEDIA POST ENRICHMENT ---- ###
-        ##############################################
-        
-        tweets_RDF = None
-        print(f"Valore self.tweet_user: {self.tweet_user}")        
-        if self.tweet_user :
-            print("Enriching users with social media posts!")
-            
-            tweets = pd.read_parquet(self.upload_users)
-            tweets_RDF = tweets.copy()
-            
-            self.moves['date'] = self.moves['datetime'].dt.date
-            tweets['tweet_created'] = tweets['tweet_created'].astype('datetime64')
-            tweets['tweet_created'] = tweets['tweet_created'].dt.date
-            self.moves['tweet'] = ''
-
-            self.moves.reset_index(inplace=True)  
-
-            self.moves.set_index(['date','uid'],inplace=True)   
-            tweets.set_index(['tweet_created','uid'],inplace=True)      
-            matched_tweets = self.moves.join(tweets,how='inner')
-
-            self.moves.reset_index(inplace=True)
-            matched_tweets.reset_index(inplace=True)
-
-            self.tweets = matched_tweets.copy()    
-        
-        else :
-            self.tweets = None
-            
-            
-
-        ##############################################
-        ###            RDF GRAPH SAVE              ###
-        ##############################################
-        
-        if self.rdf == 'yes':
-            
-            print("Creating and then saving to disk the RDF graph...")
-
-            # Instantiate RDF-builder
-            builder = RDFBuilder()
-
-            # Add the users and the information associated to their raw-trajectories to the graph.
-            traj_cleaned = pd.read_parquet('data/temp_dataset/traj_cleaned.parquet')
-            builder.add_trajectories(traj_cleaned)
-
-            # Add to the RDF graph the stops, the moves, and the semantic information 
-            # associated with the trajectories (social media posts, weather), the stops (type of stop, POIs),
-            # and the moves (transportation mean).
-            builder.add_occasional_stops(self.mats)
-            builder.add_systematic_stops(self.systematic)
-            builder.add_moves(self.moves)
-            
-            # Add weather information to the trajectories.
-            if df_weather_enrichment is not None :
-                builder.add_weather(df_weather_enrichment)
-                
-            # Add weather information to the trajectories.
-            if tweets_RDF is not None :
-                builder.add_social(tweets_RDF)
-            
-            # Output the RDF graph to disk in Turtle format.
-            builder.serialize_graph('kg.ttl')
-    
 
     def show_trajectories(self, user) :
 
@@ -1017,34 +472,41 @@ class InteractiveEnrichment(InteractiveModuleInterface):
            
            
     def get_results(self) :
-        return None
+        return self.enrichment.get_results()
         
         
     def reset_state(self) :
         print(f"Resetting state of the module {self.id_class}")
+        self.enrichment.reset_state()
                      
         
     def get_users(self):
-        self.moves.reset_index(inplace=True)
-        return self.moves['uid'].unique()
+        moves = self.results_enrichment['moves'].copy()
+        moves.reset_index(inplace=True)
+        return moves['uid'].unique()
 
 
-    def get_trajectories(self,uid):
-        return self.moves[self.moves['uid']==uid]['tid'].unique()
+    def get_trajectories(self, uid):
+        moves = self.results_enrichment['moves'].copy()
+        return moves[moves['uid']==uid]['tid'].unique()
 
 
-    def get_systematic(self,uid):
-        return len(self.systematic[self.systematic['uid']==uid])
+    def get_systematic(self, uid):
+        systematic = self.results_enrichment['systematic'].copy()
+        return len(systematic[systematic['uid']==uid])
 
 
-    def get_occasional(self,uid):
-        return len(self.occasional[self.occasional['uid']==uid])
+    def get_occasional(self, uid):
+        occasional = self.results_enrichment['occasional'].copy()
+        return len(occasional[occasional['uid']==uid])
 
 
     def get_transport_duration(self,uid):
 
-        first_transport = self.moves[self.moves['uid']==uid].groupby(['label','tid']).first()['datetime']
-        last_transport = self.moves[self.moves['uid']==uid].groupby(['label','tid']).last()['datetime']
+        moves = self.results_enrichment['moves'].copy()
+
+        first_transport = moves[moves['uid']==uid].groupby(['label','tid']).first()['datetime']
+        last_transport = moves[moves['uid']==uid].groupby(['label','tid']).last()['datetime']
 
         duration_tid = last_transport - first_transport
         
@@ -1055,13 +517,22 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
 
     def get_tweets(self,uid):
-   
-        if self.tweets is not None :
-            return self.tweets[self.tweets['uid']==uid]['text'].unique()
-        else : return []
+
+        tweets = self.results_enrichment['tweets'].copy()
+        if tweets is not None :
+            return tweets[tweets['uid']==uid]['text'].unique()
+        else :
+            return []
 
 
-    def get_mats(self,uid,traj_id):
-        #print(self.mats[self.mats['tid']==traj_id])
+    def get_mats(self, uid, traj_id):
 
-        return self.moves[(self.moves['uid']==uid)&(self.moves['tid']==traj_id)], self.mats[(self.mats['uid']==uid)&(self.mats['tid']==traj_id)], self.systematic[(self.systematic['uid']==uid)&(self.systematic['tid']==traj_id)]
+        moves = self.results_enrichment['moves'].copy()
+        mats = self.results_enrichment['mats'].copy()
+        systematic = self.results_enrichment['systematic'].copy()
+
+        # print(mats[mats['tid']==traj_id])
+
+        return moves[(moves['uid']==uid)&(moves['tid']==traj_id)],\
+               mats[(mats['uid']==uid)&(mats['tid']==traj_id)],\
+               systematic[(systematic['uid']==uid)&(systematic['tid']==traj_id)]

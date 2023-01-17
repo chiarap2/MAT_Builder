@@ -14,7 +14,7 @@ class InteractiveModuleInterface(ABC) :
         pass
         
     @abstractmethod
-    def get_input_and_execute(self) :
+    def get_input_and_execute(self, **kwargs) :
         pass
         
     @abstractmethod

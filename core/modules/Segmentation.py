@@ -131,18 +131,19 @@ class Segmentation(ModuleInterface):
 
         trajs['move_id'].ffill(inplace=True)
         trajs['move_id'].fillna(0,inplace=True)
-
         trajs['move_id'][(trajs['start_stop']==1)|(trajs['end_stop']==1)] = -1
-
         moves = trajs[trajs['move_id']!=-1]
-        self.moves = moves.copy()
+
+        # NOTE: the final moves result set will be a pandas DataFrame built from the skmob dataframe.
+        self.moves = pd.DataFrame(moves)
 
         del end_df, start_df, traj_df
 
         return True
 
     def get_results(self) -> dict :
-    
+
+
         return {'stops' : self.stops.copy() if self.stops is not None else None,
                 'moves' : self.moves.copy() if self.moves is not None else None}
 
