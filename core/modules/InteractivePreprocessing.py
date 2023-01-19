@@ -1,4 +1,5 @@
 import pandas as pd
+import os
 
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
@@ -104,6 +105,10 @@ class InteractivePreprocessing(InteractiveModuleInterface):
         if button_state is not None :
         
             print(f"Eseguo if in get_input_and_execute del modulo {self.id_class}! {button_state}")
+
+            if (path is None) or (os.path.isfile(path) is False) :
+                outputs.append(html.H6(children='Error: invalid path to the trajectory file!'))
+                return None, outputs
             
             # Check input.
             if (speed is None) or (n_points is None):
@@ -111,29 +116,25 @@ class InteractivePreprocessing(InteractiveModuleInterface):
                 return None, outputs
 
 
-            # Salva nei campi dell'istanza l'input passato 
-            dic_params = {'trajectories' : pd.read_parquet('./data/Rome/rome.parquet'),
+            # Salva nei campi dell'istanza l'input passato
+
+            dic_params = {'trajectories' : pd.read_parquet(path),
                           'speed' : speed,
                           'n_points' : n_points}
-            
             # Esegui il codice core dell'istanza.
             self.preprocessing.execute(dic_params)
             results = self.preprocessing.get_results()['preprocessed_trajectories']
             
             # Manage the output to show in the web interface.
-            if results is None :
-                outputs.append(html.H6(children='File not found or invalid path'))
-                
-            else:
-                outputs.append(html.H6(children='Dataset statistics'))
-                outputs.append(html.Hr())
-                outputs.append(html.P(children='Tot. users: {} \t\t\t Tot. trajectories: {}'.format(self._get_num_users(results), self._get_num_trajs(results))))
-                outputs.append(dcc.Graph(figure = px.histogram(results.groupby('tid').datetime.first(),
-                                         x = 'datetime',
-                                         title = 'Distribution of trajectories over time')))
-                
-                # Save the results of the preprocessing to a file.
-                results.to_parquet(self.path_output)
+            outputs.append(html.H6(children='Dataset statistics'))
+            outputs.append(html.Hr())
+            outputs.append(html.P(children='Tot. users: {} \t\t\t Tot. trajectories: {}'.format(self._get_num_users(results), self._get_num_trajs(results))))
+            outputs.append(dcc.Graph(figure = px.histogram(results.groupby('tid').datetime.first(),
+                                     x = 'datetime',
+                                     title = 'Distribution of trajectories over time')))
+
+            # Save the results of the preprocessing to a file.
+            results.to_parquet(self.path_output)
         
         return None, outputs
 
