@@ -1,3 +1,4 @@
+import pandas as pd
 from core.modules import *
 
 
@@ -6,17 +7,15 @@ from core.modules import *
 def main() :
 
     print('Executing preprocessing...')
-    params_preprocessing = {'path' : './data/Rome/rome.parquet',
+    params_preprocessing = {'trajectories' : pd.read_parquet('./data/Rome/rome.parquet'),
                             'speed' : 300,
-                            'n_points' : 3000}
+                            'n_points' : 1500}
     prepro = Preprocessing()
     prepro.execute(params_preprocessing)
-    results = prepro.get_results()
-    print(results['preprocessed_trajectories'])
 
 
     print('Executing segmentation...')
-    params_segmentation = {'trajectories' : results['preprocessed_trajectories'],
+    params_segmentation = {'trajectories' : prepro.get_results()['preprocessed_trajectories'],
                            'duration' : 10,
                            'radius' : 0.5}
     segm = Segmentation()

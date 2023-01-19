@@ -1,3 +1,5 @@
+import pandas as pd
+
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 
@@ -110,7 +112,7 @@ class InteractivePreprocessing(InteractiveModuleInterface):
 
 
             # Salva nei campi dell'istanza l'input passato 
-            dic_params = {'path' : path,
+            dic_params = {'trajectories' : pd.read_parquet('./data/Rome/rome.parquet'),
                           'speed' : speed,
                           'n_points' : n_points}
             
