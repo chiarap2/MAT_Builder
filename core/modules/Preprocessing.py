@@ -1,6 +1,4 @@
-import geopandas as gpd
 import pandas as pd
-from typing import Optional
 
 import skmob
 from skmob.preprocessing import filtering, compression

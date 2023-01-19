@@ -5,16 +5,6 @@ from core.modules import *
 
 def main() :
 
-    # Object representing the pipeline to be executed.
-    # TODO: To be activated once the Pipeline class is ready.
-
-    # modules_pipeline = [InteractivePreprocessing,
-    #                    InteractiveSegmentation,
-    #                    InteractiveEnrichment]
-                        
-    # pipeline = InteractivePipeline(app, modules_pipeline)
-
-
     print('Executing preprocessing...')
     params_preprocessing = {'path' : './data/Rome/rome.parquet',
                             'speed' : 300,
@@ -34,6 +24,8 @@ def main() :
     results = segm.get_results()
     print(results['stops'])
     print(results['moves'])
+
+
 
 if __name__ == '__main__':
     main()

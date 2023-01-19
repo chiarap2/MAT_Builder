@@ -1,7 +1,4 @@
-import geopandas as gpd
 import pandas as pd
-import numpy as np
-import math
 
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL

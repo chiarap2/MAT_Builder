@@ -1,13 +1,8 @@
-import geopandas as gpd
 import pandas as pd
 import numpy as np
-from typing import Optional
 
 import skmob
 from skmob.preprocessing import detection
-
-from dash import Dash, dcc, html
-from dash.dependencies import Input, Output, State, MATCH, ALL
 
 from core.ModuleInterface import ModuleInterface
 

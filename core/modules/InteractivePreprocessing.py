@@ -1,10 +1,3 @@
-import geopandas as gpd
-import pandas as pd
-
-import skmob
-from skmob.preprocessing import filtering, compression
-from ptrail.core.TrajectoryDF import PTRAILDataFrame
-
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
 
