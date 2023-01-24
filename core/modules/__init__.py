@@ -3,3 +3,4 @@ from .InteractiveSegmentation import InteractiveSegmentation
 from .InteractiveEnrichment import InteractiveEnrichment
 from .Preprocessing import Preprocessing
 from .Segmentation import Segmentation
+from .Enrichment import Enrichment

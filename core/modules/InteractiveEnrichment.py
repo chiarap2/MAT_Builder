@@ -1,4 +1,6 @@
 import pandas as pd
+import geopandas as gpd
+import os
 
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output, State, MATCH, ALL
@@ -204,23 +206,52 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                               create_rdf,
                               button_state):
         
-        outputs = []        
+        outputs = []
         if button_state is not None :
         
             print(f"Esecuzione get_input_and_execute del modulo {self.id_class}! {button_state}")
 
+
+            # Check input.
+            if (move_enrichment is None) or (poi_place is None) or (poi_categories is None) or (path_poi is None) or\
+               (max_dist is None) or (social_enrichment is None) or (weather_enrichment is None) or (create_rdf is None) :
+                outputs.append(html.H6(children='Error: some input values were not provided!'))
+                return None, outputs
+
+            poi_df = None
+            if (path_poi != 'no') and (os.path.isfile(path_poi) is False) :
+                outputs.append(html.H6(children='Error: invalid path to the poi file!'))
+                return None, outputs
+            else :
+                poi_df = gpd.read_parquet(path_poi)
+
+            social_df = None
+            if (social_enrichment != 'no') and (os.path.isfile(social_enrichment) is False) :
+                outputs.append(html.H6(children='Error: invalid path to the social media file!'))
+                return None, outputs
+            else :
+                social_df = pd.read_parquet(social_enrichment)
+
+            weather_df = None
+            if (weather_enrichment != 'no') and (os.path.isfile(weather_enrichment) is False) :
+                outputs.append(html.H6(children='Error: invalid path to the weather file!'))
+                return None, outputs
+            else :
+                weather_df = pd.read_parquet(weather_enrichment)
+
+
             # Esegui il core dell'istanza.
             prev_results = self.prev_module.get_results()
             dic_params = {'moves' : prev_results['moves'],
-                          'move_enrichment' : move_enrichment,
+                          'move_enrichment' : True if move_enrichment == 'yes' else False,
                           'stops' : prev_results['stops'],
                           'poi_place' : poi_place,
-                          'poi_categories' : poi_categories,
-                          'path_poi' : path_poi,
+                          'poi_categories' : None if poi_categories == ['no'] else poi_categories,
+                          'path_poi' : poi_df,
                           'max_dist' : max_dist,
-                          'social_enrichment' : social_enrichment,
-                          "weather_enrichment" : weather_enrichment,
-                          'create_rdf' : create_rdf}
+                          'social_enrichment' : social_df,
+                          "weather_enrichment" : weather_df,
+                          'create_rdf' : True if create_rdf == 'yes' else False}
             self.enrichment.execute(dic_params)
             self.results_enrichment = self.enrichment.get_results()
             

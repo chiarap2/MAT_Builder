@@ -1,7 +1,6 @@
 import geopandas as gpd
 import pandas as pd
 import numpy as np
-import math
 
 from ptrail.core.TrajectoryDF import PTRAILDataFrame
 from ptrail.features.kinematic_features import KinematicFeatures as spatial
@@ -38,13 +37,13 @@ class Enrichment(ModuleInterface):
 
         # These are the auxiliary fields internally used during the enrichment execution.
         self.rdf = None
-        self.upload_trajs = None
+        self.upload_weather = None
         self.weather = None
-        self.upload_users = None
+        self.upload_social = None
         self.tweet_user = None
         self.max_distance = None
         self.semantic_granularity = 80 # NOTE: this is a fixed, internal parameter!
-        self.upload_stops = None
+        self.path_poi = None
         self.list_pois = None
         self.poi_place = None
         self.enrich_moves = None
@@ -68,7 +67,7 @@ class Enrichment(ModuleInterface):
         # Parsing the input received from the UI / user...
 
         # 1 - moves parameters
-        if dic_params['move_enrichment'] == 'yes':
+        if dic_params['move_enrichment']:
             self.enrich_moves = True
             self.moves = dic_params['moves']
         else:
@@ -78,35 +77,26 @@ class Enrichment(ModuleInterface):
         # 2 - Stops and POIs parameters
         self.stops = dic_params['stops']
         self.poi_place = dic_params['poi_place']
-
-        if dic_params['poi_categories'] == ['no']:
-            self.list_pois = []
-        else:
-            self.list_pois = dic_params['poi_categories']
-
-        if dic_params['path_poi'] == 'no':
-            self.upload_stops = 'no'
-        else:
-            self.upload_stops = dic_params['path_poi']
-
+        self.list_pois = [] if dic_params['poi_categories'] is None else dic_params['poi_categories']
+        self.path_poi = dic_params['path_poi']
         self.max_distance = dic_params['max_dist']
 
         # 3 - Social media posts parameters
-        if dic_params['social_enrichment'] == 'no':
+        if dic_params['social_enrichment'] is None:
             self.tweet_user = False
         else:
             self.tweet_user = True
-            self.upload_users = dic_params['social_enrichment']
+            self.upload_social = dic_params['social_enrichment']
 
         # 4 - weather parameters
-        if dic_params['weather_enrichment'] == 'no':
+        if dic_params['weather_enrichment'] is None:
             self.weather = False
         else:
             self.weather = True
-            self.upload_trajs = dic_params['weather_enrichment']
+            self.upload_weather = dic_params['weather_enrichment']
 
         # 5 - RDF knowledge graph creation parameters
-        self.rdf = 'yes' if dic_params['create_rdf'] == 'yes' else 'no'
+        self.rdf = dic_params['create_rdf']
 
 
         # 6 - Core execution.
@@ -450,12 +440,12 @@ class Enrichment(ModuleInterface):
 
         # Get a POI dataset, either from OSM or from a file. 
         gdf_ = None
-        if self.upload_stops == 'no' :
+        if self.path_poi is None :
             print(f"Downloading POIs from OSM for the location of {self.poi_place}. Selected types of POIs: {self.list_pois}")
             gdf_ = download_poi_osm(self.list_pois, self.poi_place, self.semantic_granularity)
-        else :    
-            print(f"Using a POI file: {self.upload_stops}!")
-            gdf_ = gpd.read_parquet(self.upload_stops)
+        else :
+            gdf_ = self.path_poi
+            print(f"Using a POI file: {gdf_}!")
 
             if gdf_.crs is None:
                 gdf_.set_crs('epsg:4326', inplace=True)
@@ -536,7 +526,7 @@ class Enrichment(ModuleInterface):
             print("Adding weather info to the trajectories...")
 
             traj_cleaned = pd.read_parquet('./data/temp_dataset/traj_cleaned.parquet')
-            weather = pd.read_parquet(self.upload_trajs)
+            weather = self.upload_weather
             
             df_weather_enrichment = weather_enrichment(traj_cleaned, weather)
             df_weather_enrichment.to_parquet('./data/weather_enrichment.parquet')
@@ -558,7 +548,7 @@ class Enrichment(ModuleInterface):
         if self.tweet_user :
             print("Enriching users with social media posts!")
             
-            tweets = pd.read_parquet(self.upload_users)
+            tweets = self.upload_social
             tweets_RDF = tweets.copy()
             
             self.moves['date'] = self.moves['datetime'].dt.date
@@ -586,7 +576,7 @@ class Enrichment(ModuleInterface):
         ###       RDF KNOWLEDGE GRAPH SAVE         ###
         ##############################################
         
-        if self.rdf == 'yes':
+        if self.rdf :
             
             print("Creating and then saving to disk the RDF graph...")
 
@@ -614,7 +604,8 @@ class Enrichment(ModuleInterface):
             
             # Output the RDF graph to disk in Turtle format.
             builder.serialize_graph('kg.ttl')
-           
+
+        print("Enrichment complete!")
            
     def get_results(self) -> dict:
         return {'moves' : self.moves,
