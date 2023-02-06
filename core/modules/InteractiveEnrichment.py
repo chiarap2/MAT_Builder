@@ -160,7 +160,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             
             # Input social media posts enrichment
             web_components.append(html.H5(children = "Enrich trajectory users with social media posts: "))
-            web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done: "))
+            web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done): "))
             web_components.append(dcc.Input(id = self.id_class + '-social_en',
                                             value = './data/tweets/tweets_rome.parquet',
                                             type = 'text',
@@ -209,7 +209,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         outputs = []
         if button_state is not None :
         
-            print(f"Esecuzione get_input_and_execute del modulo {self.id_class}! {button_state}")
+            print(f"Executing function get_input_and_execute of module {self.id_class}! {button_state}")
 
 
             # Check input.
@@ -230,14 +230,14 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                 outputs.append(html.H6(children='Error: invalid path to the social media file!'))
                 return None, outputs
             else :
-                social_df = pd.read_parquet(social_enrichment)
+                social_df = pd.read_parquet(social_enrichment) if social_enrichment != 'no' else None
 
             weather_df = None
             if (weather_enrichment != 'no') and (os.path.isfile(weather_enrichment) is False) :
                 outputs.append(html.H6(children='Error: invalid path to the weather file!'))
                 return None, outputs
             else :
-                weather_df = pd.read_parquet(weather_enrichment)
+                weather_df = pd.read_parquet(weather_enrichment) if weather_enrichment != 'no' else None
 
 
             # Esegui il core dell'istanza.
@@ -421,7 +421,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
         ### Preparing the information concerning the moves ###
 
-        #print(mats_moves['label'].unique())
+        # print(f"DEBUG PLOT MOVES: {mats_moves}")
         mats_moves['label'] = mats_moves['label'].map(transport)
         fig = px.line_mapbox(mats_moves,
                              lat="lat",
@@ -546,8 +546,8 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
     def get_tweets(self,uid):
 
-        tweets = self.results_enrichment['tweets'].copy()
-        if tweets is not None :
+        if self.results_enrichment['tweets'] is not None :
+            tweets = self.results_enrichment['tweets']
             return tweets[tweets['uid']==uid]['text'].unique()
         else :
             return []

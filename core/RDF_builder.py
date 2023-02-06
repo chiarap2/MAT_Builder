@@ -198,7 +198,7 @@ class RDFBuilder() :
         
         df_occasional_stops['datetime'] = pd.to_datetime(df_occasional_stops['datetime'], utc = True)
         df_occasional_stops['leaving_datetime'] = pd.to_datetime(df_occasional_stops['leaving_datetime'], utc = True)
-        print(f"Dataframe of the occasional stops used to generate RDF triples: {df_occasional_stops.info()}")
+        # print(f"Dataframe of the occasional stops used to generate RDF triples: {df_occasional_stops.info()}")
 
         view_stop_data = df_occasional_stops[['stop_id', 'uid', 'tid', 'datetime', 'leaving_datetime', 'osmid', 'element_type', 'name', 'wikidata', 'category', 'distance']]
         #print(view_stop_data)

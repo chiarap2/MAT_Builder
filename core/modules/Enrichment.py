@@ -569,8 +569,16 @@ class Enrichment(ModuleInterface):
         
         else :
             self.tweets = None
-            
-            
+
+
+
+        # This final index reset ensures that the dataframe containing the moves will NOT have
+        # its index on the trajectory identifiers. This is required as previous enrichment steps
+        # modified this dataframe's index.
+        # TODO: review and simplify the code to eliminate this need.
+        self.moves.reset_index(inplace=True)
+
+
 
         ##############################################
         ###       RDF KNOWLEDGE GRAPH SAVE         ###
@@ -603,6 +611,7 @@ class Enrichment(ModuleInterface):
                 builder.add_social(tweets_RDF)
             
             # Output the RDF graph to disk in Turtle format.
+            print("Saving the KG to disk!")
             builder.serialize_graph('kg.ttl')
 
         print("Enrichment complete!")
