@@ -29,9 +29,114 @@ class Enrichment(ModuleInterface):
     The KG is populated according to a customized version of the STEPv2 ontology.
     '''
 
+    ### CLASS PROTECTED METHODS ###
+
+    def systematic_enrichment(self, stops) :
+        stops.reset_index(inplace=True)
+        stops.rename(columns={'index': 'stop_id'}, inplace=True)
+        stops['pos_hashed'] = stops[['lat', 'lng']].apply(lambda x: geohash2.encode(x[0], x[1], 7), raw=True, axis=1)
+        stops['frequency'] = 0
+
+        def compute_freq(x):
+            freqs = x.groupby('pos_hashed').count()['frequency']
+            return freqs
+
+        systematic_sp = pd.DataFrame(stops.groupby('uid').apply(lambda x: compute_freq(x)))
+        sp = stops.copy()
+        sp.set_index(['uid', 'pos_hashed'], inplace=True)
+        sp['frequency'] = systematic_sp['frequency']
+        sp.reset_index(inplace=True)
+        systematic_stops = sp[sp['frequency'] > 2]
+
+        # 1 - case where systematic stops have been found...
+        if systematic_stops.shape[0] != 0:
+            systematic_stops['start_time'] = systematic_stops['datetime'].dt.hour
+            systematic_stops['end_time'] = systematic_stops['leaving_datetime'].dt.hour
+            systematic_stops.reset_index(inplace=True, drop=True)
+
+            # global freq
+            freq = pd.DataFrame(np.zeros((len(systematic_stops), 24)))
+            freq['uid'] = systematic_stops['uid']
+            freq['location'] = systematic_stops['pos_hashed']
+            freq.drop_duplicates(['uid', 'location'], inplace=True)
+
+            def update_hour(x):
+
+                start_col = x[-2]
+                end_col = x[-1]
+
+                start_raw = freq[(freq['uid'] == x[0]) & (freq['location'] == x[1])].first_valid_index()
+                if start_raw != None:
+                    end_raw = start_raw + 1
+                    if start_col < end_col:
+                        freq.loc[start_raw:end_raw, start_col:end_col] += 1
+                    elif start_col == end_col:
+                        freq.loc[start_raw:end_raw, start_col] += 1
+                    else:
+                        freq.loc[start_raw:end_raw, start_col:23] += 1
+                        freq.loc[start_raw:end_raw, 0:end_col] += 1
+
+            systematic_stops.apply(lambda x: update_hour(x), raw=True, axis=1)
+
+            hours = [i for i in range(0, 24)]
+            freq['sum'] = freq[hours].sum(axis=1)
+            freq['tot'] = freq.groupby('uid')['sum'].sum()
+            freq['importance'] = freq['sum'] / freq['tot']
+
+            freq.set_index(['uid', 'location'], inplace=True)
+            freq.drop(columns=['sum', 'tot'], inplace=True)
+
+            freq['night'] = freq[[23, 0, 1, 2, 3, 4, 5]].sum(axis=1)
+            freq['morning'] = freq[[6, 7, 8, 9, 10, 11, 12]].sum(axis=1)
+            freq['afternoon'] = freq[[13, 14, 15, 16, 17, 18]].sum(axis=1)
+            freq['evening'] = freq[[19, 20, 21, 22]].sum(axis=1)
+
+            largest = pd.DataFrame(freq.groupby('uid')['importance'].nlargest(2))
+            largest_index = largest.index.droplevel(0)
+            freq['home'] = 0
+            freq['work'] = 0
+            freq['other'] = 0
+
+            w_home = [0.6, 0.1, 0.1, 0.4]
+            w_work = [0.1, 0.6, 0.4, 0.1]
+
+            freq['p_home'] = (freq[['night', 'morning', 'afternoon', 'evening']].loc[largest_index] * w_home).sum(axis=1)
+            freq['p_work'] = (freq[['night', 'morning', 'afternoon', 'evening']].loc[largest_index] * w_work).sum(axis=1)
+            freq['home'] = freq['p_home'] / freq[['p_home', 'p_work']].sum(axis=1)
+            freq['work'] = freq['p_work'] / freq[['p_home', 'p_work']].sum(axis=1)
+            freq['other'].loc[~freq.index.isin(largest_index)] = 1
+            freq['home'].fillna(0, inplace=True)
+            freq['work'].fillna(0, inplace=True)
+
+            systematic_stops.set_index(['uid', 'pos_hashed'], inplace=True)
+            systematic_stops['home'] = 0
+            systematic_stops['work'] = 0
+            systematic_stops['other'] = 0
+            systematic_stops['home'].loc[systematic_stops.index.isin(freq.index)] = freq['home'].loc[
+                freq.index.isin(systematic_stops.index)]
+            systematic_stops['work'].loc[systematic_stops.index.isin(freq.index)] = freq['work'].loc[
+                freq.index.isin(systematic_stops.index)]
+            systematic_stops['other'].loc[systematic_stops.index.isin(freq.index)] = freq['other'].loc[
+                freq.index.isin(systematic_stops.index)]
+            systematic_stops.reset_index(inplace=True)
+
+        # 2 - case where no systematic stops have been found...adapt the empty dataframe
+        #     for the code that will use it.
+        else:
+            new_cols = ['home', 'work', 'other', 'start_time', 'end_time']
+            systematic_stops = systematic_stops.reindex(systematic_stops.columns.union(new_cols), axis=1)
+
+        # Write out the dataframe...
+        self.systematic = systematic_stops
+        self.systematic.to_parquet('data/systematic_stops.parquet')
+
+        # Return a dataframe indicating whether a stop belongs to a systematic stop (will be used
+        # to determine the occasional ones).
+        return stops
 
 
-    ### CLASS CONSTRUCTOR ###
+
+    ### CLASS PUBLIC CONSTRUCTOR ###
     
     def __init__(self) :
 
@@ -178,103 +283,8 @@ class Enrichment(ModuleInterface):
         ############################################
         
         print("Executing systematic stop enrichment...")
+        stops = self.systematic_enrichment(self.stops.copy())
 
-        stops = self.stops.copy()
-        stops.reset_index(inplace=True)
-        stops.rename(columns={'index':'stop_id'},inplace=True)
-        stops['pos_hashed'] = stops[['lat', 'lng']].apply(lambda x: geohash2.encode(x[0], x[1], 7), raw=True, axis=1)
-        stops['frequency'] = 0
-
-        def compute_freq(x):
-            freqs = x.groupby('pos_hashed').count()['frequency']
-            return freqs
-
-        systematic_sp = pd.DataFrame(stops.groupby('uid').apply(lambda x: compute_freq(x)))
-        sp = stops.copy()
-        sp.set_index(['uid','pos_hashed'],inplace=True)
-        sp['frequency'] = systematic_sp['frequency']
-        sp.reset_index(inplace=True)
-        systematic_stops = sp[sp['frequency'] > 2]
-        
-        # 1 - case where systematic stops have been found...
-        if systematic_stops.shape[0] != 0 :
-            systematic_stops['start_time'] = systematic_stops['datetime'].dt.hour
-            systematic_stops['end_time'] = systematic_stops['leaving_datetime'].dt.hour
-            systematic_stops.reset_index(inplace=True,drop=True)
-
-            # global freq
-            freq = pd.DataFrame(np.zeros((len(systematic_stops),24)))
-            freq['uid'] = systematic_stops['uid']
-            freq['location'] = systematic_stops['pos_hashed']
-            freq.drop_duplicates(['uid','location'],inplace=True)
-
-            def update_hour(x):
-                
-                start_col = x[-2]
-                end_col = x[-1]
-                
-                start_raw = freq[(freq['uid']==x[0])&(freq['location']==x[1])].first_valid_index()
-                if start_raw != None:
-                    end_raw = start_raw+1
-                    if start_col<end_col:
-                        freq.loc[start_raw:end_raw, start_col:end_col] += 1
-                    elif start_col == end_col:
-                        freq.loc[start_raw:end_raw, start_col] += 1
-                    else:
-                        freq.loc[start_raw:end_raw, start_col:23] += 1
-                        freq.loc[start_raw:end_raw, 0:end_col] += 1
-
-            systematic_stops.apply(lambda x: update_hour(x),raw=True,axis=1)
-
-            hours = [i for i in range(0,24)]
-            freq['sum'] = freq[hours].sum(axis=1)
-            freq['tot'] = freq.groupby('uid')['sum'].sum()
-            freq['importance'] = freq['sum'] / freq['tot']
-
-            freq.set_index(['uid','location'],inplace=True)
-            freq.drop(columns=['sum','tot'],inplace=True)
-
-            freq['night'] = freq[[23,0,1,2,3,4,5]].sum(axis=1)
-            freq['morning'] = freq[[6,7,8,9,10,11,12]].sum(axis=1)
-            freq['afternoon'] = freq[[13,14,15,16,17,18]].sum(axis=1)
-            freq['evening'] = freq[[19,20,21,22]].sum(axis=1)
-
-            largest = pd.DataFrame(freq.groupby('uid')['importance'].nlargest(2))
-            largest_index = largest.index.droplevel(0)
-            freq['home'] = 0
-            freq['work'] = 0
-            freq['other'] = 0
-
-            w_home = [0.6,0.1,0.1,0.4]
-            w_work = [0.1,0.6,0.4,0.1]
-        
-            freq['p_home'] = (freq[['night','morning','afternoon','evening']].loc[largest_index] * w_home).sum(axis=1)
-            freq['p_work'] = (freq[['night','morning','afternoon','evening']].loc[largest_index] * w_work).sum(axis=1)
-            freq['home'] = freq['p_home'] / freq[['p_home','p_work']].sum(axis=1)
-            freq['work'] = freq['p_work'] / freq[['p_home','p_work']].sum(axis=1)
-            freq['other'].loc[~freq.index.isin(largest_index)] = 1
-            freq['home'].fillna(0,inplace=True)
-            freq['work'].fillna(0,inplace=True)
-
-            systematic_stops.set_index(['uid','pos_hashed'],inplace=True)
-            systematic_stops['home'] = 0
-            systematic_stops['work'] = 0
-            systematic_stops['other'] = 0
-            systematic_stops['home'].loc[systematic_stops.index.isin(freq.index)] = freq['home'].loc[freq.index.isin(systematic_stops.index)]
-            systematic_stops['work'].loc[systematic_stops.index.isin(freq.index)] = freq['work'].loc[freq.index.isin(systematic_stops.index)]
-            systematic_stops['other'].loc[systematic_stops.index.isin(freq.index)] = freq['other'].loc[freq.index.isin(systematic_stops.index)]
-            systematic_stops.reset_index(inplace=True)
-            
-        # 2 - case where no systematic stops have been found...adapt the empty dataframe
-        #     for the code that will use it.
-        else :
-            new_cols = ['home', 'work', 'other', 'start_time', 'end_time']
-            systematic_stops = systematic_stops.reindex(systematic_stops.columns.union(new_cols), axis=1)
-            
-        # Write out the dataframe...
-        self.systematic = systematic_stops
-        self.systematic.to_parquet('data/systematic_stops.parquet')
-        
         
         
         ############################################
@@ -434,8 +444,7 @@ class Enrichment(ModuleInterface):
 
         print("Executing occasional stop augmentation with POIs...")
 
-        occasional_stops = stops[~stops['stop_id'].isin(systematic_stops['stop_id'])]
-        self.occasional = occasional_stops
+        self.occasional = stops[~stops['stop_id'].isin(self.systematic['stop_id'])]
         
 
         # Get a POI dataset, either from OSM or from a file. 
@@ -456,7 +465,7 @@ class Enrichment(ModuleInterface):
 
 
         # Calling functions internal to this method...
-        o_stops = preparing_stops(occasional_stops, self.max_distance)    
+        o_stops = preparing_stops(self.occasional, self.max_distance)
         mat = semantic_enrichment(o_stops, gdf_[['element_type','osmid','name','wikidata','geometry','category']], 'poi')
 
         ######## PROVA ###########
