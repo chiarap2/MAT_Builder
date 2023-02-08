@@ -31,7 +31,7 @@ class Enrichment(ModuleInterface):
 
     ### CLASS PROTECTED METHODS ###
 
-    def _systematic_enrichment(self, stops : pd.DataFrame, geohash_precision : int, min_frequency_sys : int) :
+    def _systematic_enrichment(self, stops : pd.DataFrame, geohash_precision : int, min_frequency_sys : int) -> tuple[pd.DataFrame, pd.DataFrame]:
         # Qui l'indice in 'stops' e' l'id degli stop...resettiamo l'indice in maniera tale da farlo diventare
         # la colonna degli ID degli stop.
         stops.reset_index(inplace=True)

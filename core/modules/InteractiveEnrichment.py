@@ -473,12 +473,19 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
         ### Preparing the information concerning the systematic stops ###
 
+        mats_systematic['systematic_id'] = mats_systematic['systematic_id'].astype(str)
         mats_systematic['home'] = round((mats_systematic['home']*100),2).astype(str)
         mats_systematic['work'] = round((mats_systematic['work']*100),2).astype(str)
         mats_systematic['other'] = round((mats_systematic['other']*100),2).astype(str)
+        mats_systematic['importance'] = round((mats_systematic['importance'] * 100), 2).astype(str)
         mats_systematic['frequency'] = mats_systematic['frequency'].astype(str)
 
-        mats_systematic['description'] = '<b> Home </b>: ' + mats_systematic['home'] + '% </br></br> <b> Work </b>: ' + mats_systematic['work'] + '% </br> <b> Other </b>: ' + mats_systematic['other'] + '% </br> <b> Frequency </b>: ' + mats_systematic['frequency']
+        mats_systematic['description'] = '</br><b>Systematic ID</b>: ' + mats_systematic['systematic_id']\
+                                         + '</br><b>Home</b>: ' + mats_systematic['home']\
+                                         + '%</br><b>Work</b>: ' + mats_systematic['work']\
+                                         + '%</br><b>Other</b>: ' + mats_systematic['other'] \
+                                         + '%</br><b>Importance</b>: ' + mats_systematic['importance'] \
+                                         + '%</br><b>Frequency </b>: ' + mats_systematic['frequency']
         systematic_desc = list(mats_systematic['description'])
 
         fig.add_trace(go.Scattermapbox(mode = "markers", name = 'systematic stops',
