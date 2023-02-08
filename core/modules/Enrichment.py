@@ -31,108 +31,122 @@ class Enrichment(ModuleInterface):
 
     ### CLASS PROTECTED METHODS ###
 
-    def systematic_enrichment(self, stops) :
+    def _systematic_enrichment(self, stops : pd.DataFrame, geohash_precision : int, min_frequency_sys : int) :
+        # Qui l'indice in 'stops' e' l'id degli stop...resettiamo l'indice in maniera tale da farlo diventare
+        # la colonna degli ID degli stop.
         stops.reset_index(inplace=True)
         stops.rename(columns={'index': 'stop_id'}, inplace=True)
-        stops['pos_hashed'] = stops[['lat', 'lng']].apply(lambda x: geohash2.encode(x[0], x[1], 7), raw=True, axis=1)
-        stops['frequency'] = 0
 
-        def compute_freq(x):
-            freqs = x.groupby('pos_hashed').count()['frequency']
-            return freqs
 
-        systematic_sp = pd.DataFrame(stops.groupby('uid').apply(lambda x: compute_freq(x)))
-        sp = stops.copy()
-        sp.set_index(['uid', 'pos_hashed'], inplace=True)
-        sp['frequency'] = systematic_sp['frequency']
-        sp.reset_index(inplace=True)
-        systematic_stops = sp[sp['frequency'] > 2]
+        # Qui mappiamo i centroidi degli stop vs le celle materializzate tramite la funzione di geohash.
+        stops['pos_hashed'] = [geohash2.encode(lat, lng, geohash_precision) for lat, lng in zip(stops['lat'], stops['lng'])]
+
+
+        # Conta la frequenza delle coppie ('uid', 'pos_hashed').
+        # NOTA: questa e' la base da cui individueremo i systematic stop e li classificheremo.
+        systematic_sp = pd.DataFrame(stops.groupby(['uid', 'pos_hashed']).size(), columns = ['frequency']).reset_index()
+        # display(systematic_sp)
+
+
+        # Ora associa gli stop originali alle coppie (uid, pos_hashed) insieme alla frequenza trovata.
+        sp = stops.merge(systematic_sp, on = ['uid', 'pos_hashed'], how = 'left')
+        # display(sp)
+
+
+        systematic_stops = sp[sp['frequency'] >= min_frequency_sys].copy()
+        systematic_stops['systematic_id'] = systematic_stops.groupby(["uid", "pos_hashed"]).ngroup()
+        systematic_stops.reset_index(inplace=True, drop=True)
+        # display(systematic_stops)
+
 
         # 1 - case where systematic stops have been found...
         if systematic_stops.shape[0] != 0:
             systematic_stops['start_time'] = systematic_stops['datetime'].dt.hour
             systematic_stops['end_time'] = systematic_stops['leaving_datetime'].dt.hour
-            systematic_stops.reset_index(inplace=True, drop=True)
 
-            # global freq
-            freq = pd.DataFrame(np.zeros((len(systematic_stops), 24)))
+
+            # 1.1 - Prepare the dataframe that will hold the hours' frequencies.
+            freq = pd.DataFrame(np.zeros((len(systematic_stops), 24), dtype = np.uint32))
             freq['uid'] = systematic_stops['uid']
             freq['location'] = systematic_stops['pos_hashed']
             freq.drop_duplicates(['uid', 'location'], inplace=True)
+            # display(freq)
 
-            def update_hour(x):
 
-                start_col = x[-2]
-                end_col = x[-1]
+            # 1.2 - Qui calcoliamo i contatori delle ore in cui occorrono i sistematic stop
+            # (propedeutico a determinare se si tratta di home/work/other).
+            def update_freq(freq, systematic_stops) :
+                it = zip(systematic_stops['uid'], systematic_stops['pos_hashed'],
+                         systematic_stops['start_time'], systematic_stops['end_time'])
 
-                start_raw = freq[(freq['uid'] == x[0]) & (freq['location'] == x[1])].first_valid_index()
-                if start_raw != None:
-                    end_raw = start_raw + 1
-                    if start_col < end_col:
-                        freq.loc[start_raw:end_raw, start_col:end_col] += 1
-                    elif start_col == end_col:
-                        freq.loc[start_raw:end_raw, start_col] += 1
-                    else:
-                        freq.loc[start_raw:end_raw, start_col:23] += 1
-                        freq.loc[start_raw:end_raw, 0:end_col] += 1
+                for uid, location, start, end in it :
+                    cols = list(range(start, end + 1)) if start <= end else list(range(0, end + 1)) + list(range(start, 24))
+                    freq.loc[(freq['uid'] == uid) & (freq['location'] == location), cols] += 1
 
-            systematic_stops.apply(lambda x: update_hour(x), raw=True, axis=1)
+            update_freq(freq, systematic_stops)
+            # display(freq)
 
-            hours = [i for i in range(0, 24)]
-            freq['sum'] = freq[hours].sum(axis=1)
-            freq['tot'] = freq.groupby('uid')['sum'].sum()
-            freq['importance'] = freq['sum'] / freq['tot']
 
-            freq.set_index(['uid', 'location'], inplace=True)
+            # 1.3 - Qui calcoliamo l'importanza degli stop sistematici trovati per ogni utente.
+            #     I due piu' importanti vengono assunti essere casa o lavoro.
+            hours = list(range(0, 24))
+            freq['sum'] = freq[hours].sum(axis=1) # Qui calcoliamo la somma delle ore per ogni systematic stop.
+            freq['tot'] = freq.groupby('uid')['sum'].transform('sum')
+            freq['importance'] = freq['sum'] / freq['tot'] # E qui determiniamo l'importanza di ogni systematic stop.
             freq.drop(columns=['sum', 'tot'], inplace=True)
+            freq.set_index(['uid', 'location'], inplace=True)
+            # display(freq)
 
-            freq['night'] = freq[[23, 0, 1, 2, 3, 4, 5]].sum(axis=1)
-            freq['morning'] = freq[[6, 7, 8, 9, 10, 11, 12]].sum(axis=1)
+
+            # 1.4 - Qui distribuiamo i contatori associate alle ore ai 4 momenti del giorno.
+            freq['night'] = freq[[22, 23, 0, 1, 2, 3, 4, 5, 6]].sum(axis=1)
+            freq['morning'] = freq[[7, 8, 9, 10, 11, 12]].sum(axis=1)
             freq['afternoon'] = freq[[13, 14, 15, 16, 17, 18]].sum(axis=1)
-            freq['evening'] = freq[[19, 20, 21, 22]].sum(axis=1)
+            freq['evening'] = freq[[19, 20, 21]].sum(axis=1)
+            # display(freq)
 
-            largest = pd.DataFrame(freq.groupby('uid')['importance'].nlargest(2))
-            largest_index = largest.index.droplevel(0)
-            freq['home'] = 0
-            freq['work'] = 0
-            freq['other'] = 0
 
+            # 1.5 - Qui per ogni utente troviamo i primi 2 stop sistematici con importanza maggiore (saranno )
+            largest_index = pd.DataFrame(freq.groupby('uid')['importance'].nlargest(2)).index.droplevel(0)
+            # display(largest_index)
+
+
+            # 1.6 - Qui calcoliamo le probabilita' associate alle tipologie di stop sistematici.
             w_home = [0.6, 0.1, 0.1, 0.4]
             w_work = [0.1, 0.6, 0.4, 0.1]
+            list_exclusion = list(set(freq.index) - set(largest_index))
+            freq['p_home'] = (freq[['night', 'morning', 'afternoon', 'evening']] * w_home).sum(axis=1)
+            freq['p_work'] = (freq[['night', 'morning', 'afternoon', 'evening']] * w_work).sum(axis=1)
+            freq['home'] = freq['p_home'] / (freq['p_home'] + freq['p_work'])
+            freq['work'] = freq['p_work'] / (freq['p_home'] + freq['p_work'])
+            freq.loc[list_exclusion, 'home'] = 0
+            freq.loc[list_exclusion, 'work'] = 0
+            freq['other'] = 0
+            freq.loc[list_exclusion, 'other'] = 1
+            # display(freq)
 
-            freq['p_home'] = (freq[['night', 'morning', 'afternoon', 'evening']].loc[largest_index] * w_home).sum(axis=1)
-            freq['p_work'] = (freq[['night', 'morning', 'afternoon', 'evening']].loc[largest_index] * w_work).sum(axis=1)
-            freq['home'] = freq['p_home'] / freq[['p_home', 'p_work']].sum(axis=1)
-            freq['work'] = freq['p_work'] / freq[['p_home', 'p_work']].sum(axis=1)
-            freq['other'].loc[~freq.index.isin(largest_index)] = 1
-            freq['home'].fillna(0, inplace=True)
-            freq['work'].fillna(0, inplace=True)
 
+            # 7 - Qui, infine, completiamo il dataframe systematic stops con le varie probabilita' calcolate.
             systematic_stops.set_index(['uid', 'pos_hashed'], inplace=True)
             systematic_stops['home'] = 0
             systematic_stops['work'] = 0
-            systematic_stops['other'] = 0
-            systematic_stops['home'].loc[systematic_stops.index.isin(freq.index)] = freq['home'].loc[
-                freq.index.isin(systematic_stops.index)]
-            systematic_stops['work'].loc[systematic_stops.index.isin(freq.index)] = freq['work'].loc[
-                freq.index.isin(systematic_stops.index)]
-            systematic_stops['other'].loc[systematic_stops.index.isin(freq.index)] = freq['other'].loc[
-                freq.index.isin(systematic_stops.index)]
+            systematic_stops['other'] = 1
+            systematic_stops['importance'] = freq['importance']
+            systematic_stops.loc[largest_index, 'home'] = freq.loc[largest_index, 'home']
+            systematic_stops.loc[largest_index, 'work'] = freq.loc[largest_index, 'work']
+            systematic_stops.loc[largest_index, 'other'] = freq.loc[largest_index, 'other']
             systematic_stops.reset_index(inplace=True)
+
 
         # 2 - case where no systematic stops have been found...adapt the empty dataframe
         #     for the code that will use it.
         else:
-            new_cols = ['home', 'work', 'other', 'start_time', 'end_time']
+            new_cols = ['systematic_id', 'importance', 'home', 'work', 'other', 'start_time', 'end_time']
             systematic_stops = systematic_stops.reindex(systematic_stops.columns.union(new_cols), axis=1)
 
-        # Write out the dataframe...
-        self.systematic = systematic_stops
-        self.systematic.to_parquet('data/systematic_stops.parquet')
 
-        # Return a dataframe indicating whether a stop belongs to a systematic stop (will be used
-        # to determine the occasional ones).
-        return stops
+        # Print out the dataframe holding the systematic stops.
+        return stops, systematic_stops
 
 
 
@@ -283,7 +297,8 @@ class Enrichment(ModuleInterface):
         ############################################
         
         print("Executing systematic stop enrichment...")
-        stops = self.systematic_enrichment(self.stops.copy())
+        # TODO: passare la soglia oltre la quale si individua uno stop sistematico.
+        stops, self.systematic = self._systematic_enrichment(self.stops.copy(), 7, 5)
 
         
         
@@ -443,7 +458,7 @@ class Enrichment(ModuleInterface):
 
 
         print("Executing occasional stop augmentation with POIs...")
-
+        print(self.systematic)
         self.occasional = stops[~stops['stop_id'].isin(self.systematic['stop_id'])]
         
 
