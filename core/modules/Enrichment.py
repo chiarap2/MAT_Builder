@@ -388,13 +388,14 @@ class Enrichment(ModuleInterface):
             
             # now we can use sjoin_nearest to obtain the results we want
             mats = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
+
+            # Remove the POIs that have been associated with the same stop multiple times.
+            mats.drop_duplicates(subset=['stop_id', 'osmid'], inplace = True)
             
             # compute the distance between the stop point and the POI geometry
-            #mats['distance_'+suffix] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
             mats['distance'] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
             
             # sort by distance
-            #mats = mats.sort_values(['stop_id','distance_'+suffix])
             mats = mats.sort_values(['tid','stop_id','distance'])
             
             #print(f"Stampa df risultati: {mats.info()}")

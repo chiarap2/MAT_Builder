@@ -277,8 +277,17 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
         options = []
         if user is not None:
+            trajectories = self.get_trajectories(user)
+            systematic = self.results_enrichment['systematic']
+            occasional = self.results_enrichment['occasional']
 
-            list_traj = [{'label': i, 'value': i} for i in self.get_trajectories(user)]
+            list_traj = []
+            for i in trajectories :
+                num_sys = str(len(systematic[systematic['tid']==i]))
+                num_occ = str(len(occasional[occasional['tid']==i]))
+                text = i + ' (systematic: ' + num_sys + ', occasional: ' + num_occ + ')'
+                list_traj.append({'label': text, 'value': i})
+
             options.extend([html.P(children = 'Trajectories:'),
                            dcc.Dropdown(id = 'traj_sel-' + self.id_class,
                                         options = list_traj,
@@ -433,8 +442,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         
         
         ### Prepare the information concerning the occasional stops... ###
-        mats_stops.drop_duplicates(subset=['category','distance'], inplace = True)
-        
+
         mats_stops['distance'] = round(mats_stops['distance'], 2)
         mats_stops['description'] = '</br><b>PoI category</b>: ' +\
                                     mats_stops['category'] +\
@@ -445,7 +453,6 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         gb_occ_stops = mats_stops.groupby('stop_id')
         matched_pois = []
         for key, item in gb_occ_stops:
-            
             tmp = item['description']
             size = tmp.shape[0]
             limit = min(size, limit_pois)
@@ -479,8 +486,10 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         mats_systematic['other'] = round((mats_systematic['other']*100),2).astype(str)
         mats_systematic['importance'] = round((mats_systematic['importance'] * 100), 2).astype(str)
         mats_systematic['frequency'] = mats_systematic['frequency'].astype(str)
+        mats_systematic['duration'] = (mats_systematic['leaving_datetime'] - mats_systematic['datetime']).astype(str)
 
         mats_systematic['description'] = '</br><b>Systematic ID</b>: ' + mats_systematic['systematic_id']\
+                                         + '</br><b>Duration</b>: ' + mats_systematic['duration']\
                                          + '</br><b>Home</b>: ' + mats_systematic['home']\
                                          + '%</br><b>Work</b>: ' + mats_systematic['work']\
                                          + '%</br><b>Other</b>: ' + mats_systematic['other'] \
