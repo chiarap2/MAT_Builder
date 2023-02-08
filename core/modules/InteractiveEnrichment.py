@@ -425,7 +425,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             return None
 
         # Get the dataframes of interest from the enrichment class.
-        mats_moves, mats_stops, mats_systematic = self.get_mats(user, traj)
+        mats_moves, mats_stops, mats_systematic = self.get_enriched_stop_move(user, traj)
 
 
         ### Preparing the information concerning the moves ###
@@ -569,14 +569,12 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             return []
 
 
-    def get_mats(self, uid, traj_id):
+    def get_enriched_stop_move(self, uid, traj_id):
 
         moves = self.results_enrichment['moves'].copy()
-        mats = self.results_enrichment['mats'].copy()
+        enriched_occasional = self.results_enrichment['enriched_occasional'].copy()
         systematic = self.results_enrichment['systematic'].copy()
 
-        # print(mats[mats['tid']==traj_id])
-
         return moves[(moves['uid']==uid)&(moves['tid']==traj_id)],\
-               mats[(mats['uid']==uid)&(mats['tid']==traj_id)],\
+               enriched_occasional[(enriched_occasional['uid']==uid)&(enriched_occasional['tid']==traj_id)],\
                systematic[(systematic['uid']==uid)&(systematic['tid']==traj_id)]

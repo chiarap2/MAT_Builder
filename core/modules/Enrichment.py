@@ -172,7 +172,7 @@ class Enrichment(ModuleInterface):
         self.stops = None
         self.moves = None
 
-        self.mats = None
+        self.enriched_occasional = None
         self.systematic = None
         self.occasional = None
         self.tweets = None
@@ -387,19 +387,19 @@ class Enrichment(ModuleInterface):
             print(f"Stampa df POIs: {s_df.info()}")
             
             # now we can use sjoin_nearest to obtain the results we want
-            mats = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
+            enriched_occasional = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
 
             # Remove the POIs that have been associated with the same stop multiple times.
-            mats.drop_duplicates(subset=['stop_id', 'osmid'], inplace = True)
-            
+            enriched_occasional.drop_duplicates(subset=['stop_id', 'osmid'], inplace = True)
+
             # compute the distance between the stop point and the POI geometry
-            mats['distance'] = mats['geometry_stop'].distance(mats['geometry_'+suffix])
+            enriched_occasional['distance'] = enriched_occasional['geometry_stop'].distance(enriched_occasional['geometry_'+suffix])
             
             # sort by distance
-            mats = mats.sort_values(['tid','stop_id','distance'])
+            enriched_occasional = enriched_occasional.sort_values(['tid','stop_id','distance'])
             
-            #print(f"Stampa df risultati: {mats.info()}")
-            return mats
+            #print(f"Stampa df risultati: {enriched_occasional.info()}")
+            return enriched_occasional
 
 
 
@@ -482,12 +482,12 @@ class Enrichment(ModuleInterface):
 
         # Calling functions internal to this method...
         o_stops = preparing_stops(self.occasional, self.max_distance)
-        mat = semantic_enrichment(o_stops, gdf_[['element_type','osmid','name','wikidata','geometry','category']], 'poi')
+        enriched_occasional = semantic_enrichment(o_stops, gdf_[['element_type','osmid','name','wikidata','geometry','category']], 'poi')
 
         ######## PROVA ###########
         # mat.set_index(['stop_id','lat','lng'],inplace=True)
-        self.mats = mat.copy()
-        self.mats.to_parquet('data/enriched_occasional.parquet')
+        self.enriched_occasional = enriched_occasional.copy()
+        self.enriched_occasional.to_parquet('data/enriched_occasional.parquet')
         
         
         
@@ -623,7 +623,7 @@ class Enrichment(ModuleInterface):
             # Add to the RDF graph the stops, the moves, and the semantic information 
             # associated with the trajectories (social media posts, weather), the stops (type of stop, POIs),
             # and the moves (transportation mean).
-            builder.add_occasional_stops(self.mats)
+            builder.add_occasional_stops(self.enriched_occasional)
             builder.add_systematic_stops(self.systematic)
             builder.add_moves(self.moves)
             
@@ -645,7 +645,7 @@ class Enrichment(ModuleInterface):
         return {'moves' : self.moves,
                 'occasional' : self.occasional,
                 'systematic' : self.systematic,
-                'mats' : self.mats,
+                'enriched_occasional' : self.enriched_occasional,
                 'tweets' : self.tweets}
 
     def get_params_input(self) -> list[str] :
@@ -659,7 +659,7 @@ class Enrichment(ModuleInterface):
                 'create_rdf']
 
     def get_params_output(self) -> list[str] :
-        return ['moves', 'occasional', 'systematic', 'mats', 'tweets']
+        return ['moves', 'occasional', 'systematic', 'enriched_occasional', 'tweets']
         
     def reset_state(self) :
         pass
