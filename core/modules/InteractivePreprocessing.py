@@ -52,6 +52,7 @@ class InteractivePreprocessing(InteractiveModuleInterface):
             State(component_id = self.id_class + '-path', component_property='value'),
             State(component_id = self.id_class + '-speed', component_property='value'),
             State(component_id = self.id_class + '-n_points', component_property='value'),
+            State(component_id = self.id_class + '-compress', component_property='value'),
             Input(component_id = self.id_class + '-run', component_property='n_clicks')
         )(self.get_input_and_execute)
 
@@ -91,12 +92,21 @@ class InteractivePreprocessing(InteractiveModuleInterface):
                                         placeholder = 3000))
         web_components.append(html.Br())
         web_components.append(html.Br())
+
+        web_components.append(html.Span(children="Compress trajectories (this can speed up other modules): "))
+        web_components.append(dcc.Dropdown(id=self.id_class + '-compress',
+                                           options=[{"label": "yes", "value": "yes"},
+                                                    {"label": "no", "value": "no"}],
+                                           value="yes",
+                                           style={'color': '#333'}))
+        web_components.append(html.Br())
+        web_components.append(html.Br())
         
         web_components.append(html.Button(id = self.id_class + '-run', children='RUN'))           
         
         return web_components
         
-    def get_input_and_execute(self, path, speed, n_points, button_state) :
+    def get_input_and_execute(self, path, speed, n_points, compress, button_state) :
     
         print(f"Eseguo get_input_and_execute del modulo {self.id_class}! Button state: {button_state}")
     
@@ -111,7 +121,7 @@ class InteractivePreprocessing(InteractiveModuleInterface):
                 return None, outputs
             
             # Check input.
-            if (speed is None) or (n_points is None):
+            if [x for x in (speed, n_points, compress) if x is None]:
                 outputs.append(html.H6(children='Error: some input values were not provided!'))
                 return None, outputs
 
@@ -120,7 +130,8 @@ class InteractivePreprocessing(InteractiveModuleInterface):
 
             dic_params = {'trajectories' : pd.read_parquet(path),
                           'speed' : speed,
-                          'n_points' : n_points}
+                          'n_points' : n_points,
+                          'compress' : True if 'yes' else False}
             # Esegui il codice core dell'istanza.
             self.preprocessing.execute(dic_params)
             results = self.preprocessing.get_results()['preprocessed_trajectories']

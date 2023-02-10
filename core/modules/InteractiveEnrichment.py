@@ -53,6 +53,8 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             State(component_id = self.id_class + '-poi_cat', component_property='value'),
             State(component_id = self.id_class + '-poi_file', component_property='value'),
             State(component_id = self.id_class + '-max_dist', component_property='value'),
+            State(component_id=self.id_class + '-geohash_precision', component_property='value'),
+            State(component_id=self.id_class + '-systematic_threshold', component_property='value'),
             State(component_id = self.id_class + '-social_en', component_property='value'),
             State(component_id = self.id_class + '-weather_en', component_property='value'),
             State(component_id = self.id_class + '-write_rdf', component_property='value'),
@@ -156,7 +158,22 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                                             placeholder = 'Max distance from PoIs (in meters)...'))
             web_components.append(html.Br())
             web_components.append(html.Br())
-            
+
+
+            web_components.append(html.H5(children="Systematic stop detection"))
+            web_components.append(html.Span(children="Insert the geohash precision (this determines the cell size): "))
+            web_components.append(dcc.Input(id=self.id_class + '-geohash_precision',
+                                            value=7,
+                                            type='number',
+                                            placeholder='Insert geohash precision...'))
+            web_components.append(html.Br())
+            web_components.append(html.Span(children="Insert the cell stop-counter threshold (used to find the systematic stops): "))
+            web_components.append(dcc.Input(id=self.id_class + '-systematic_threshold',
+                                            value=5,
+                                            type='number',
+                                            placeholder='Insert threshold...'))
+            web_components.append(html.Br())
+            web_components.append(html.Br())
             
             # Input social media posts enrichment
             web_components.append(html.H5(children = "Enrich trajectory users with social media posts: "))
@@ -201,6 +218,8 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                               poi_categories,
                               path_poi,
                               max_dist,
+                              geohash_precision,
+                              systematic_threshold,
                               social_enrichment,
                               weather_enrichment,
                               create_rdf,
@@ -213,8 +232,8 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
 
             # Check input.
-            if (move_enrichment is None) or (poi_place is None) or (poi_categories is None) or (path_poi is None) or\
-               (max_dist is None) or (social_enrichment is None) or (weather_enrichment is None) or (create_rdf is None) :
+            if [x for x in (move_enrichment, poi_place, poi_categories, path_poi, max_dist, geohash_precision,
+                            systematic_threshold, social_enrichment, weather_enrichment, create_rdf) if x is None]:
                 outputs.append(html.H6(children='Error: some input values were not provided!'))
                 return None, outputs
 
@@ -249,6 +268,8 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                           'poi_categories' : None if poi_categories == ['no'] else poi_categories,
                           'path_poi' : poi_df,
                           'max_dist' : max_dist,
+                          'geohash_precision' : geohash_precision,
+                          'systematic_threshold' : systematic_threshold,
                           'social_enrichment' : social_df,
                           "weather_enrichment" : weather_df,
                           'create_rdf' : True if create_rdf == 'yes' else False}
@@ -288,12 +309,13 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                 text = i + ' (systematic: ' + num_sys + ', occasional: ' + num_occ + ')'
                 list_traj.append({'label': text, 'value': i})
 
-            options.extend([html.P(children = 'Trajectories:'),
-                           dcc.Dropdown(id = 'traj_sel-' + self.id_class,
-                                        options = list_traj,
-                                        style={'color':'#333'}),
-                           html.Br(),
-                           html.Div(id = 'traj_display-' + self.id_class)])
+            options.extend([html.H6(children='Trajectory plotter (choose one from the dropdown menu):',
+                                    style={'font-weight': 'bold'}),
+                            dcc.Dropdown(id = 'traj_sel-' + self.id_class,
+                                         options = list_traj,
+                                         style={'color':'#333'}),
+                            html.Br(),
+                            html.Div(id = 'traj_display-' + self.id_class)])
 
         return options
 
@@ -406,6 +428,98 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             outputs.append(html.Br())
 
 
+        ### Plot the systematic and occasional stops. ###
+        occasional = self.results_enrichment['enriched_occasional']
+        systematic = self.results_enrichment['systematic']
+
+        ### Plot the systematic stops. ###
+        mats_systematic = systematic[systematic['uid'] == user].copy()
+        if len(mats_systematic) :
+            outputs.append(html.H6(children='Overall distribution of the systematic stops:',
+                                   style={'font-weight': 'bold'}))
+
+            ### Preparing the information concerning the systematic stops ###
+            mats_systematic['systematic_id'] = mats_systematic['systematic_id'].astype(str)
+            mats_systematic['home'] = round((mats_systematic['home'] * 100), 2).astype(str)
+            mats_systematic['work'] = round((mats_systematic['work'] * 100), 2).astype(str)
+            mats_systematic['other'] = round((mats_systematic['other'] * 100), 2).astype(str)
+            mats_systematic['importance'] = round((mats_systematic['importance'] * 100), 2).astype(str)
+            mats_systematic['frequency'] = mats_systematic['frequency'].astype(str)
+            mats_systematic['start'] = mats_systematic['datetime'].astype(str)
+            mats_systematic['duration'] = (mats_systematic['leaving_datetime'] - mats_systematic['datetime']).astype(str)
+            mats_systematic['weekday'] = mats_systematic['datetime'].dt.weekday.astype(str)
+
+            mats_systematic['description'] = '</br><b>Systematic ID</b>: ' + mats_systematic['systematic_id'] \
+                                             + '</br><b>Start time</b>: ' + mats_systematic['start'] \
+                                             + '</br><b>Day of the week</b>: ' + mats_systematic['weekday'] \
+                                             + '</br><b>Duration</b>: ' + mats_systematic['duration'] \
+                                             + '</br><b>Home</b>: ' + mats_systematic['home'] \
+                                             + '%</br><b>Work</b>: ' + mats_systematic['work'] \
+                                             + '%</br><b>Other</b>: ' + mats_systematic['other'] \
+                                             + '%</br><b>Importance</b>: ' + mats_systematic['importance'] \
+                                             + '%</br><b>Frequency </b>: ' + mats_systematic['frequency']
+            systematic_desc = list(mats_systematic['description'])
+
+            fig = go.Figure(go.Scattermapbox(mode="markers", name='systematic stops',
+                                             lon=mats_systematic.lng,
+                                             lat=mats_systematic.lat,
+                                             text=systematic_desc,
+                                             hoverinfo='text',
+                                             marker={'size': 10, 'color': '#2BD98C'}))
+            fig.update_layout(mapbox_style = "open-street-map",
+                              margin = {"r" : 0, "t" : 0 ,"l" : 0, "b" : 0},
+                              mapbox = dict(center = dict(lat=mats_systematic.iloc[0].lat,lon=mats_systematic.iloc[0].lng),
+                                            zoom=10))
+            outputs.append(dcc.Graph(figure = fig))
+
+
+        ### Plot the occasional stops. ###
+        mats_stops = occasional[occasional['uid'] == user].copy()
+        if len(mats_stops) :
+            outputs.append(html.H6(children='Overall distribution of the occasional stops:',
+                                   style={'font-weight': 'bold'}))
+
+            mats_stops['distance'] = round(mats_stops['distance'], 2)
+            mats_stops['description'] = '</br><b>PoI category</b>: ' + \
+                                        mats_stops['category'] + \
+                                        ' <b>Distance</b>: ' + \
+                                        mats_stops['distance'].astype(str)
+
+            limit_pois = 8
+            gb_occ_stops = mats_stops.groupby('stop_id')
+            matched_lat = gb_occ_stops['lat'].first().tolist()
+            matched_lng = gb_occ_stops['lng'].first().tolist()
+            matched_pois = []
+            for key, item in gb_occ_stops:
+                tmp = item['description']
+                size = tmp.shape[0]
+                limit = min(size, limit_pois)
+
+                stringa = ''
+                if ~item['distance'].isna().all():
+                    tmp = tmp.head(limit)
+                    stringa = tmp.str.cat(sep="")
+                    if size > limit_pois:
+                        stringa = stringa + f"</br>(...and other {size - limit_pois} POIs)"
+                else:
+                    stringa = 'No POI could be associated with this occasional stop!'
+
+                matched_pois.append(stringa)
+
+            fig2 = go.Figure(go.Scattermapbox(mode="markers", name='occasional stops',
+                                              lon = matched_lng,
+                                              lat = matched_lat,
+                                              text = matched_pois,
+                                              hoverinfo='text',
+                                              marker={'size': 10, 'color': '#F14C2B'}))
+            fig2.update_layout(mapbox_style="open-street-map",
+                              margin={"r": 0, "t": 0, "l": 0, "b": 0},
+                              mapbox=dict(center=dict(lat = matched_lat[0],
+                                                      lon = matched_lng[0]),
+                                          zoom=10))
+            outputs.append(dcc.Graph(figure=fig2))
+
+
         return outputs      
 
 
@@ -486,9 +600,13 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         mats_systematic['other'] = round((mats_systematic['other']*100),2).astype(str)
         mats_systematic['importance'] = round((mats_systematic['importance'] * 100), 2).astype(str)
         mats_systematic['frequency'] = mats_systematic['frequency'].astype(str)
+        mats_systematic['start'] = mats_systematic['datetime'].astype(str)
         mats_systematic['duration'] = (mats_systematic['leaving_datetime'] - mats_systematic['datetime']).astype(str)
+        mats_systematic['weekday'] = mats_systematic['datetime'].dt.weekday.astype(str)
 
-        mats_systematic['description'] = '</br><b>Systematic ID</b>: ' + mats_systematic['systematic_id']\
+        mats_systematic['description'] = '</br><b>Systematic ID</b>: ' + mats_systematic['systematic_id'] \
+                                         + '</br><b>Start time</b>: ' + mats_systematic['start'] \
+                                         + '</br><b>Day of the week</b>: ' + mats_systematic['weekday'] \
                                          + '</br><b>Duration</b>: ' + mats_systematic['duration']\
                                          + '</br><b>Home</b>: ' + mats_systematic['home']\
                                          + '%</br><b>Work</b>: ' + mats_systematic['work']\
@@ -506,7 +624,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         
         
         
-        ### Setting the last parameters... ###
+        ### Setting the figure's last parameters... ###
         
         fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=12,
                           margin={"r":0,"t":0,"l":0,"b":0})
@@ -575,6 +693,6 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         enriched_occasional = self.results_enrichment['enriched_occasional'].copy()
         systematic = self.results_enrichment['systematic'].copy()
 
-        return moves[(moves['uid']==uid)&(moves['tid']==traj_id)],\
-               enriched_occasional[(enriched_occasional['uid']==uid)&(enriched_occasional['tid']==traj_id)],\
-               systematic[(systematic['uid']==uid)&(systematic['tid']==traj_id)]
+        return moves[(moves['uid']==uid) & (moves['tid'] == traj_id)],\
+               enriched_occasional[(enriched_occasional['uid']==uid) & (enriched_occasional['tid']==traj_id)],\
+               systematic[(systematic['uid']==uid) & (systematic['tid']==traj_id)]

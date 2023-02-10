@@ -33,8 +33,9 @@ class InteractiveSegmentation(InteractiveModuleInterface):
         outputs.append(html.P(children='Number of trajectories found for this user: {}'.format(num_trajs)))
         num_stops = self._get_stops(user)
         outputs.append(html.P(children='Number of stops found for this user: {}'.format(num_stops)))
-        mean_duration = self._get_duration(user)
-        outputs.append(html.P(children='Stop average duration: {} minutes'.format(mean_duration)))
+        if num_stops :
+            mean_duration = self._get_duration(user)
+            outputs.append(html.P(children='Stop average duration: {} minutes'.format(mean_duration)))
 
         return outputs
 
@@ -159,7 +160,7 @@ class InteractiveSegmentation(InteractiveModuleInterface):
             print(f"Eseguo if in get_input_and_execute del modulo {self.id_class}! {button_state}")
             
             # Check input.
-            if (duration is None) or (radius is None):
+            if [x for x in (duration, radius) if x is None] :
                 outputs.append(html.H6(children='Error: some input values were not provided!'))
                 return None, outputs
 

@@ -61,70 +61,68 @@ class Enrichment(ModuleInterface):
 
         # 1 - case where systematic stops have been found...
         if systematic_stops.shape[0] != 0:
-            systematic_stops['start_time'] = systematic_stops['datetime'].dt.hour
-            systematic_stops['end_time'] = systematic_stops['leaving_datetime'].dt.hour
-
 
             # 1.1 - Prepare the dataframe that will hold the hours' frequencies.
-            freq = pd.DataFrame(np.zeros((len(systematic_stops), 24), dtype = np.uint32))
+            freq = pd.DataFrame(np.zeros((len(systematic_stops), 24), dtype=np.uint32))
+            freq['weekend'] = 0
             freq['uid'] = systematic_stops['uid']
             freq['location'] = systematic_stops['pos_hashed']
             freq.drop_duplicates(['uid', 'location'], inplace=True)
             # display(freq)
 
-
             # 1.2 - Qui calcoliamo i contatori delle ore in cui occorrono i sistematic stop
             # (propedeutico a determinare se si tratta di home/work/other).
-            def update_freq(freq, systematic_stops) :
+            def update_freq(freq, systematic_stops):
                 it = zip(systematic_stops['uid'], systematic_stops['pos_hashed'],
-                         systematic_stops['start_time'], systematic_stops['end_time'])
+                         systematic_stops['datetime'], systematic_stops['leaving_datetime'])
 
-                for uid, location, start, end in it :
-                    cols = list(range(start, end + 1)) if start <= end else list(range(0, end + 1)) + list(range(start, 24))
-                    freq.loc[(freq['uid'] == uid) & (freq['location'] == location), cols] += 1
+                for uid, location, start, end in it:
+                    time_range = pd.date_range(start.floor('h'), end.floor('h'), freq='H')
+                    indexer = (freq['uid'] == uid) & (freq['location'] == location)
+                    for t in time_range:
+                        if t.weekday() > 4:
+                            freq.loc[indexer, 'weekend'] += 1
+                        else:
+                            freq.loc[indexer, t.hour] += 1
 
             update_freq(freq, systematic_stops)
             # display(freq)
 
-
             # 1.3 - Qui calcoliamo l'importanza degli stop sistematici trovati per ogni utente.
             #     I due piu' importanti vengono assunti essere casa o lavoro.
-            hours = list(range(0, 24))
-            freq['sum'] = freq[hours].sum(axis=1) # Qui calcoliamo la somma delle ore per ogni systematic stop.
+            slots = list(range(0, 24)) + ['weekend']
+            freq['sum'] = freq[slots].sum(axis=1)  # Qui calcoliamo la somma delle ore per ogni systematic stop.
             freq['tot'] = freq.groupby('uid')['sum'].transform('sum')
-            freq['importance'] = freq['sum'] / freq['tot'] # E qui determiniamo l'importanza di ogni systematic stop.
+            freq['importance'] = freq['sum'] / freq['tot']  # E qui determiniamo l'importanza di ogni systematic stop.
             freq.drop(columns=['sum', 'tot'], inplace=True)
             freq.set_index(['uid', 'location'], inplace=True)
             # display(freq)
 
-
             # 1.4 - Qui distribuiamo i contatori associate alle ore ai 4 momenti del giorno.
-            freq['night'] = freq[[22, 23, 0, 1, 2, 3, 4, 5, 6]].sum(axis=1)
-            freq['morning'] = freq[[7, 8, 9, 10, 11, 12]].sum(axis=1)
+            freq['night'] = freq[[22, 23, 0, 1, 2, 3, 4, 5, 6, 7]].sum(axis=1)
+            freq['morning'] = freq[[8, 9, 10, 11, 12]].sum(axis=1)
             freq['afternoon'] = freq[[13, 14, 15, 16, 17, 18]].sum(axis=1)
             freq['evening'] = freq[[19, 20, 21]].sum(axis=1)
             # display(freq)
-
 
             # 1.5 - Qui per ogni utente troviamo i primi 2 stop sistematici con importanza maggiore (saranno )
             largest_index = pd.DataFrame(freq.groupby('uid')['importance'].nlargest(2)).index.droplevel(0)
             # display(largest_index)
 
-
             # 1.6 - Qui calcoliamo le probabilita' associate alle tipologie di stop sistematici.
-            w_home = [0.6, 0.1, 0.1, 0.4]
-            w_work = [0.1, 0.6, 0.4, 0.1]
+            w_home = [1, 0.1, 0, 0.9, 1]
+            w_work = [0, 0.9, 1, 0.1, 0]
             list_exclusion = list(set(freq.index) - set(largest_index))
-            freq['p_home'] = (freq[['night', 'morning', 'afternoon', 'evening']] * w_home).sum(axis=1)
-            freq['p_work'] = (freq[['night', 'morning', 'afternoon', 'evening']] * w_work).sum(axis=1)
+            freq['p_home'] = (freq[['night', 'morning', 'afternoon', 'evening', 'weekend']] * w_home).sum(axis=1)
+            freq['p_work'] = (freq[['night', 'morning', 'afternoon', 'evening', 'weekend']] * w_work).sum(axis=1)
             freq['home'] = freq['p_home'] / (freq['p_home'] + freq['p_work'])
             freq['work'] = freq['p_work'] / (freq['p_home'] + freq['p_work'])
             freq.loc[list_exclusion, 'home'] = 0
             freq.loc[list_exclusion, 'work'] = 0
             freq['other'] = 0
             freq.loc[list_exclusion, 'other'] = 1
+            freq.drop(columns=['p_home', 'p_work'], inplace=True)
             # display(freq)
-
 
             # 7 - Qui, infine, completiamo il dataframe systematic stops con le varie probabilita' calcolate.
             systematic_stops.set_index(['uid', 'pos_hashed'], inplace=True)
@@ -135,6 +133,7 @@ class Enrichment(ModuleInterface):
             systematic_stops.loc[largest_index, 'home'] = freq.loc[largest_index, 'home']
             systematic_stops.loc[largest_index, 'work'] = freq.loc[largest_index, 'work']
             systematic_stops.loc[largest_index, 'other'] = freq.loc[largest_index, 'other']
+
             systematic_stops.reset_index(inplace=True)
 
 
@@ -153,29 +152,7 @@ class Enrichment(ModuleInterface):
     ### CLASS PUBLIC CONSTRUCTOR ###
     
     def __init__(self) :
-
-        # These are the auxiliary fields internally used during the enrichment execution.
-        self.rdf = None
-        self.upload_weather = None
-        self.weather = None
-        self.upload_social = None
-        self.tweet_user = None
-        self.max_distance = None
-        self.semantic_granularity = 80 # NOTE: this is a fixed, internal parameter!
-        self.path_poi = None
-        self.list_pois = None
-        self.poi_place = None
-        self.enrich_moves = None
-
-        # These are the fundamental fields internally used during the enrichment execution, and that may
-        # be exposed by a class instance (e.g., it the instance is used via a UI wrapper).
-        self.stops = None
-        self.moves = None
-
-        self.enriched_occasional = None
-        self.systematic = None
-        self.occasional = None
-        self.tweets = None
+        self.reset_state()
         
     
     
@@ -199,6 +176,8 @@ class Enrichment(ModuleInterface):
         self.list_pois = [] if dic_params['poi_categories'] is None else dic_params['poi_categories']
         self.path_poi = dic_params['path_poi']
         self.max_distance = dic_params['max_dist']
+        self.geohash_precision = dic_params['geohash_precision']
+        self.systematic_threshold = dic_params['systematic_threshold']
 
         # 3 - Social media posts parameters
         if dic_params['social_enrichment'] is None:
@@ -297,8 +276,9 @@ class Enrichment(ModuleInterface):
         ############################################
         
         print("Executing systematic stop enrichment...")
-        # TODO: passare la soglia oltre la quale si individua uno stop sistematico.
-        stops, self.systematic = self._systematic_enrichment(self.stops.copy(), 7, 5)
+        stops, self.systematic = self._systematic_enrichment(self.stops.copy(),
+                                                             geohash_precision = self.geohash_precision,
+                                                             min_frequency_sys = self.systematic_threshold)
 
         
         
@@ -654,6 +634,8 @@ class Enrichment(ModuleInterface):
                 'poi_categories',
                 'path_poi',
                 'max_dist',
+                'geohash_precision',
+                'systematic_threshold',
                 'social_enrichment',
                 'weather_enrichment',
                 'create_rdf']
@@ -662,4 +644,27 @@ class Enrichment(ModuleInterface):
         return ['moves', 'occasional', 'systematic', 'enriched_occasional', 'tweets']
         
     def reset_state(self) :
-        pass
+        # These are the auxiliary fields internally used during the enrichment execution.
+        self.geohash_precision = None
+        self.systematic_threshold = None
+        self.rdf = None
+        self.upload_weather = None
+        self.weather = None
+        self.upload_social = None
+        self.tweet_user = None
+        self.max_distance = None
+        self.semantic_granularity = 80  # NOTE: this is a fixed, internal parameter!
+        self.path_poi = None
+        self.list_pois = None
+        self.poi_place = None
+        self.enrich_moves = None
+
+        # These are the fundamental fields internally used during the enrichment execution, and that may
+        # be exposed by a class instance (e.g., it the instance is used via a UI wrapper).
+        self.stops = None
+        self.moves = None
+
+        self.enriched_occasional = None
+        self.systematic = None
+        self.occasional = None
+        self.tweets = None
