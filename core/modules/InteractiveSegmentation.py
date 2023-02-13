@@ -112,9 +112,9 @@ class InteractiveSegmentation(InteractiveModuleInterface):
         
         # Here we manage the case where no data is available from the previous module.
         if(self.prev_module is None) or (next(iter(self.prev_module.get_results().values())) is None) :
-            web_components.append(html.Span(children = f"No preprocessed trajectories available!"))
+            web_components.append(html.Span(children = f"No trajectory dataset available!"))
             web_components.append(html.Br())
-            web_components.append(html.Span(children = f"Please, provide a file containing them: "))
+            web_components.append(html.Span(children=f"Please, provide a path to one: "))
             web_components.append(dcc.Input(id = self.id_class + '-path',
                                             value = './data/temp_dataset/traj_cleaned.parquet',
                                             type = 'text',
@@ -131,15 +131,15 @@ class InteractiveSegmentation(InteractiveModuleInterface):
 
         web_components.append(html.Span(children = "Minimum duration of a stop (in minutes): "))
         web_components.append(dcc.Input(id = self.id_class + '-duration',
-                                        value = 10,
+                                        value = 120,
                                         type = 'number',
                                         placeholder = 'minutes'))
         web_components.append(html.Br())
         web_components.append(html.Br())
         
-        web_components.append(html.Span(children = "Spatial radius (in km) of the stop: "))
+        web_components.append(html.Span(children = "Maximum spatial radius (in meters) of a stop: "))
         web_components.append(dcc.Input(id = self.id_class + '-radius',
-                                        value = 1,
+                                        value = 200,
                                         type = 'number',
                                         placeholder = 'Spatial radius'))
         web_components.append(html.Br())
@@ -177,7 +177,7 @@ class InteractiveSegmentation(InteractiveModuleInterface):
             # Execute the segmentation module and retrieve the output as well as the execution .
             dic_params = {'trajectories' : preprocessed_trajs,
                           'duration' : duration,
-                          'radius' : radius}
+                          'radius' : radius / 1000}
             is_exe_ok = self.segmentation.execute(dic_params)
             results = self.segmentation.get_results()
             self.stops = results['stops']
@@ -185,12 +185,18 @@ class InteractiveSegmentation(InteractiveModuleInterface):
 
             
             # Manage the output to show in the web interface.
+            outputs.append(html.H6(children=f"Overall number of moves found: {self.moves['move_id'].nunique()}",
+                                   style={'font-weight': 'bold'}))
+            outputs.append(html.H6(children=f'Overall number of stops found: {len(self.stops)}',
+                                   style={'font-weight': 'bold'}))
+
             options = [{'label': i, 'value': i} for i in self._get_users()]
             outputs.append(html.Div(id = 'users' + self.id_class,
-                                    children=[html.P(children='User selection:'),
+                                    children=[html.H6(children='Select a user for more specific information:',
+                                                      style={'font-weight': 'bold'}),
                                               dcc.Dropdown(id='user_sel-' + self.id_class,
                                                            options = options,
-                                                           style={'color':'#333'}),
+                                                           style = {'color':'#333'}),
                                               html.Div(id = 'user_result-'  + self.id_class)]))
             
             # Save the stops and moves that have been detected to disk.
