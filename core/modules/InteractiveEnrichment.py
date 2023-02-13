@@ -33,6 +33,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
     
     def __init__(self, app : Dash, pipeline : InteractivePipeline) :
 
+        self.enrich_moves = None
         self.app = app
         self.pipeline = pipeline
         self.prev_module = None
@@ -231,7 +232,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             print(f"Executing function get_input_and_execute of module {self.id_class}! {button_state}")
 
 
-            # Check input.
+            # Check input correctness.
             if [x for x in (move_enrichment, poi_place, poi_categories, path_poi, max_dist, geohash_precision,
                             systematic_threshold, social_enrichment, weather_enrichment, create_rdf) if x is None]:
                 outputs.append(html.H6(children='Error: some input values were not provided!'))
@@ -261,8 +262,9 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
             # Esegui il core dell'istanza.
             prev_results = self.prev_module.get_results()
+            self.enrich_moves = True if move_enrichment == 'yes' else False
             dic_params = {'moves' : prev_results['moves'],
-                          'move_enrichment' : True if move_enrichment == 'yes' else False,
+                          'move_enrichment' : self.enrich_moves,
                           'stops' : prev_results['stops'],
                           'poi_place' : poi_place,
                           'poi_categories' : None if poi_categories == ['no'] else poi_categories,
@@ -346,75 +348,76 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         outputs.append(html.Br())
         
         
-        # Display transportation means information...
-        duration_transport = self.get_transport_duration(user)
-        duration_walk = duration_transport[duration_transport['label']==0]['datetime'].astype(str).values
-        duration_bike = duration_transport[duration_transport['label']==1]['datetime'].astype(str).values
-        duration_bus = duration_transport[duration_transport['label']==2]['datetime'].astype(str).values
-        duration_car = duration_transport[duration_transport['label']==3]['datetime'].astype(str).values
-        duration_subway = duration_transport[duration_transport['label']==4]['datetime'].astype(str).values
-        duration_train = duration_transport[duration_transport['label']==5]['datetime'].astype(str).values
-        duration_taxi = duration_transport[duration_transport['label']==6]['datetime'].astype(str).values
+        # Display transportation means information, if the moves have been enriched.
+        if self.enrich_moves :
+            duration_transport = self.get_transport_duration(user)
+            duration_walk = duration_transport[duration_transport['label']==0]['datetime'].astype(str).values
+            duration_bike = duration_transport[duration_transport['label']==1]['datetime'].astype(str).values
+            duration_bus = duration_transport[duration_transport['label']==2]['datetime'].astype(str).values
+            duration_car = duration_transport[duration_transport['label']==3]['datetime'].astype(str).values
+            duration_subway = duration_transport[duration_transport['label']==4]['datetime'].astype(str).values
+            duration_train = duration_transport[duration_transport['label']==5]['datetime'].astype(str).values
+            duration_taxi = duration_transport[duration_transport['label']==6]['datetime'].astype(str).values
 
-        if len(duration_walk) == 0:
-            duration_walk = 0
-        else:
-            duration_walk = duration_walk[0]
+            if len(duration_walk) == 0:
+                duration_walk = 0
+            else:
+                duration_walk = duration_walk[0]
 
-        if len(duration_bike) == 0:
-            duration_bike = 0
-        else:
-            duration_bike = duration_bike[0]
+            if len(duration_bike) == 0:
+                duration_bike = 0
+            else:
+                duration_bike = duration_bike[0]
 
-        if len(duration_bus) == 0:
-            duration_bus = 0
-        else:
-            duration_bus = duration_bus[0]
+            if len(duration_bus) == 0:
+                duration_bus = 0
+            else:
+                duration_bus = duration_bus[0]
 
-        if len(duration_car) == 0:
-            duration_car = 0
-        else:
-            duration_car = duration_car[0]
-        
-        if len(duration_subway) == 0:
-            duration_subway = 0
-        else:
-            duration_subway = duration_subway[0]
-        
-        if len(duration_train) == 0:
-            duration_train = 0
-        else:
-            duration_train = duration_train[0]
+            if len(duration_car) == 0:
+                duration_car = 0
+            else:
+                duration_car = duration_car[0]
 
-        if len(duration_taxi) == 0:
-            duration_taxi = 0
-        else:
-            duration_taxi = duration_taxi[0]
-            
-        outputs.append(html.H6(children='Aspects concerning the moves (transportation means and duration):',
-                               style={'font-weight':'bold'}))
-        outputs.append(html.Span(children='Walk: ',style={'font-weight':'bold'}))    
-        outputs.append(html.Span(children=str(duration_walk)+' \t'))
-        outputs.append(html.Br())
-        outputs.append(html.Span(children='Bike: ',style={'font-weight':'bold'}))    
-        outputs.append(html.Span(children=str(duration_bike)+' \t'))
-        outputs.append(html.Br())
-        outputs.append(html.Span(children='Bus: ',style={'font-weight':'bold'}))    
-        outputs.append(html.Span(children=str(duration_bus)+' \t'))
-        outputs.append(html.Br())
-        outputs.append(html.Span(children='Car: ',style={'font-weight':'bold'}))    
-        outputs.append(html.Span(children=str(duration_car)+' \t'))
-        outputs.append(html.Br())
-        outputs.append(html.Span(children='Train: ',style={'font-weight':'bold'}))    
-        outputs.append(html.Span(children=str(duration_train)+' \t'))
-        outputs.append(html.Br())
-        outputs.append(html.Span(children='Subway: ',style={'font-weight':'bold'}))    
-        outputs.append(html.Span(children=str(duration_subway)+' \t'))
-        outputs.append(html.Br())
-        outputs.append(html.Span(children='Taxi: ',style={'font-weight':'bold'}))    
-        outputs.append(html.Span(children=str(duration_taxi)+' \t'))
-        outputs.append(html.Br())
-        outputs.append(html.Br())
+            if len(duration_subway) == 0:
+                duration_subway = 0
+            else:
+                duration_subway = duration_subway[0]
+
+            if len(duration_train) == 0:
+                duration_train = 0
+            else:
+                duration_train = duration_train[0]
+
+            if len(duration_taxi) == 0:
+                duration_taxi = 0
+            else:
+                duration_taxi = duration_taxi[0]
+
+            outputs.append(html.H6(children='Aspects concerning the moves (transportation means and duration):',
+                                   style={'font-weight':'bold'}))
+            outputs.append(html.Span(children='Walk: ',style={'font-weight':'bold'}))
+            outputs.append(html.Span(children=str(duration_walk)+' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Bike: ',style={'font-weight':'bold'}))
+            outputs.append(html.Span(children=str(duration_bike)+' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Bus: ',style={'font-weight':'bold'}))
+            outputs.append(html.Span(children=str(duration_bus)+' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Car: ',style={'font-weight':'bold'}))
+            outputs.append(html.Span(children=str(duration_car)+' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Train: ',style={'font-weight':'bold'}))
+            outputs.append(html.Span(children=str(duration_train)+' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Subway: ',style={'font-weight':'bold'}))
+            outputs.append(html.Span(children=str(duration_subway)+' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Taxi: ',style={'font-weight':'bold'}))
+            outputs.append(html.Span(children=str(duration_taxi)+' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Br())
 
 
         # Display social media information...
@@ -545,7 +548,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         ### Preparing the information concerning the moves ###
 
         # print(f"DEBUG PLOT MOVES: {mats_moves}")
-        mats_moves['label'] = mats_moves['label'].map(transport)
+        mats_moves['label'] = mats_moves['label'].map(transport) if self.enrich_moves else 'NA'
         fig = px.line_mapbox(mats_moves,
                              lat="lat",
                              lon="lng",

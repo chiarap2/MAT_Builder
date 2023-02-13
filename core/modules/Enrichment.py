@@ -163,9 +163,9 @@ class Enrichment(ModuleInterface):
         # Parsing the input received from the UI / user...
 
         # 1 - moves parameters
+        self.moves = dic_params['moves']
         if dic_params['move_enrichment']:
             self.enrich_moves = True
-            self.moves = dic_params['moves']
         else:
             self.enrich_moves = False
 
@@ -210,6 +210,7 @@ class Enrichment(ModuleInterface):
         ### ---- MOVE ENRICHMENT ---- ###
         #################################
 
+        # 1 - Case in which we augment the moves with the estimated transportation means.
         if self.enrich_moves:
             print("Executing move enrichment...")
             
@@ -263,6 +264,11 @@ class Enrichment(ModuleInterface):
             self.moves.loc[moves_index.isin(acceleration_index), 'label'] =\
                 acceleration.loc[acceleration_index.isin(moves_index), 'label']
 
+            self.moves.to_parquet('data/enriched_moves.parquet')
+
+        # 2 - Case in which we do not augment the moves: just make the dataframe compatible with the subsequent steps.
+        else :
+            self.moves.set_index(['tid', 'move_id'], inplace=True)
             self.moves.to_parquet('data/enriched_moves.parquet')
 
 
@@ -605,7 +611,7 @@ class Enrichment(ModuleInterface):
             # and the moves (transportation mean).
             builder.add_occasional_stops(self.enriched_occasional)
             builder.add_systematic_stops(self.systematic)
-            builder.add_moves(self.moves)
+            builder.add_moves(self.moves, self.enrich_moves)
             
             # Add weather information to the trajectories.
             if df_weather_enrichment is not None :

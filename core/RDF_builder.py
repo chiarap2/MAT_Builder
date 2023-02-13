@@ -2,6 +2,8 @@ import geopandas as gpd
 import pandas as pd
 import math
 
+import itertools
+
 from rdflib import Graph, Namespace
 from rdflib import Literal, URIRef, BNode
 from rdflib import RDF
@@ -96,7 +98,7 @@ class RDFBuilder() :
         # Define a dictionary containing the mapping to be used for transport mode.
         self.dic_sys_stop = {'home' : self.STEP.Home,
                              'work' : self.STEP.Work,
-                             'other' : self.STEP.SystematicStop}
+                             'other' : self.STEP.Other}
         
         
         # Define a dictionary containing the mapping to be used for transport mode.
@@ -227,12 +229,12 @@ class RDFBuilder() :
             # Find the nodes in the graph associated with the "uid" and "tid" identifiers.
             user, traj, raw_traj = self.find_trajectories_from_graph(uid, tid)
 
-            # Find the nodes in the graph corresponding to the instants and locations associated with this move.
+            # Find the nodes in the graph corresponding to the instants and locations associated with this stop.
             instant_start, location_start, instant_end, location_end = \
                 self.find_instants_locations_start_end(raw_traj, start, end)
 
 
-            # *** Now, create all the triples neeed to semantically enrich the trajectory with this move. *** #
+            # *** Now, create all the triples neeed to semantically enrich the trajectory with this stop. *** #
             # Feature node.
             URI_feat = 'http://example.org/user_' + str(uid) + '/traj_' + str(tid) + '/feature_occ_stop/'
             feature = URIRef(URI_feat)
@@ -248,7 +250,7 @@ class RDFBuilder() :
             # Semantic description (Occasional Stop) node.
             stop_desc = URIRef(URI_episode + 'desc/')
             self.g.add((stop_desc, RDF.type, self.STEP.OccasionalStop))
-            self.g.add((stop_desc, RDFS.subClassOf, self.STEP.Stop))
+            # self.g.add((stop_desc, RDFS.subClassOf, self.STEP.Stop))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
 
             # Link this Occasional Stop with all the POIs that may be associated with it.
@@ -285,31 +287,40 @@ class RDFBuilder() :
             
             
     def add_systematic_stops(self, df_sys_stops) :
-        
-        # print(df_sys_stops)
-        # print(df_sys_stops.info())
-        
-        
-        print(f"Number of systematic stops: {df_sys_stops['stop_id'].nunique()}")
-        if(df_sys_stops.shape[0] == 0) : return
-        
-        df_sys_stops['type_stop'] = df_sys_stops[['home','work', 'other']].idxmax(axis=1)
 
-        iter_sys_stops = zip(df_sys_stops['uid'], df_sys_stops['tid'], 
-                             df_sys_stops['lat'], df_sys_stops['lng'], 
-                             df_sys_stops['type_stop'],
-                             df_sys_stops['stop_id'],
-                             df_sys_stops['start_time'], df_sys_stops['end_time'])
+        sys_stops = df_sys_stops.copy()
+        # print(sys_stops)
+        
+        print(f"Number of systematic stops: {sys_stops['stop_id'].nunique()}")
+        if(sys_stops.shape[0] == 0) : return
+
+
+        sys_stops['datetime'] = pd.to_datetime(sys_stops['datetime'], utc=True)
+        sys_stops['leaving_datetime'] = pd.to_datetime(sys_stops['leaving_datetime'], utc=True)
+        sys_stops['type_stop'] = sys_stops[['home', 'work', 'other']].idxmax(axis=1)
+
+        iter_sys_stops = zip(sys_stops['uid'], sys_stops['tid'],
+                             sys_stops['lat'], sys_stops['lng'],
+                             sys_stops['type_stop'],
+                             sys_stops['stop_id'],
+                             sys_stops['systematic_id'],
+                             sys_stops['datetime'], sys_stops['leaving_datetime'])
         
         
-        for uid, tid, lat, lng, type_stop, stop_id, start_hour, end_hour in iter_sys_stops :
+        for uid, tid, lat, lng, type_stop, stop_id, sys_id, start_time, end_time in iter_sys_stops :
     
-            #print(f"{uid} -- {tid} -- {type_stop} -- {lat} -- {lng} -- {start_hour} -- {end_hour}")
+            # print(f"{uid} -- {tid} -- {stop_id} -- {type_stop} -- {lat} -- {lng} -- {sys_id} -- {start_time} -- {end_time}")
 
             # Find the nodes in the graph associated with the "uid" and "tid" identifiers.
             user, traj, raw_traj = self.find_trajectories_from_graph(uid, tid)
+            # print(f"{user}, {traj}, {raw_traj}")
 
-            # *** Now, create all the triples neeed to semantically enrich the trajectory with this move. *** #
+            # Find the nodes in the graph corresponding to the instants and locations associated with this stop.
+            instant_start, location_start, instant_end, location_end = \
+                self.find_instants_locations_start_end(raw_traj, start_time, end_time)
+            # print(f"{instant_start}, {location_start}, {instant_end}, {location_end}")
+
+            # *** Now, create all the triples neeed to semantically enrich the trajectory with this stop. *** #
             # Feature node.
             URI_feat = 'http://example.org/user_' + str(uid) + '/traj_' + str(tid) + '/feature_sys_stop/'
             feature = URIRef(URI_feat)
@@ -325,21 +336,31 @@ class RDFBuilder() :
             # Semantic description node.
             stop_desc = URIRef(URI_episode + 'desc/')
             self.g.add((stop_desc, RDF.type, self.dic_sys_stop[type_stop]))
-            self.g.add((stop_desc, RDFS.subClassOf, self.STEP.Stop))
-            self.g.add((stop_desc, self.STEP.hasStartHour, Literal(int(start_hour))))
-            self.g.add((stop_desc, self.STEP.hasEndHour, Literal(int(end_hour))))
+            self.g.add((stop_desc, self.STEP.hasSysID, Literal(sys_id)))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
 
-            # Spatial extent (i.e, the latitude and longitude retrieved from the dataframe).
-            sp_extent = URIRef(URI_episode + 'extent/')
-            self.g.add((sp_extent, RDF.type, self.STEP.Point))           
-            self.g.add((sp_extent, self.GEO.lat, Literal(lat)))
-            self.g.add((sp_extent, self.GEO.long, Literal(lng)))
-            self.g.add((episode, self.STEP.hasExtent, sp_extent))
+            # Spatiotemporal extent.
+            st_extent = URIRef(URI_episode + 'extent/')
+            self.g.add((st_extent, RDF.type, self.STEP.SpatiotemporalExtent))
+            self.g.add((episode, self.STEP.hasExtent, st_extent))
+
+            # Starting keypoint to associate to the spatiotemporal extent.
+            start_kp = URIRef(URI_episode + 'extent/skp/')
+            self.g.add((start_kp, RDF.type, self.STEP.KeyPoint))
+            self.g.add((start_kp, self.STEP.atTime, instant_start))
+            self.g.add((start_kp, self.STEP.hasLocation, location_start))
+            self.g.add((st_extent, self.STEP.hasStartingPoint, start_kp))
+
+            # Ending keypoint to associate to the spatiotemporal extent.
+            end_kp = URIRef(URI_episode + 'extent/ekp/')
+            self.g.add((end_kp, RDF.type, self.STEP.KeyPoint))
+            self.g.add((end_kp, self.STEP.atTime, instant_end))
+            self.g.add((end_kp, self.STEP.hasLocation, location_end))
+            self.g.add((st_extent, self.STEP.hasEndingPoint, end_kp))
             
             
             
-    def add_moves(self, df_moves) :
+    def add_moves(self, df_moves, enriched_moves) :
         
         df_moves['datetime'] = pd.to_datetime(df_moves['datetime'], utc = True)
 
@@ -347,10 +368,17 @@ class RDFBuilder() :
         #print(df_moves.info())
         
         # Compute a groupby on the enriched moves in order to extract the relevant information.
-        res_gb = df_moves.groupby(['tid', 'move_id']).agg({'datetime': ["min", "max"], 'label': 'first', "uid": 'first'}).reset_index()
+        res_gb = None
+        iter_res = None
+        if enriched_moves :
+            res_gb = df_moves.groupby(['tid', 'move_id']).agg({'datetime': ["min", "max"], 'label': 'first', "uid": 'first'}).reset_index()
+            iter_res = zip(res_gb[('uid', 'first')], res_gb['tid'], res_gb['move_id'], res_gb[('label', 'first')],
+                           res_gb[('datetime', 'min')], res_gb[('datetime', 'max')])
+        else :
+            res_gb = df_moves.groupby(['tid', 'move_id']).agg({'datetime': ["min", "max"], "uid": 'first'}).reset_index()
+            iter_res = zip(res_gb[('uid', 'first')], res_gb['tid'], res_gb['move_id'], itertools.repeat('NA'),
+                           res_gb[('datetime', 'min')], res_gb[('datetime', 'max')])
         # print(res_gb)
-        iter_res = zip(res_gb[('uid', 'first')], res_gb['tid'], res_gb['move_id'], res_gb[('label', 'first')],
-                       res_gb[('datetime', 'min')], res_gb[('datetime', 'max')])
         
         
         for uid, tid, move_id, type_move, start_t, end_t in iter_res :
@@ -380,8 +408,7 @@ class RDFBuilder() :
 
             # Semantic description node.
             move_desc = URIRef(URI_episode + 'desc/')
-            self.g.add((move_desc, RDF.type, self.dic_moves[type_move]))
-            self.g.add((move_desc, RDFS.subClassOf, self.STEP.Move))
+            self.g.add((move_desc, RDF.type, self.dic_moves[type_move] if enriched_moves else self.STEP.Move))
             self.g.add((episode, self.STEP.hasSemanticDescription, move_desc))
 
             # Spatiotemporal extent.
