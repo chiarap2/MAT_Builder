@@ -523,6 +523,30 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             outputs.append(dcc.Graph(figure=fig2))
 
 
+        ### Plot all the stops. ###
+        mats_stops = occasional[occasional['uid'] == user].copy()
+        mats_systematic = systematic[systematic['uid'] == user].copy()
+        if len(mats_stops) + len(mats_systematic) :
+            outputs.append(html.H6(children='Overall distribution of the stops (systematic + occasional):',
+                                   style={'font-weight': 'bold'}))
+
+            gb_occ_stops = mats_stops.groupby('stop_id')
+            matched_lat = gb_occ_stops['lat'].first().tolist() + mats_systematic.lat.tolist()
+            matched_lng = gb_occ_stops['lng'].first().tolist() + mats_systematic.lng.tolist()
+
+
+            fig3 = go.Figure(go.Scattermapbox(mode="markers", name='occasional stops',
+                                              lon = matched_lng,
+                                              lat = matched_lat,
+                                              marker={'size': 10, 'color': 'blue'}))
+            fig3.update_layout(mapbox_style="open-street-map",
+                              margin={"r": 0, "t": 0, "l": 0, "b": 0},
+                              mapbox=dict(center=dict(lat = matched_lat[0],
+                                                      lon = matched_lng[0]),
+                                          zoom=10))
+            outputs.append(dcc.Graph(figure=fig3))
+
+
         return outputs      
 
 
