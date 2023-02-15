@@ -31,12 +31,7 @@ class Enrichment(ModuleInterface):
 
     ### CLASS PROTECTED METHODS ###
 
-    def _systematic_enrichment(self, stops : pd.DataFrame, geohash_precision : int, min_frequency_sys : int) -> tuple[pd.DataFrame, pd.DataFrame]:
-        # Qui l'indice in 'stops' e' l'id degli stop...resettiamo l'indice in maniera tale da farlo diventare
-        # la colonna degli ID degli stop.
-        stops.reset_index(inplace=True)
-        stops.rename(columns={'index': 'stop_id'}, inplace=True)
-
+    def _systematic_enrichment_geohash(self, stops : pd.DataFrame, geohash_precision : int, min_frequency_sys : int) -> pd.DataFrame :
 
         # Qui mappiamo i centroidi degli stop vs le celle materializzate tramite la funzione di geohash.
         stops['pos_hashed'] = [geohash2.encode(lat, lng, geohash_precision) for lat, lng in zip(stops['lat'], stops['lng'])]
@@ -145,13 +140,15 @@ class Enrichment(ModuleInterface):
 
 
         # Print out the dataframe holding the systematic stops.
-        return stops, systematic_stops
+        return systematic_stops
 
 
 
     ### CLASS PUBLIC CONSTRUCTOR ###
     
     def __init__(self) :
+
+        # Here we initialize the various class fields.
         self.reset_state()
         
     
@@ -273,73 +270,30 @@ class Enrichment(ModuleInterface):
 
 
 
-        ############################################
-        ###        ---- STOP ENRICHMENT ----     ###
-        ############################################
+        ##################################################
+        ###        ---- STOP ENRICHMENT PHASE ----     ###
+        ##################################################
+
+        # Here stops' index contains the IDs of the stops. We reset the index such
+        # that the old index becomes a column.
+        self.stops.reset_index(inplace=True)
+        self.stops.rename(columns={'index': 'stop_id'}, inplace=True)
+
 
         ############################################
         ### ---- SYSTEMATIC STOP ENRICHMENT ---- ###
         ############################################
         
         print("Executing systematic stop enrichment...")
-        stops, self.systematic = self._systematic_enrichment(self.stops.copy(),
-                                                             geohash_precision = self.geohash_precision,
-                                                             min_frequency_sys = self.systematic_threshold)
+        self.systematic = self._systematic_enrichment_geohash(self.stops.copy(),
+                                                              geohash_precision = self.geohash_precision,
+                                                              min_frequency_sys = self.systematic_threshold)
 
         
         
         ############################################
         ### ---- OCCASIONAL STOP ENRICHMENT ---- ###
         ############################################
-
-        def select_columns(gdf, threshold=80.0) :
-            """
-            A function to select columns of a GeoDataFrame that have a percentage of null values
-            lower than a given threshold.
-            Returns a GeoDataFrame
-
-            -----------------------------
-            gdf: a GeoDataFrame
-
-            threshold: default 80.0
-                a float representing the maxium percentage of null values in a column.
-            """
-            
-            # list of columns
-            cols = gdf.columns
-            # print(f"Initial set of POI columns...{cols}")
-            
-            # list of columns to delete
-            del_cols = []
-            for c in cols:
-
-                # check if column contains only null value
-                if(gdf[c].isnull().all()):
-                    # save the empty column
-                    del_cols.append(c)
-                    continue
-
-                # control only columns with at least one null value
-                if(gdf[c].isnull().any()):
-
-                    # compute number of null values
-                    null_vals = gdf[c].isnull().value_counts()[1]
-                    # compute percentage w.r.t. total number of sample
-                    perc = null_vals/len(gdf[c])*100
-
-                    # save only columns that have a perc of null values lower than the given threshold
-                    if(threshold <= perc):
-                        del_cols.append(c)
-
-        
-            # Now, drop the selected columns MINUS 'osmid' and 'wikidata' 
-            del_cols = list(set(del_cols) - set(['osmid', 'wikidata']))
-            gdf = gdf.drop(columns = del_cols)
-
-            # print(f"POI dataframe info: {gdf.info()}")
-            return gdf
-
-
 
         def preparing_stops(stop,max_distance):
     
@@ -389,7 +343,7 @@ class Enrichment(ModuleInterface):
 
 
 
-        def download_poi_osm(list_pois, place, semantic_granularity) :
+        def download_poi_osm(list_pois, place) :
         
             # Here we download the POIs from OSM if the list of types of POIs is not empty.
             gdf_ = gpd.GeoDataFrame()
@@ -426,10 +380,7 @@ class Enrichment(ModuleInterface):
                         poi.to_crs('epsg:3857',inplace=True)
                     else:
                         poi.to_crs('epsg:3857',inplace=True)
-                    
-                    # Now drop the columns with too many missing values...
-                    poi = select_columns(poi, semantic_granularity)
-                    
+
                     # Now write out this subset of POIs to a file. 
                     poi.to_parquet('data/poi/' + key + '.parquet')
 
@@ -445,15 +396,14 @@ class Enrichment(ModuleInterface):
 
 
         print("Executing occasional stop augmentation with POIs...")
-        print(self.systematic)
-        self.occasional = stops[~stops['stop_id'].isin(self.systematic['stop_id'])]
+        self.occasional = self.stops[~self.stops['stop_id'].isin(self.systematic['stop_id'])]
         
 
         # Get a POI dataset, either from OSM or from a file. 
         gdf_ = None
         if self.path_poi is None :
             print(f"Downloading POIs from OSM for the location of {self.poi_place}. Selected types of POIs: {self.list_pois}")
-            gdf_ = download_poi_osm(self.list_pois, self.poi_place, self.semantic_granularity)
+            gdf_ = download_poi_osm(self.list_pois, self.poi_place)
         else :
             gdf_ = self.path_poi
             print(f"Using a POI file: {gdf_}!")
@@ -659,7 +609,6 @@ class Enrichment(ModuleInterface):
         self.upload_social = None
         self.tweet_user = None
         self.max_distance = None
-        self.semantic_granularity = 80  # NOTE: this is a fixed, internal parameter!
         self.path_poi = None
         self.list_pois = None
         self.poi_place = None
