@@ -54,7 +54,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             State(component_id = self.id_class + '-poi_cat', component_property='value'),
             State(component_id = self.id_class + '-poi_file', component_property='value'),
             State(component_id = self.id_class + '-max_dist', component_property='value'),
-            State(component_id=self.id_class + '-geohash_precision', component_property='value'),
+            State(component_id=self.id_class + '-dbscan_epsilon', component_property='value'),
             State(component_id=self.id_class + '-systematic_threshold', component_property='value'),
             State(component_id = self.id_class + '-social_en', component_property='value'),
             State(component_id = self.id_class + '-weather_en', component_property='value'),
@@ -162,13 +162,13 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
 
             web_components.append(html.H5(children="Systematic stop detection"))
-            web_components.append(html.Span(children="Insert the geohash precision (this determines the cell size): "))
-            web_components.append(dcc.Input(id=self.id_class + '-geohash_precision',
-                                            value=7,
+            web_components.append(html.Span(children="Insert the maximum distance below which a stop can be included in a cluster of stops: "))
+            web_components.append(dcc.Input(id=self.id_class + '-dbscan_epsilon',
+                                            value=50,
                                             type='number',
-                                            placeholder='Insert geohash precision...'))
+                                            placeholder='Insert distance (in meters)...'))
             web_components.append(html.Br())
-            web_components.append(html.Span(children="Insert the cell stop-counter threshold (used to find the systematic stops): "))
+            web_components.append(html.Span(children="Insert the minimum size of a systematic stop: "))
             web_components.append(dcc.Input(id=self.id_class + '-systematic_threshold',
                                             value=5,
                                             type='number',
@@ -219,7 +219,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                               poi_categories,
                               path_poi,
                               max_dist,
-                              geohash_precision,
+                              dbscan_epsilon,
                               systematic_threshold,
                               social_enrichment,
                               weather_enrichment,
@@ -233,7 +233,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
 
             # Check input correctness.
-            if [x for x in (move_enrichment, poi_place, poi_categories, path_poi, max_dist, geohash_precision,
+            if [x for x in (move_enrichment, poi_place, poi_categories, path_poi, max_dist, dbscan_epsilon,
                             systematic_threshold, social_enrichment, weather_enrichment, create_rdf) if x is None]:
                 outputs.append(html.H6(children='Error: some input values were not provided!'))
                 return None, outputs
@@ -270,7 +270,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                           'poi_categories' : None if poi_categories == ['no'] else poi_categories,
                           'path_poi' : poi_df,
                           'max_dist' : max_dist,
-                          'geohash_precision' : geohash_precision,
+                          'dbscan_epsilon' : dbscan_epsilon,
                           'systematic_threshold' : systematic_threshold,
                           'social_enrichment' : social_df,
                           "weather_enrichment" : weather_df,
@@ -431,15 +431,15 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             outputs.append(html.Br())
 
 
-        ### Plot the systematic and occasional stops. ###
+        ### Plot the systematic and occasional stops ###
         occasional = self.results_enrichment['enriched_occasional']
         systematic = self.results_enrichment['systematic']
+        fig = go.Figure()
 
         ### Plot the systematic stops. ###
+        center_map = None
         mats_systematic = systematic[systematic['uid'] == user].copy()
         if len(mats_systematic) :
-            outputs.append(html.H6(children='Overall distribution of the systematic stops:',
-                                   style={'font-weight': 'bold'}))
 
             ### Preparing the information concerning the systematic stops ###
             mats_systematic['systematic_id'] = mats_systematic['systematic_id'].astype(str)
@@ -463,25 +463,19 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                                              + '%</br><b>Frequency </b>: ' + mats_systematic['frequency']
             systematic_desc = list(mats_systematic['description'])
 
-            fig = go.Figure(go.Scattermapbox(mode="markers", name='systematic stops',
-                                             lon=mats_systematic.lng,
-                                             lat=mats_systematic.lat,
-                                             text=systematic_desc,
-                                             hoverinfo='text',
-                                             marker={'size': 10, 'color': '#2BD98C'}))
-            fig.update_layout(mapbox_style = "open-street-map",
-                              margin = {"r" : 0, "t" : 0 ,"l" : 0, "b" : 0},
-                              mapbox = dict(center = dict(lat=mats_systematic.iloc[0].lat,lon=mats_systematic.iloc[0].lng),
-                                            zoom=10))
-            outputs.append(dcc.Graph(figure = fig))
+            fig.add_trace(go.Scattermapbox(mode="markers", name='systematic stops',
+                                           lon=mats_systematic.lng,
+                                           lat=mats_systematic.lat,
+                                           text=systematic_desc,
+                                           hoverinfo='text',
+                                           marker={'size': 10, 'color': 'blue'}))
+
+            center_map = {'lat' : mats_systematic.lat.mean(), 'lon' : mats_systematic.lng.mean()}
 
 
         ### Plot the occasional stops. ###
         mats_stops = occasional[occasional['uid'] == user].copy()
         if len(mats_stops) :
-            outputs.append(html.H6(children='Overall distribution of the occasional stops:',
-                                   style={'font-weight': 'bold'}))
-
             mats_stops['distance'] = round(mats_stops['distance'], 2)
             mats_stops['description'] = '</br><b>PoI category</b>: ' + \
                                         mats_stops['category'] + \
@@ -509,43 +503,26 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
                 matched_pois.append(stringa)
 
-            fig2 = go.Figure(go.Scattermapbox(mode="markers", name='occasional stops',
-                                              lon = matched_lng,
-                                              lat = matched_lat,
-                                              text = matched_pois,
-                                              hoverinfo='text',
-                                              marker={'size': 10, 'color': '#F14C2B'}))
-            fig2.update_layout(mapbox_style="open-street-map",
+            fig.add_trace(go.Scattermapbox(mode="markers", name='occasional stops',
+                                           lon=mats_stops.lng.unique(),
+                                           lat=mats_stops.lat.unique(),
+                                           text=matched_pois,
+                                           hoverinfo='text',
+                                           marker={'size': 10, 'color': 'red'}))
+
+            if center_map is None : center_map = {'lat' : mats_stops.lat.mean(), 'lon' : mats_stops.lng.mean()}
+
+        # Plot the map with the systematic and occasional stops if at least one of them have been found.
+        if center_map is not None :
+            fig.update_layout(showlegend=True,
+                              legend_title="Types of stops",
+                              mapbox_style="open-street-map",
                               margin={"r": 0, "t": 0, "l": 0, "b": 0},
-                              mapbox=dict(center=dict(lat = matched_lat[0],
-                                                      lon = matched_lng[0]),
+                              mapbox=dict(center=center_map,
                                           zoom=10))
-            outputs.append(dcc.Graph(figure=fig2))
-
-
-        ### Plot all the stops. ###
-        mats_stops = occasional[occasional['uid'] == user].copy()
-        mats_systematic = systematic[systematic['uid'] == user].copy()
-        if len(mats_stops) + len(mats_systematic) :
-            outputs.append(html.H6(children='Overall distribution of the stops (systematic + occasional):',
+            outputs.append(html.H6(children='Overall distribution of the systematic and occasional stops:',
                                    style={'font-weight': 'bold'}))
-
-            gb_occ_stops = mats_stops.groupby('stop_id')
-            matched_lat = gb_occ_stops['lat'].first().tolist() + mats_systematic.lat.tolist()
-            matched_lng = gb_occ_stops['lng'].first().tolist() + mats_systematic.lng.tolist()
-
-
-            fig3 = go.Figure(go.Scattermapbox(mode="markers", name='occasional stops',
-                                              lon = matched_lng,
-                                              lat = matched_lat,
-                                              marker={'size': 10, 'color': 'blue'}))
-            fig3.update_layout(mapbox_style="open-street-map",
-                              margin={"r": 0, "t": 0, "l": 0, "b": 0},
-                              mapbox=dict(center=dict(lat = matched_lat[0],
-                                                      lon = matched_lng[0]),
-                                          zoom=10))
-            outputs.append(dcc.Graph(figure=fig3))
-
+            outputs.append(dcc.Graph(figure=fig))
 
         return outputs      
 

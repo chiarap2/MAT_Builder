@@ -5,6 +5,8 @@ import numpy as np
 from ptrail.core.TrajectoryDF import PTRAILDataFrame
 from ptrail.features.kinematic_features import KinematicFeatures as spatial
 
+from sklearn.cluster import DBSCAN
+
 import pickle
 from sklearn.preprocessing import StandardScaler
 import geohash2
@@ -31,6 +33,61 @@ class Enrichment(ModuleInterface):
 
     ### CLASS PROTECTED METHODS ###
 
+    ### METHODS RELATED TO THE MOVES ENRICHMENT ###
+    def _moves_enrichment(self, moves, model) :
+        # add speed, acceleration, distance info using PTRAIL
+        df = PTRAILDataFrame(moves, latitude='lat',
+                             longitude='lng',
+                             datetime='datetime',
+                             traj_id='tid')
+
+        speed = spatial.create_speed_column(df)
+        bearing = spatial.create_bearing_rate_column(speed)
+        acceleration = spatial.create_jerk_column(bearing)
+
+        # preparing input for transport mode detection
+        acceleration.reset_index(inplace=True)
+        acceleration.set_index(['traj_id', 'move_id'], inplace=True)
+
+        acceleration2 = acceleration.copy()
+
+        acceleration['tot_distance'] = acceleration.groupby(['traj_id', 'move_id']).apply(lambda x: x['Distance'].sum())
+        acceleration = acceleration.groupby(['traj_id', 'move_id']).mean()
+        acceleration[
+            ['max_bearing', 'max_bearing_rate', 'max_speed', 'max_acceleration', 'max_jerk']] = acceleration2.groupby(
+            ['traj_id', 'move_id']).apply(lambda x: x[['Bearing', 'Bearing_Rate', 'Speed', 'Acceleration', 'Jerk']].max())
+
+        col_to_train = ['Bearing', 'Bearing_Rate', 'Speed', 'Acceleration', 'Jerk', 'tot_distance', 'max_bearing',
+                        'max_bearing_rate', 'max_speed', 'max_acceleration', 'max_jerk']
+        col = acceleration.columns.to_list()
+        col_to_drop = [c for c in col if c not in col_to_train]
+        acceleration.drop(columns=col_to_drop, inplace=True)
+        acceleration.fillna(0, inplace=True)
+
+        scaler = StandardScaler()
+        scaled = scaler.fit_transform(acceleration)
+
+        transport_pred = model.predict(scaled)
+        acceleration['label'] = transport_pred
+
+        # transport label:
+        # 0: walk
+        # 1: bike
+        # 2: bus
+        # 3: car
+        # 4: subway
+        # 5: train
+        # 6: taxi
+
+        moves.set_index(['tid', 'move_id'], inplace=True)
+        moves_index = moves.index
+        acceleration_index = acceleration.index
+        moves.loc[moves_index.isin(acceleration_index), 'label'] = \
+            acceleration.loc[acceleration_index.isin(moves_index), 'label']
+
+        return moves
+
+    ### METHODS RELATED TO THE SYSTEMATIC STOPS ENRICHMENT ###
     def _systematic_enrichment_geohash(self, stops : pd.DataFrame, geohash_precision : int, min_frequency_sys : int) -> pd.DataFrame :
 
         # Qui mappiamo i centroidi degli stop vs le celle materializzate tramite la funzione di geohash.
@@ -142,6 +199,245 @@ class Enrichment(ModuleInterface):
         # Print out the dataframe holding the systematic stops.
         return systematic_stops
 
+    def _dbscan_stops(self, stops, eps, min_pts):
+
+        # convert epsilon from km to radians
+        kms_per_radian = 6371.0088
+        eps = (eps / 1000) / kms_per_radian
+
+        # set up the algorithm
+        dbscan = DBSCAN(eps=eps,
+                        min_samples=min_pts,
+                        algorithm='ball_tree',
+                        metric='haversine')
+
+        # Fit the algorithm on the stops of individual users.
+        df_stops = stops.copy()
+        df_stops['systematic_id'] = -5
+        gb = df_stops.groupby('uid')
+        for k, df in gb:
+            # print(f"Processing the stops of user {k}!")
+
+            dbscan.fit(np.radians([x for x in zip(df['lat'], df['lng'])]))
+
+            df_stops.loc[df.index, 'systematic_id'] = dbscan.labels_
+            # print(f"Main dataframe after the update: {df_stops.loc[df_stops['uid'] == k, 'sys_id']}")
+
+            view = df_stops[df_stops['uid'] == k]
+            # print(f"Number of clusters found for this user: {view.loc[view['sys_id'] >= 0, 'sys_id'].nunique()}")
+            # print(f"Number of occasional stops found for this user: {len(view.loc[view['sys_id'] == -1])}")
+            # break
+
+        # display(df_stops)
+        # display(df_stops.info())
+        return df_stops['systematic_id']
+
+    def _systematic_enrichment_dbscan(self, stops: pd.DataFrame, epsilon: int, min_frequency_sys: int) -> pd.DataFrame:
+
+        # Qui mappiamo i centroidi degli stop vs le celle materializzate tramite la funzione di geohash.
+        systematic_sp = stops.copy()
+        systematic_sp['systematic_id'] = self._dbscan_stops(stops, epsilon, min_frequency_sys) # Assign the stops to the clusters.
+        systematic_sp = systematic_sp.loc[systematic_sp['systematic_id'] >= 0, :] # Eliminate the stops that do not belong to any cluster.
+        # print(systematic_sp)
+
+        # Conta la frequenza delle coppie ('uid', 'pos_hashed').
+        # NOTA: questa e' la base da cui individueremo i systematic stop e li classificheremo.
+        freq_sys_sp = pd.DataFrame(systematic_sp.groupby(['uid', 'systematic_id']).size(),
+                                   columns=['frequency']).reset_index()
+        # display(freq_sys_sp)
+
+        # Ora associa gli stop originali alle coppie (uid, pos_hashed) insieme alla frequenza trovata.
+        systematic_sp = systematic_sp.merge(freq_sys_sp, on=['uid', 'systematic_id'], how='left')
+        # display(systematic_sp)
+        # display(systematic_sp['id_sys'].unique())
+
+        # 1 - case where systematic stops have been found...
+        if systematic_sp.shape[0] != 0:
+
+            # 1.1 - Prepare the dataframe that will hold the hours' frequencies.
+            freq = pd.DataFrame(np.zeros((len(systematic_sp), 24), dtype=np.uint32))
+            freq['weekend'] = 0
+            freq['uid'] = systematic_sp['uid']
+            freq['location'] = systematic_sp['systematic_id']
+            freq.drop_duplicates(['uid', 'location'], inplace=True)
+            # display(freq)
+
+
+            # 1.2 - Qui calcoliamo i contatori delle ore in cui occorrono i sistematic stop
+            # (propedeutico a determinare se si tratta di home/work/other).
+            def update_freq(freq, systematic_sp):
+                it = zip(systematic_sp['uid'], systematic_sp['systematic_id'],
+                         systematic_sp['datetime'], systematic_sp['leaving_datetime'])
+
+                for uid, location, start, end in it:
+                    time_range = pd.date_range(start.floor('h'), end.floor('h'), freq='H')
+                    indexer = (freq['uid'] == uid) & (freq['location'] == location)
+                    for t in time_range:
+                        if t.weekday() > 4:
+                            freq.loc[indexer, 'weekend'] += 1
+                        else:
+                            freq.loc[indexer, t.hour] += 1
+
+            update_freq(freq, systematic_sp)
+            # display(freq)
+
+
+            # 1.3 - Qui calcoliamo l'importanza degli stop sistematici trovati per ogni utente.
+            #     I due piu' importanti vengono assunti essere casa o lavoro.
+            slots = list(range(0, 24)) + ['weekend']
+            freq['sum'] = freq[slots].sum(axis=1)  # Qui calcoliamo la somma delle ore per ogni systematic stop.
+            freq['tot'] = freq.groupby('uid')['sum'].transform('sum')
+            freq['importance'] = freq['sum'] / freq['tot']  # E qui determiniamo l'importanza di ogni systematic stop.
+            freq.drop(columns=['sum', 'tot'], inplace=True)
+            freq.set_index(['uid', 'location'], inplace=True)
+            # display(freq)
+
+
+            # 1.4 - Qui distribuiamo i contatori associate alle ore ai 4 momenti del giorno.
+            freq['night'] = freq[[22, 23, 0, 1, 2, 3, 4, 5, 6, 7]].sum(axis=1)
+            freq['morning'] = freq[[8, 9, 10, 11, 12]].sum(axis=1)
+            freq['afternoon'] = freq[[13, 14, 15, 16, 17, 18]].sum(axis=1)
+            freq['evening'] = freq[[19, 20, 21]].sum(axis=1)
+            # display(freq)
+
+
+            # 1.5 - Qui per ogni utente troviamo i primi 2 stop sistematici con importanza maggiore (saranno )
+            largest_index = pd.DataFrame(freq.groupby('uid')['importance'].nlargest(2)).index.droplevel(0)
+            # display(largest_index)
+
+
+            # 1.6 - Qui calcoliamo le probabilita' associate alle tipologie di stop sistematici.
+            w_home = [1, 0.1, 0, 0.9, 1]
+            w_work = [0, 0.9, 1, 0.1, 0]
+            list_exclusion = list(set(freq.index) - set(largest_index))
+            freq['p_home'] = (freq[['night', 'morning', 'afternoon', 'evening', 'weekend']] * w_home).sum(axis=1)
+            freq['p_work'] = (freq[['night', 'morning', 'afternoon', 'evening', 'weekend']] * w_work).sum(axis=1)
+            freq['home'] = freq['p_home'] / (freq['p_home'] + freq['p_work'])
+            freq['work'] = freq['p_work'] / (freq['p_home'] + freq['p_work'])
+            freq.loc[list_exclusion, 'home'] = 0
+            freq.loc[list_exclusion, 'work'] = 0
+            freq['other'] = 0
+            freq.loc[list_exclusion, 'other'] = 1
+            freq.drop(columns=['p_home', 'p_work'], inplace=True)
+            # display(freq)
+
+
+            # 1.7 - Qui, infine, completiamo il dataframe systematic stops con le varie probabilita' calcolate.
+            systematic_sp.set_index(['uid', 'systematic_id'], inplace=True)
+            systematic_sp['home'] = 0
+            systematic_sp['work'] = 0
+            systematic_sp['other'] = 1
+            systematic_sp['importance'] = freq['importance']
+            systematic_sp.loc[largest_index, 'home'] = freq.loc[largest_index, 'home']
+            systematic_sp.loc[largest_index, 'work'] = freq.loc[largest_index, 'work']
+            systematic_sp.loc[largest_index, 'other'] = freq.loc[largest_index, 'other']
+
+            systematic_sp.reset_index(inplace=True)
+
+
+        # 2 - case where no systematic stops have been found...adapt the empty dataframe
+        #     for the code that will use it.
+        else:
+            new_cols = ['systematic_id', 'importance', 'home', 'work', 'other', 'start_time', 'end_time']
+            systematic_sp = systematic_sp.reindex(systematic_stops.columns.union(new_cols), axis=1)
+
+        # Print out the dataframe holding the systematic stops.
+        return systematic_sp
+
+    ### METHODS RELATED TO THE OCCASIONAL STOPS ENRICHMENT ###
+    def _preparing_stops(self, stop, max_distance):
+
+        # buffer stop points -> convert their geometries from points into polygon
+        # (we set the radius of polygon = to the radius of sjoin)
+        stops = gpd.GeoDataFrame(stop, geometry=gpd.points_from_xy(stop.lng, stop.lat))
+        stops.set_crs('epsg:4326', inplace=True)
+        stops.to_crs('epsg:3857', inplace=True)
+        stops['geometry_stop'] = stops['geometry']
+        stops['geometry'] = stops['geometry_stop'].buffer(max_distance)
+
+        return stops
+
+    def _semantic_enrichment(self, stop, semantic_df, suffix):
+
+        # print("DEBUG enrichment occasional stops...")
+
+        # duplicate geometry column because we loose it during the sjoin_nearest
+        s_df = semantic_df.copy()
+
+        # Filter out the POIs without a name!
+        s_df = s_df.loc[s_df['name'].notna(), :]
+
+        s_df['geometry_' + suffix] = s_df['geometry']
+        s_df['element_type'] = s_df['element_type'].astype(str)
+        s_df['osmid'] = s_df['osmid'].astype(str)
+
+        # print(f"Stampa df stop occasionali: {stop.info()}")
+        print(f"Stampa df POIs: {s_df.info()}")
+
+        # now we can use sjoin_nearest to obtain the results we want
+        enriched_occasional = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
+
+        # Remove the POIs that have been associated with the same stop multiple times.
+        enriched_occasional.drop_duplicates(subset=['stop_id', 'osmid'], inplace=True)
+
+        # compute the distance between the stop point and the POI geometry
+        enriched_occasional['distance'] = enriched_occasional['geometry_stop'].distance(
+            enriched_occasional['geometry_' + suffix])
+
+        # sort by distance
+        enriched_occasional = enriched_occasional.sort_values(['tid', 'stop_id', 'distance'])
+
+        # print(f"Stampa df risultati: {enriched_occasional.info()}")
+        return enriched_occasional
+
+    def _download_poi_osm(self, list_pois, place):
+
+        # Here we download the POIs from OSM if the list of types of POIs is not empty.
+        gdf_ = gpd.GeoDataFrame()
+        if list_pois != []:
+
+            for key in list_pois:
+
+                # downloading POI
+                print(f"Downloading {key} POIs from OSM...")
+                poi = ox.geometries_from_place(place, tags={key: True})
+                print(f"Download completed! Dataframe with the downloaded POIs: {poi}")
+
+                # Immediately return the empty dataframe if it doesn't contain any suitable POI...
+                if poi.empty:
+                    print("No POI found...")
+                    new_cols = ['osmid', 'element_type', 'name', 'wikidata', 'geometry', 'category']
+                    poi = poi.reindex(poi.columns.union(new_cols), axis=1)
+                    return poi
+
+                # convert list into string in order to save poi into parquet
+                if 'nodes' in poi.columns:
+                    poi['nodes'] = poi['nodes'].astype(str)
+
+                if 'ways' in poi.columns:
+                    poi['ways'] = poi['ways'].astype(str)
+
+                poi.reset_index(inplace=True)
+                poi.rename(columns={key: 'category'}, inplace=True)
+                poi['category'].replace({'yes': key}, inplace=True)
+
+                if poi.crs is None:
+                    poi.set_crs('epsg:4326', inplace=True)
+                    poi.to_crs('epsg:3857', inplace=True)
+                else:
+                    poi.to_crs('epsg:3857', inplace=True)
+
+                # Now write out this subset of POIs to a file.
+                poi.to_parquet('data/poi/' + key + '.parquet')
+
+                # And finally, concatenate this subset of POIs to the other POIs
+                # that have been added to the main dataframe so far.
+                gdf_ = pd.concat([gdf_, poi])
+
+            # print(f"A few info on the POIs downloaded from OSM: {gdf_.info()}")
+            gdf_.to_parquet('data/poi/pois.parquet')
+            return gdf_
+
 
 
     ### CLASS PUBLIC CONSTRUCTOR ###
@@ -173,7 +469,7 @@ class Enrichment(ModuleInterface):
         self.list_pois = [] if dic_params['poi_categories'] is None else dic_params['poi_categories']
         self.path_poi = dic_params['path_poi']
         self.max_distance = dic_params['max_dist']
-        self.geohash_precision = dic_params['geohash_precision']
+        self.dbscan_epsilon = dic_params['dbscan_epsilon']
         self.systematic_threshold = dic_params['systematic_threshold']
 
         # 3 - Social media posts parameters
@@ -210,57 +506,10 @@ class Enrichment(ModuleInterface):
         # 1 - Case in which we augment the moves with the estimated transportation means.
         if self.enrich_moves:
             print("Executing move enrichment...")
-            
-            # add speed, acceleration, distance info using PTRAIL
-            df = PTRAILDataFrame(self.moves, latitude='lat',
-                                 longitude='lng',
-                                 datetime='datetime',
-                                 traj_id='tid')
-            speed = spatial.create_speed_column(df)
-            bearing = spatial.create_bearing_rate_column(speed)
-            acceleration = spatial.create_jerk_column(bearing)
 
-            ### save acceleration ###
             # load random forest classifier
             model = pickle.load(open('models/best_rf.sav', 'rb'))
-
-            # preparing input for transport mode detection
-            acceleration.reset_index(inplace=True)
-            acceleration.set_index(['traj_id','move_id'],inplace=True)
-
-            acceleration2 = acceleration.copy()
-
-            acceleration['tot_distance'] = acceleration.groupby(['traj_id','move_id']).apply(lambda x: x['Distance'].sum())
-            acceleration = acceleration.groupby(['traj_id','move_id']).mean()
-            acceleration[['max_bearing','max_bearing_rate','max_speed','max_acceleration','max_jerk']] = acceleration2.groupby(['traj_id','move_id']).apply(lambda x: x[['Bearing', 'Bearing_Rate', 'Speed', 'Acceleration', 'Jerk']].max())
-
-            col_to_train = ['Bearing', 'Bearing_Rate', 'Speed', 'Acceleration', 'Jerk','tot_distance','max_bearing','max_bearing_rate','max_speed','max_acceleration','max_jerk']
-            col = acceleration.columns.to_list()
-            col_to_drop = [c for c in col if c not in col_to_train]
-            acceleration.drop(columns=col_to_drop, inplace=True)
-            acceleration.fillna(0,inplace=True)
-
-            scaler = StandardScaler()
-            scaled = scaler.fit_transform(acceleration)
-
-            transport_pred = model.predict(scaled)
-            acceleration['label'] = transport_pred
-
-            # transport label:
-            # 0: walk
-            # 1: bike
-            # 2: bus
-            # 3: car
-            # 4: subway
-            # 5: train
-            # 6: taxi
-
-            self.moves.set_index(['tid', 'move_id'], inplace=True)
-            moves_index = self.moves.index
-            acceleration_index = acceleration.index
-            self.moves.loc[moves_index.isin(acceleration_index), 'label'] =\
-                acceleration.loc[acceleration_index.isin(moves_index), 'label']
-
+            self.moves = self._moves_enrichment(self.moves.copy(), model)
             self.moves.to_parquet('data/enriched_moves.parquet')
 
         # 2 - Case in which we do not augment the moves: just make the dataframe compatible with the subsequent steps.
@@ -285,115 +534,17 @@ class Enrichment(ModuleInterface):
         ############################################
         
         print("Executing systematic stop enrichment...")
-        self.systematic = self._systematic_enrichment_geohash(self.stops.copy(),
-                                                              geohash_precision = self.geohash_precision,
-                                                              min_frequency_sys = self.systematic_threshold)
+        #self.systematic = self._systematic_enrichment_geohash(self.stops.copy(),
+        #                                                      geohash_precision = self.geohash_precision,
+        #                                                      min_frequency_sys = self.systematic_threshold)
+        self.systematic = self._systematic_enrichment_dbscan(self.stops.copy(),
+                                                             epsilon = self.dbscan_epsilon,
+                                                             min_frequency_sys = self.systematic_threshold)
 
-        
-        
+
         ############################################
         ### ---- OCCASIONAL STOP ENRICHMENT ---- ###
         ############################################
-
-        def preparing_stops(stop,max_distance):
-    
-            # buffer stop points -> convert their geometries from points into polygon 
-            # (we set the radius of polygon = to the radius of sjoin) 
-            stops = gpd.GeoDataFrame(stop, geometry=gpd.points_from_xy(stop.lng, stop.lat))
-            stops.set_crs('epsg:4326',inplace=True)
-            stops.to_crs('epsg:3857',inplace=True)
-            stops['geometry_stop'] = stops['geometry']
-            stops['geometry'] = stops['geometry_stop'].buffer(max_distance)
-
-            return stops
-
-
-
-        def semantic_enrichment(stop, semantic_df, suffix):
-        
-            #print("DEBUG enrichment occasional stops...")
-            
-            # duplicate geometry column because we loose it during the sjoin_nearest
-            s_df = semantic_df.copy()
-            
-            # Filter out the POIs without a name!
-            s_df = s_df.loc[s_df['name'].notna(), :]
-            
-            s_df['geometry_'+suffix] = s_df['geometry']
-            s_df['element_type'] = s_df['element_type'].astype(str)
-            s_df['osmid'] = s_df['osmid'].astype(str)
-            
-            #print(f"Stampa df stop occasionali: {stop.info()}")
-            print(f"Stampa df POIs: {s_df.info()}")
-            
-            # now we can use sjoin_nearest to obtain the results we want
-            enriched_occasional = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
-
-            # Remove the POIs that have been associated with the same stop multiple times.
-            enriched_occasional.drop_duplicates(subset=['stop_id', 'osmid'], inplace = True)
-
-            # compute the distance between the stop point and the POI geometry
-            enriched_occasional['distance'] = enriched_occasional['geometry_stop'].distance(enriched_occasional['geometry_'+suffix])
-            
-            # sort by distance
-            enriched_occasional = enriched_occasional.sort_values(['tid','stop_id','distance'])
-            
-            #print(f"Stampa df risultati: {enriched_occasional.info()}")
-            return enriched_occasional
-
-
-
-        def download_poi_osm(list_pois, place) :
-        
-            # Here we download the POIs from OSM if the list of types of POIs is not empty.
-            gdf_ = gpd.GeoDataFrame()
-            if list_pois != [] :
-            
-                for key in list_pois:
-
-                    # downloading POI
-                    print(f"Downloading {key} POIs from OSM...")
-                    poi = ox.geometries_from_place(place, tags={key:True})
-                    print(f"Download completed! Dataframe with the downloaded POIs: {poi}")
-                    
-                    # Immediately return the empty dataframe if it doesn't contain any suitable POI...
-                    if poi.empty : 
-                        print("No POI found...")
-                        new_cols = ['osmid', 'element_type', 'name', 'wikidata', 'geometry', 'category']
-                        poi = poi.reindex(poi.columns.union(new_cols), axis=1)
-                        return poi
-                    
-                    
-                    # convert list into string in order to save poi into parquet
-                    if 'nodes' in poi.columns:
-                        poi['nodes'] = poi['nodes'].astype(str)
-
-                    if 'ways' in poi.columns:
-                        poi['ways'] = poi['ways'].astype(str)
-
-                    poi.reset_index(inplace=True)
-                    poi.rename(columns={key: 'category'}, inplace=True)
-                    poi['category'].replace({'yes': key}, inplace=True)
-
-                    if poi.crs is None:
-                        poi.set_crs('epsg:4326',inplace=True)
-                        poi.to_crs('epsg:3857',inplace=True)
-                    else:
-                        poi.to_crs('epsg:3857',inplace=True)
-
-                    # Now write out this subset of POIs to a file. 
-                    poi.to_parquet('data/poi/' + key + '.parquet')
-
-                    # And finally, concatenate this subset of POIs to the other POIs
-                    # that have been added to the main dataframe so far.
-                    gdf_ = pd.concat([gdf_, poi])
-            
-            
-                # print(f"A few info on the POIs downloaded from OSM: {gdf_.info()}")
-                gdf_.to_parquet('data/poi/pois.parquet')
-                return gdf_
-
-
 
         print("Executing occasional stop augmentation with POIs...")
         self.occasional = self.stops[~self.stops['stop_id'].isin(self.systematic['stop_id'])]
@@ -403,7 +554,7 @@ class Enrichment(ModuleInterface):
         gdf_ = None
         if self.path_poi is None :
             print(f"Downloading POIs from OSM for the location of {self.poi_place}. Selected types of POIs: {self.list_pois}")
-            gdf_ = download_poi_osm(self.list_pois, self.poi_place)
+            gdf_ = self._download_poi_osm(self.list_pois, self.poi_place)
         else :
             gdf_ = self.path_poi
             print(f"Using a POI file: {gdf_}!")
@@ -417,8 +568,8 @@ class Enrichment(ModuleInterface):
 
 
         # Calling functions internal to this method...
-        o_stops = preparing_stops(self.occasional, self.max_distance)
-        enriched_occasional = semantic_enrichment(o_stops, gdf_[['element_type','osmid','name','wikidata','geometry','category']], 'poi')
+        o_stops = self._preparing_stops(self.occasional, self.max_distance)
+        enriched_occasional = self._semantic_enrichment(o_stops, gdf_[['element_type','osmid','name','wikidata','geometry','category']], 'poi')
 
         ######## PROVA ###########
         # mat.set_index(['stop_id','lat','lng'],inplace=True)
@@ -590,7 +741,7 @@ class Enrichment(ModuleInterface):
                 'poi_categories',
                 'path_poi',
                 'max_dist',
-                'geohash_precision',
+                'dbscan_epsilon',
                 'systematic_threshold',
                 'social_enrichment',
                 'weather_enrichment',
@@ -601,7 +752,7 @@ class Enrichment(ModuleInterface):
         
     def reset_state(self) :
         # These are the auxiliary fields internally used during the enrichment execution.
-        self.geohash_precision = None
+        self.dbscan_epsilon = None
         self.systematic_threshold = None
         self.rdf = None
         self.upload_weather = None
