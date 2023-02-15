@@ -162,7 +162,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
 
             web_components.append(html.H5(children="Systematic stop detection"))
-            web_components.append(html.Span(children="Insert the maximum distance below which a stop can be included in a cluster of stops: "))
+            web_components.append(html.Span(children="Insert distance below which a stop can be included in a systematic stop: "))
             web_components.append(dcc.Input(id=self.id_class + '-dbscan_epsilon',
                                             value=50,
                                             type='number',
