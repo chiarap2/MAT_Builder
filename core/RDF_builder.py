@@ -21,8 +21,8 @@ class RDFBuilder() :
     # with the logical and raw trajectories corresponding to uid and tid. 
     def find_trajectories_from_graph(self, uid, tid) :
 
-        user = self.g.value(predicate = FOAF.name, object = Literal(uid), any = False)
-        set_traj = self.g.subjects(predicate = self.STEP.hasID, object = Literal(tid))
+        user = self.g.value(predicate = FOAF.name, object = Literal(str(uid)), any = False)
+        set_traj = self.g.subjects(predicate = self.STEP.hasID, object = Literal(str(tid)))
         traj = None
         for t in set_traj :
             if (user, self.STEP.hasTrajectory, t) in self.g : 
@@ -37,7 +37,7 @@ class RDFBuilder() :
     # Given a graph g, an agent identifier uid, this method returns the node in g representing the agent corresponding to uid. 
     def find_user_from_graph(self, uid) :
 
-        return self.g.value(predicate = FOAF.name, object = Literal(uid), any = False)
+        return self.g.value(predicate = FOAF.name, object = Literal(str(uid)), any = False)
 
     
     # Given a graph g, a node raw_traj representing a specific raw subtrajectory, and a start and end time instants,
