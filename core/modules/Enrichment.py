@@ -426,8 +426,11 @@ class Enrichment(ModuleInterface):
         enriched_stops.drop_duplicates(subset=['stop_id', 'osmid'], inplace=True)
 
         # compute the distance between the stop point and the POI geometry
-        enriched_stops['distance'] = enriched_stops['geometry_stop'].distance(
-            enriched_stops['geometry_' + suffix])
+        enriched_stops['distance'] = enriched_stops['geometry_stop'].distance(enriched_stops['geometry_' + suffix])
+
+        # Remove the rows for which it was not possible to associate a stop to a POI.
+        # To this end, examine whether the distance is NaN.
+        enriched_stops = enriched_stops.loc[~enriched_stops['distance'].isna(), :]
 
         # sort by distance
         enriched_stops = enriched_stops.sort_values(['tid', 'stop_id', 'distance'])
@@ -625,7 +628,7 @@ class Enrichment(ModuleInterface):
             print(weather_enrichment)
             print(weather_enrichment.info())
 
-            return(weather_enrichment)
+            return weather_enrichment
         
             
             
