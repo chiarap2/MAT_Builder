@@ -394,9 +394,9 @@ class Enrichment(ModuleInterface):
                                    df_poi : gpd.GeoDataFrame,
                                    suffix : str, max_distance : float) -> gpd.GeoDataFrame:
 
-        # print("DEBUG enrichment occasional stops...")
+        # print("DEBUG enrichment stops...")
 
-        # Prepare the occasional stops for the subsequent spatial join.
+        # Prepare the stops for the subsequent spatial join.
         stops = gpd.GeoDataFrame(df_stops,
                                  geometry=gpd.points_from_xy(df_stops.lng, df_stops.lat),
                                  crs="EPSG:4326")
@@ -526,18 +526,36 @@ class Enrichment(ModuleInterface):
         self.stops.reset_index(inplace=True)
         self.stops.rename(columns={'index': 'stop_id'}, inplace=True)
 
+        # Get a POI dataset, either from OSM or from a file.
+        df_poi = None
+        if self.path_poi is None:
+            print(
+                f"Downloading POIs from OSM for the location of {self.poi_place}. Selected types of POIs: {self.list_pois}")
+            df_poi = self._download_poi_osm(self.list_pois, self.poi_place)
+        else:
+            df_poi = self.path_poi
+            print(f"Using a POI file: {df_poi}!")
+        print(f"A few info on the POIs that will be used to enrich the occasional stops: {df_poi.info()}")
+
 
         ############################################
         ### ---- SYSTEMATIC STOP ENRICHMENT ---- ###
         ############################################
         
-        print("Executing systematic stop enrichment...")
+        print("Executing systematic stop detection...")
         #self.systematic = self._systematic_enrichment_geohash(self.stops.copy(),
         #                                                      geohash_precision = self.geohash_precision,
         #                                                      min_frequency_sys = self.systematic_threshold)
         self.systematic = self._systematic_enrichment_dbscan(self.stops.copy(),
                                                              epsilon = self.dbscan_epsilon,
                                                              min_frequency_sys = self.systematic_threshold)
+
+        print("Executing systematic stop augmentation with POIs...")
+        self.enriched_systematic = self._stop_enrichment_with_pois(self.systematic,
+                                                                   df_poi,
+                                                                   'poi',
+                                                                   self.max_distance)
+        self.enriched_systematic.to_parquet('data/enriched_systematic.parquet')
 
 
         ############################################
@@ -546,25 +564,12 @@ class Enrichment(ModuleInterface):
 
         print("Executing occasional stop augmentation with POIs...")
         self.occasional = self.stops[~self.stops['stop_id'].isin(self.systematic['stop_id'])]
-        
-
-        # Get a POI dataset, either from OSM or from a file. 
-        df_poi = None
-        if self.path_poi is None :
-            print(f"Downloading POIs from OSM for the location of {self.poi_place}. Selected types of POIs: {self.list_pois}")
-            df_poi = self._download_poi_osm(self.list_pois, self.poi_place)
-        else :
-            df_poi = self.path_poi
-            print(f"Using a POI file: {df_poi}!")
-        print(f"A few info on the POIs that will be used to enrich the occasional stops: {df_poi.info()}")
-
 
         # Calling functions internal to this method...
         self.enriched_occasional = self._stop_enrichment_with_pois(self.occasional,
-                                                                   df_poi[['element_type','osmid','name','name:en','wikidata','geometry','category']],
-                                                        'poi',
+                                                                   df_poi,
+                                                                   'poi',
                                                                    self.max_distance)
-
         # mat.set_index(['stop_id','lat','lng'],inplace=True)
         self.enriched_occasional.to_parquet('data/enriched_occasional.parquet')
         
@@ -724,6 +729,7 @@ class Enrichment(ModuleInterface):
         return {'moves' : self.moves,
                 'occasional' : self.occasional,
                 'systematic' : self.systematic,
+                'enriched_systematic': self.enriched_systematic,
                 'enriched_occasional' : self.enriched_occasional,
                 'tweets' : self.tweets}
 
@@ -740,7 +746,7 @@ class Enrichment(ModuleInterface):
                 'create_rdf']
 
     def get_params_output(self) -> list[str] :
-        return ['moves', 'occasional', 'systematic', 'enriched_occasional', 'tweets']
+        return ['moves', 'occasional', 'systematic', 'enriched_systematic', 'enriched_occasional', 'tweets']
         
     def reset_state(self) :
         # These are the auxiliary fields internally used during the enrichment execution.
@@ -758,10 +764,11 @@ class Enrichment(ModuleInterface):
         self.enrich_moves = None
 
         # These are the fundamental fields internally used during the enrichment execution, and that may
-        # be exposed by a class instance (e.g., it the instance is used via a UI wrapper).
+        # be exposed by a class instance (e.g., if the instance is used via a UI wrapper).
         self.stops = None
         self.moves = None
 
+        self.enriched_systematic = None
         self.enriched_occasional = None
         self.systematic = None
         self.occasional = None
