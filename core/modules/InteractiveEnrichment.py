@@ -263,7 +263,8 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             # Esegui il core dell'istanza.
             prev_results = self.prev_module.get_results()
             self.enrich_moves = True if move_enrichment == 'yes' else False
-            dic_params = {'moves' : prev_results['moves'],
+            dic_params = {'trajectories' : prev_results['trajectories'],
+                          'moves' : prev_results['moves'],
                           'move_enrichment' : self.enrich_moves,
                           'stops' : prev_results['stops'],
                           'poi_place' : poi_place,

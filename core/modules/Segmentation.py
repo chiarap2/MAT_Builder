@@ -16,10 +16,11 @@ class Segmentation(ModuleInterface):
     ### PUBLIC CLASS CONSTRUCTOR ###
     
     def __init__(self) :
-        
+        self.radius = None
+        self.duration = None
+        self.trajectories = None
         self.stops = None
         self.moves = None
-        self.path_pre_traj = './data/temp_dataset/traj_cleaned.parquet'
         
         
 
@@ -139,15 +140,19 @@ class Segmentation(ModuleInterface):
     def get_results(self) -> dict :
 
 
-        return {'stops' : self.stops.copy() if self.stops is not None else None,
+        return {'trajectories' : self.trajectories.copy(),
+                'stops' : self.stops.copy() if self.stops is not None else None,
                 'moves' : self.moves.copy() if self.moves is not None else None}
 
     def get_params_input(self) -> list[str] :
         return ['trajectories', 'duration' 'radius']
 
     def get_params_output(self) -> list[str] :
-        return ['stops', 'moves']
+        return ['trajectories', 'stops', 'moves']
             
     def reset_state(self) :
+        self.trajectories = None
         self.stops = None
         self.moves = None
+        self.radius = None
+        self.duration = None

@@ -456,6 +456,9 @@ class Enrichment(ModuleInterface):
 
         # Parsing the input received from the UI / user...
 
+        # 0 - Trajectories
+        self.trajectories = pd.DataFrame(dic_params['trajectories'])
+
         # 1 - moves parameters
         self.moves = dic_params['moves']
         if dic_params['move_enrichment']:
@@ -637,10 +640,9 @@ class Enrichment(ModuleInterface):
         if self.weather :
             print("Adding weather info to the trajectories...")
 
-            traj_cleaned = pd.read_parquet('./data/temp_dataset/traj_cleaned.parquet')
             weather = self.upload_weather
             
-            df_weather_enrichment = weather_enrichment(traj_cleaned, weather)
+            df_weather_enrichment = weather_enrichment(self.trajectories.copy(), weather)
             df_weather_enrichment.to_parquet('./data/weather_enrichment.parquet')
         
             # Set up the moves dataframe to have temperature and weather conditions (needed later on by
@@ -704,8 +706,7 @@ class Enrichment(ModuleInterface):
             builder = RDFBuilder()
 
             # Add the users and the information associated to their raw-trajectories to the graph.
-            traj_cleaned = pd.read_parquet('data/temp_dataset/traj_cleaned.parquet')
-            builder.add_trajectories(traj_cleaned)
+            builder.add_trajectories(self.trajectories.copy())
 
             # Add to the RDF graph the stops, the moves, and the semantic information 
             # associated with the trajectories (social media posts, weather), the stops (type of stop, POIs),
@@ -737,7 +738,8 @@ class Enrichment(ModuleInterface):
                 'tweets' : self.tweets}
 
     def get_params_input(self) -> list[str] :
-        return ['move_enrichment',
+        return ['trajectories',
+                'move_enrichment',
                 'place',
                 'poi_categories',
                 'path_poi',
@@ -768,6 +770,7 @@ class Enrichment(ModuleInterface):
 
         # These are the fundamental fields internally used during the enrichment execution, and that may
         # be exposed by a class instance (e.g., if the instance is used via a UI wrapper).
+        self.trajectories = None
         self.stops = None
         self.moves = None
 
