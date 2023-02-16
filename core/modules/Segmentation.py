@@ -50,7 +50,7 @@ class Segmentation(ModuleInterface):
                                minutes_for_a_stop = self.duration, 
                                spatial_radius_km = self.radius, 
                                leaving_time = True)
-        self.stops = stdf
+        self.stops = pd.DataFrame(stdf)
 
 
         ### move detection ###

@@ -87,7 +87,50 @@ class Enrichment(ModuleInterface):
 
         return moves
 
+    ### METHODS RELATED TO THE OCCASIONAL/SYSTEMATIC STOPS ENRICHMENT ###
+
+    def _download_poi_osm(self, list_pois: list[str], place: str, write_files: bool = False) -> gpd.GeoDataFrame:
+
+        # Final list of the columns that are expected to be found in the POI dataframe.
+        list_columns_df_poi = ['osmid', 'element_type', 'name', 'name:en', 'wikidata', 'geometry', 'category']
+
+        # Here we download the POIs from OSM if the list of types of POIs is not empty.
+        gdf_ = gpd.GeoDataFrame(columns=list_columns_df_poi, crs="EPSG:4326")
+        if list_pois:
+
+            print(f"Downloading POIs from OSM for the location {place}...")
+            for key in list_pois:
+
+                # downloading POI
+                print(f"Downloading {key} POIs from OSM...")
+                poi = ox.geometries_from_place(place, tags={key: True})
+                print(f"Download completed!")
+
+                # Immediately return the empty dataframe if it doesn't contain any suitable POI...
+                if poi.empty:
+                    print(f"No POI found for category {key}!")
+                    break
+
+                # Remove the POIs that do not have a name.
+                poi.reset_index(inplace=True)
+                poi.rename(columns={key: 'category'}, inplace=True)
+                poi.drop(poi.columns.difference(list_columns_df_poi), axis=1, inplace=True)
+                poi = poi.loc[~poi['name'].isna()]
+                poi['category'].replace({'yes': key}, inplace=True)
+
+                # Now write out this subset of POIs to a file.
+                if write_files: poi.to_parquet('./' + key + '.parquet')
+
+                # And finally, concatenate this subset of POIs to the other POIs
+                # that have been added to the main dataframe so far.
+                gdf_ = pd.concat([gdf_, poi])
+
+            gdf_.reset_index(drop=True, inplace=True)
+            if write_files: gdf_.to_parquet('./pois.parquet')
+            return gdf_
+
     ### METHODS RELATED TO THE SYSTEMATIC STOPS ENRICHMENT ###
+
     def _systematic_enrichment_geohash(self, stops : pd.DataFrame, geohash_precision : int, min_frequency_sys : int) -> pd.DataFrame :
 
         # Qui mappiamo i centroidi degli stop vs le celle materializzate tramite la funzione di geohash.
@@ -339,104 +382,58 @@ class Enrichment(ModuleInterface):
         #     for the code that will use it.
         else:
             new_cols = ['systematic_id', 'importance', 'home', 'work', 'other', 'start_time', 'end_time']
-            systematic_sp = systematic_sp.reindex(systematic_stops.columns.union(new_cols), axis=1)
+            systematic_sp = systematic_sp.reindex(systematic_sp.columns.union(new_cols), axis=1)
 
         # Print out the dataframe holding the systematic stops.
         return systematic_sp
 
     ### METHODS RELATED TO THE OCCASIONAL STOPS ENRICHMENT ###
-    def _preparing_stops(self, stop, max_distance):
 
-        # buffer stop points -> convert their geometries from points into polygon
-        # (we set the radius of polygon = to the radius of sjoin)
-        stops = gpd.GeoDataFrame(stop, geometry=gpd.points_from_xy(stop.lng, stop.lat))
-        stops.set_crs('epsg:4326', inplace=True)
+    def _stop_enrichment_with_pois(self,
+                                   df_stops : pd.DataFrame,
+                                   df_poi : gpd.GeoDataFrame,
+                                   suffix : str, max_distance : float) -> gpd.GeoDataFrame:
+
+        # print("DEBUG enrichment occasional stops...")
+
+        # Prepare the occasional stops for the subsequent spatial join.
+        stops = gpd.GeoDataFrame(df_stops,
+                                 geometry=gpd.points_from_xy(df_stops.lng, df_stops.lat),
+                                 crs="EPSG:4326")
         stops.to_crs('epsg:3857', inplace=True)
         stops['geometry_stop'] = stops['geometry']
         stops['geometry'] = stops['geometry_stop'].buffer(max_distance)
 
-        return stops
 
-    def _semantic_enrichment(self, stop, semantic_df, suffix):
-
-        # print("DEBUG enrichment occasional stops...")
-
-        # duplicate geometry column because we loose it during the sjoin_nearest
-        s_df = semantic_df.copy()
+        pois = df_poi.copy()
+        pois.to_crs('epsg:3857', inplace=True)
 
         # Filter out the POIs without a name!
-        s_df = s_df.loc[s_df['name'].notna(), :]
+        pois = pois.loc[pois['name'].notna(), :]
 
-        s_df['geometry_' + suffix] = s_df['geometry']
-        s_df['element_type'] = s_df['element_type'].astype(str)
-        s_df['osmid'] = s_df['osmid'].astype(str)
+        # duplicate geometry column because we loose it during the sjoin_nearest
+        pois['geometry_' + suffix] = pois['geometry']
+        pois['element_type'] = pois['element_type'].astype(str)
+        pois['osmid'] = pois['osmid'].astype(str)
 
         # print(f"Stampa df stop occasionali: {stop.info()}")
-        print(f"Stampa df POIs: {s_df.info()}")
+        print(f"Stampa df POIs: {pois.info()}")
 
-        # now we can use sjoin_nearest to obtain the results we want
-        enriched_occasional = stop.sjoin_nearest(s_df, max_distance=0.00001, how='left', rsuffix=suffix)
+        # Execute the spatial left join to associate POIs to the stops.
+        enriched_stops = stops.sjoin_nearest(pois, max_distance=0.00001, how='left', rsuffix=suffix)
 
         # Remove the POIs that have been associated with the same stop multiple times.
-        enriched_occasional.drop_duplicates(subset=['stop_id', 'osmid'], inplace=True)
+        enriched_stops.drop_duplicates(subset=['stop_id', 'osmid'], inplace=True)
 
         # compute the distance between the stop point and the POI geometry
-        enriched_occasional['distance'] = enriched_occasional['geometry_stop'].distance(
-            enriched_occasional['geometry_' + suffix])
+        enriched_stops['distance'] = enriched_stops['geometry_stop'].distance(
+            enriched_stops['geometry_' + suffix])
 
         # sort by distance
-        enriched_occasional = enriched_occasional.sort_values(['tid', 'stop_id', 'distance'])
+        enriched_stops = enriched_stops.sort_values(['tid', 'stop_id', 'distance'])
 
-        # print(f"Stampa df risultati: {enriched_occasional.info()}")
-        return enriched_occasional
-
-    def _download_poi_osm(self, list_pois, place):
-
-        # Here we download the POIs from OSM if the list of types of POIs is not empty.
-        gdf_ = gpd.GeoDataFrame()
-        if list_pois != []:
-
-            for key in list_pois:
-
-                # downloading POI
-                print(f"Downloading {key} POIs from OSM...")
-                poi = ox.geometries_from_place(place, tags={key: True})
-                print(f"Download completed! Dataframe with the downloaded POIs: {poi}")
-
-                # Immediately return the empty dataframe if it doesn't contain any suitable POI...
-                if poi.empty:
-                    print("No POI found...")
-                    new_cols = ['osmid', 'element_type', 'name', 'wikidata', 'geometry', 'category']
-                    poi = poi.reindex(poi.columns.union(new_cols), axis=1)
-                    return poi
-
-                # convert list into string in order to save poi into parquet
-                if 'nodes' in poi.columns:
-                    poi['nodes'] = poi['nodes'].astype(str)
-
-                if 'ways' in poi.columns:
-                    poi['ways'] = poi['ways'].astype(str)
-
-                poi.reset_index(inplace=True)
-                poi.rename(columns={key: 'category'}, inplace=True)
-                poi['category'].replace({'yes': key}, inplace=True)
-
-                if poi.crs is None:
-                    poi.set_crs('epsg:4326', inplace=True)
-                    poi.to_crs('epsg:3857', inplace=True)
-                else:
-                    poi.to_crs('epsg:3857', inplace=True)
-
-                # Now write out this subset of POIs to a file.
-                poi.to_parquet('data/poi/' + key + '.parquet')
-
-                # And finally, concatenate this subset of POIs to the other POIs
-                # that have been added to the main dataframe so far.
-                gdf_ = pd.concat([gdf_, poi])
-
-            # print(f"A few info on the POIs downloaded from OSM: {gdf_.info()}")
-            gdf_.to_parquet('data/poi/pois.parquet')
-            return gdf_
+        # print(f"Stampa df risultati: {enriched_stops.info()}")
+        return enriched_stops
 
 
 
@@ -551,29 +548,23 @@ class Enrichment(ModuleInterface):
         
 
         # Get a POI dataset, either from OSM or from a file. 
-        gdf_ = None
+        df_poi = None
         if self.path_poi is None :
             print(f"Downloading POIs from OSM for the location of {self.poi_place}. Selected types of POIs: {self.list_pois}")
-            gdf_ = self._download_poi_osm(self.list_pois, self.poi_place)
+            df_poi = self._download_poi_osm(self.list_pois, self.poi_place)
         else :
-            gdf_ = self.path_poi
-            print(f"Using a POI file: {gdf_}!")
-
-            if gdf_.crs is None:
-                gdf_.set_crs('epsg:4326', inplace=True)
-                gdf_.to_crs('epsg:3857', inplace=True)
-            else:
-                gdf_.to_crs('epsg:3857', inplace=True)
-        print(f"A few info on the POIs that will be used to enrich the occasional stops: {gdf_.info()}")
+            df_poi = self.path_poi
+            print(f"Using a POI file: {df_poi}!")
+        print(f"A few info on the POIs that will be used to enrich the occasional stops: {df_poi.info()}")
 
 
         # Calling functions internal to this method...
-        o_stops = self._preparing_stops(self.occasional, self.max_distance)
-        enriched_occasional = self._semantic_enrichment(o_stops, gdf_[['element_type','osmid','name','wikidata','geometry','category']], 'poi')
+        self.enriched_occasional = self._stop_enrichment_with_pois(self.occasional,
+                                                                   df_poi[['element_type','osmid','name','name:en','wikidata','geometry','category']],
+                                                        'poi',
+                                                                   self.max_distance)
 
-        ######## PROVA ###########
         # mat.set_index(['stop_id','lat','lng'],inplace=True)
-        self.enriched_occasional = enriched_occasional.copy()
         self.enriched_occasional.to_parquet('data/enriched_occasional.parquet')
         
         
