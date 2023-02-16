@@ -39,17 +39,6 @@
     
 
 
-    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasStop -->
-
-    <owl:ObjectProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasStop">
-        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
-        <rdfs:range rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Stop"/>
-        <rdfs:comment>Links an instance of SystematicStop to an instance of Stop.</rdfs:comment>
-        <rdfs:label>hasStop</rdfs:label>
-    </owl:ObjectProperty>
-    
-
-
     <!-- 
     ///////////////////////////////////////////////////////////////////////////////////////
     //
@@ -80,6 +69,18 @@
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
         <rdfs:comment>Links the identifier value associated to a trajectory with an instance of Trajectory.</rdfs:comment>
         <rdfs:label>hasID</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasImportance -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasImportance">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+        <rdfs:comment>This property specifies the fraction of time that a user has been found to stay in the instances of a SystematicStop. Instances of a specific SystematicStop will therefore have all the same importance value.</rdfs:comment>
+        <rdfs:label>hasImportance</rdfs:label>
     </owl:DatatypeProperty>
     
 
@@ -116,6 +117,30 @@
 
 NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:comment>
         <rdfs:label>hasOSMValue</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasProbability -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasProbability">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+        <rdfs:comment>This property represents the probability that this instance of a systematic stop  effectively represents a stay at home, workplace, or other, depending on the subclass of SystematicStop the instance belongs to.</rdfs:comment>
+        <rdfs:label>hasProbability</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasSysID -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasSysID">
+        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:comment>The value of this property represents the identifier of the cluster to which this systematic stop belongs to.</rdfs:comment>
+        <rdfs:label>hasSysID</rdfs:label>
     </owl:DatatypeProperty>
     
 
@@ -160,54 +185,6 @@ NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:c
         <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
         <rdfs:comment>Links the WikiData URI of a Point of Interest to an instance of Point_of_Interest. Not always applicable, e.g., a POI may not have a WikiData URI.</rdfs:comment>
         <rdfs:label>hasWDValue</rdfs:label>
-    </owl:DatatypeProperty>
-    
-
-
-    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#sysHasID -->
-
-    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#sysHasID">
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
-        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
-        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
-        <rdfs:comment>Specifies the identifier associated with a systematic stop.</rdfs:comment>
-        <rdfs:label>sysHasID</rdfs:label>
-    </owl:DatatypeProperty>
-    
-
-
-    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#sysImportance -->
-
-    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#sysImportance">
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
-        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
-        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
-        <rdfs:comment>The value of this property represents the percentage of time an individual has spent in the stops associated with this systematic stop when taking into account all of their systematic stops.</rdfs:comment>
-        <rdfs:label>sysImportance</rdfs:label>
-    </owl:DatatypeProperty>
-    
-
-
-    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#sysProbHome -->
-
-    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#sysProbHome">
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
-        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
-        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
-        <rdfs:comment>This property represents the probability that this systematic stop represents a set of stays at home.</rdfs:comment>
-        <rdfs:label>sysProbHome</rdfs:label>
-    </owl:DatatypeProperty>
-    
-
-
-    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#sysProbWork -->
-
-    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#sysProbWork">
-        <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
-        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
-        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
-        <rdfs:comment>This property represents the probability that this systematic stop represents a set of stays at work.</rdfs:comment>
-        <rdfs:label>sysProbWork</rdfs:label>
     </owl:DatatypeProperty>
     
 
@@ -316,7 +293,7 @@ NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:c
     <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop -->
 
     <owl:Class rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop">
-        <rdfs:subClassOf rdf:resource="http://purl.org/net/step#QualitativeDescription"/>
+        <rdfs:subClassOf rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Stop"/>
         <rdfs:label>Systematic Stop</rdfs:label>
     </owl:Class>
     
@@ -404,7 +381,6 @@ NOTE: not always applicable, e.g., a person may just be staying at home.</rdfs:c
             <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Move"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SocialMediaPost"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Stop"/>
-            <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#SystematicStop"/>
             <rdf:Description rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Weather"/>
         </owl:members>
     </rdf:Description>

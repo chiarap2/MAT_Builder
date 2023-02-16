@@ -284,31 +284,28 @@ class RDFBuilder() :
             self.g.add((end_kp, self.STEP.hasLocation, location_end))
             self.g.add((st_extent, self.STEP.hasEndingPoint, end_kp))
 
-            
-            
-    def add_systematic_stops(self, df_sys_stops) :
+    def add_systematic_stops(self, df_sys_stops):
 
         sys_stops = df_sys_stops.copy()
-        # print(sys_stops)
-        
-        print(f"Number of systematic stops that will be added to the RDF graph: {sys_stops['stop_id'].nunique()}")
-        if(sys_stops.shape[0] == 0) : return
-
+        print(f"Number of stops belonging to some systematic stop that will be added to the RDF graph: {sys_stops['stop_id'].nunique()}")
+        if (sys_stops.shape[0] == 0): return
 
         sys_stops['datetime'] = pd.to_datetime(sys_stops['datetime'], utc=True)
         sys_stops['leaving_datetime'] = pd.to_datetime(sys_stops['leaving_datetime'], utc=True)
         sys_stops['type_stop'] = sys_stops[['home', 'work', 'other']].idxmax(axis=1)
+        # print(sys_stops)
+        # print(sys_stops.columns)
 
-        iter_sys_stops = zip(sys_stops['uid'], sys_stops['tid'],
-                             sys_stops['lat'], sys_stops['lng'],
-                             sys_stops['type_stop'],
-                             sys_stops['stop_id'],
-                             sys_stops['systematic_id'],
-                             sys_stops['datetime'], sys_stops['leaving_datetime'])
-        
-        
-        for uid, tid, lat, lng, type_stop, stop_id, sys_id, start_time, end_time in iter_sys_stops :
-    
+        gb = sys_stops.groupby(['uid', 'tid', 'stop_id'])
+        for (uid, tid, stop_id), df in gb:
+
+            sys_id = df["systematic_id"].iloc[0]
+            importance = round(df["importance"].iloc[0], 2)
+            probability = round(df[['home', 'work', 'other']].iloc[0].max(), 2)
+            type_stop = df["type_stop"].iloc[0]
+            start_time = df["datetime"].iloc[0]
+            end_time = df["leaving_datetime"].iloc[0]
+
             # print(f"{uid} -- {tid} -- {stop_id} -- {type_stop} -- {lat} -- {lng} -- {sys_id} -- {start_time} -- {end_time}")
 
             # Find the nodes in the graph associated with the "uid" and "tid" identifiers.
@@ -337,7 +334,23 @@ class RDFBuilder() :
             stop_desc = URIRef(URI_episode + 'desc/')
             self.g.add((stop_desc, RDF.type, self.dic_sys_stop[type_stop]))
             self.g.add((stop_desc, self.STEP.hasSysID, Literal(sys_id)))
+            self.g.add((stop_desc, self.STEP.hasProbability, Literal(probability)))
+            self.g.add((stop_desc, self.STEP.hasImportance, Literal(importance)))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
+
+            # Link this stop with all the POIs that may be associated with it.
+            it_pois = zip(df['osmid'], df['element_type'], df['name'], df['wikidata'], df['category'], df['distance'])
+            for osm, type_poi, name, wd, cat, distance in it_pois:
+                if not pd.isna(osm):
+                    poi = URIRef('http://example.org/poi_' + str(osm) + '/')
+                    self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
+                    self.g.add((poi, self.STEP.hasOSMValue, Literal(str(osm))))
+                    self.g.add((poi, self.STEP.hasOSMName, Literal(str(name))))
+                    self.g.add((poi, self.STEP.hasOSMType, Literal(str(type_poi))))
+                    self.g.add((poi, self.STEP.hasOSMCategory, Literal(str(cat))))
+                    if not pd.isna(wd): self.g.add(
+                        (poi, self.STEP.hasWDValue, URIRef("http://www.wikidata.org/entity/" + str(wd))))
+                    self.g.add((stop_desc, self.STEP.hasPOI, poi))
 
             # Spatiotemporal extent.
             st_extent = URIRef(URI_episode + 'extent/')

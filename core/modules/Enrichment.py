@@ -711,9 +711,9 @@ class Enrichment(ModuleInterface):
             # Add to the RDF graph the stops, the moves, and the semantic information 
             # associated with the trajectories (social media posts, weather), the stops (type of stop, POIs),
             # and the moves (transportation mean).
-            builder.add_occasional_stops(self.enriched_occasional)
-            builder.add_systematic_stops(self.systematic)
             builder.add_moves(self.moves, self.enrich_moves)
+            builder.add_occasional_stops(self.enriched_occasional)
+            builder.add_systematic_stops(self.enriched_systematic)
             
             # Add weather information to the trajectories.
             if df_weather_enrichment is not None :

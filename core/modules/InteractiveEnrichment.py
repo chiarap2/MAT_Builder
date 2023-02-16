@@ -117,11 +117,28 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                                                value = "yes",
                                                style={'color':'#333'}))
             web_components.append(html.Br())
+
+
+            # Systematic and occasional stop detection
+            web_components.append(html.H5(children="Systematic and occasional stop detection"))
+            web_components.append(html.Span(children="Distance below which a stop can be included in a systematic stop: "))
+            web_components.append(dcc.Input(id=self.id_class + '-dbscan_epsilon',
+                                            value=50,
+                                            type='number',
+                                            placeholder='Distance (in meters)...'))
+            web_components.append(html.Br())
+            web_components.append(html.Span(children="Minimum size of a systematic stop: "))
+            web_components.append(dcc.Input(id=self.id_class + '-systematic_threshold',
+                                            value=5,
+                                            type='number',
+                                            placeholder='Insert minimum size...'))
+            web_components.append(html.Br())
+            web_components.append(html.Br())
             
             
-            # Input stop enrichment with POIs 
-            web_components.append(html.H5(children = "Add POIs to occasional stops"))
-            web_components.append(html.Span(children = "Insert the name of the city (to download PoIs from OpenStreetMap): "))
+            # Stop enrichment with POIs
+            web_components.append(html.H5(children = "Occasional and systematic stop augmentation with POIs"))
+            web_components.append(html.Span(children = "Download from OpenStreetMap the POIs of this city: "))
             web_components.append(dcc.Input(id = self.id_class + '-place',
                                             value = "Rome, Italy",
                                             type = 'text',
@@ -144,37 +161,21 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                                                multi = True,
                                                style = {'color':'#333'}))
                                                
-            web_components.append(html.Span(children = "... or upload your file containing a POI dataset (leave 'no' if no file is uploaded) "))
+            web_components.append(html.Span(children = "... or provide a path to a POI dataset (write 'no' to use OSM) "))
             web_components.append(dcc.Input(id = self.id_class + '-poi_file',
                                             value = "./data/Rome/poi/pois.parquet",
                                             type = 'text',
                                             placeholder = 'Path to the POI dataset...'))   
             web_components.append(html.Br())
-            
-            
+
             web_components.append(html.Span(children = "Maximum distance from the centroid of the stops (in meters): "))
             web_components.append(dcc.Input(id = self.id_class + '-max_dist',
-                                            value = 100,
+                                            value = 50,
                                             type = 'number',
-                                            placeholder = 'Max distance from PoIs (in meters)...'))
+                                            placeholder = 'Max distance (in meters)...'))
             web_components.append(html.Br())
             web_components.append(html.Br())
 
-
-            web_components.append(html.H5(children="Systematic stop detection"))
-            web_components.append(html.Span(children="Insert distance below which a stop can be included in a systematic stop: "))
-            web_components.append(dcc.Input(id=self.id_class + '-dbscan_epsilon',
-                                            value=50,
-                                            type='number',
-                                            placeholder='Insert distance (in meters)...'))
-            web_components.append(html.Br())
-            web_components.append(html.Span(children="Insert the minimum size of a systematic stop: "))
-            web_components.append(dcc.Input(id=self.id_class + '-systematic_threshold',
-                                            value=5,
-                                            type='number',
-                                            placeholder='Insert threshold...'))
-            web_components.append(html.Br())
-            web_components.append(html.Br())
             
             # Input social media posts enrichment
             web_components.append(html.H5(children = "Enrich trajectory users with social media posts: "))
