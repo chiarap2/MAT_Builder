@@ -204,7 +204,7 @@ class RDFBuilder() :
 
         view_stop_data = df_occasional_stops[['stop_id', 'uid', 'tid', 'datetime', 'leaving_datetime', 'osmid', 'element_type', 'name', 'wikidata', 'category', 'distance']]
         #print(view_stop_data)
-        print(f"Number of occasional stops: {view_stop_data['stop_id'].nunique()}")
+        print(f"Number of occasional stops that will be added to the RDF graph: {view_stop_data['stop_id'].nunique()}")
         
         gb = view_stop_data.groupby(['stop_id'])
         for key in gb.groups.keys() :
@@ -291,7 +291,7 @@ class RDFBuilder() :
         sys_stops = df_sys_stops.copy()
         # print(sys_stops)
         
-        print(f"Number of systematic stops: {sys_stops['stop_id'].nunique()}")
+        print(f"Number of systematic stops that will be added to the RDF graph: {sys_stops['stop_id'].nunique()}")
         if(sys_stops.shape[0] == 0) : return
 
 
@@ -364,6 +364,7 @@ class RDFBuilder() :
         
         df_moves['datetime'] = pd.to_datetime(df_moves['datetime'], utc = True)
 
+        print(f"Number of moves that will be added to the RDF graph: {df_moves['move_id'].nunique()}")
         #print(df_moves)
         #print(df_moves.info())
         

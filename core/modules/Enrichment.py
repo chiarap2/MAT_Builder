@@ -431,6 +431,7 @@ class Enrichment(ModuleInterface):
 
         # sort by distance
         enriched_stops = enriched_stops.sort_values(['tid', 'stop_id', 'distance'])
+        enriched_stops.reset_index(drop = True, inplace = True)
 
         # print(f"Stampa df risultati: {enriched_stops.info()}")
         return enriched_stops
