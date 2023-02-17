@@ -140,7 +140,7 @@ class Segmentation(ModuleInterface):
     def get_results(self) -> dict :
 
 
-        return {'trajectories' : self.trajectories.copy(),
+        return {'trajectories' : self.trajectories.copy() if self.trajectories is not None else None,
                 'stops' : self.stops.copy() if self.stops is not None else None,
                 'moves' : self.moves.copy() if self.moves is not None else None}
 
