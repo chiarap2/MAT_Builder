@@ -121,13 +121,13 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
             # Systematic and occasional stop detection
             web_components.append(html.H5(children="Systematic and occasional stop detection"))
-            web_components.append(html.Span(children="Distance below which a stop can be included in a systematic stop: "))
+            web_components.append(html.Span(children="Distance below which a stop can be included in a systematic stop (DBSCAN epsilon parameter): "))
             web_components.append(dcc.Input(id=self.id_class + '-dbscan_epsilon',
                                             value=50,
                                             type='number',
                                             placeholder='Distance (in meters)...'))
             web_components.append(html.Br())
-            web_components.append(html.Span(children="Minimum size of a systematic stop: "))
+            web_components.append(html.Span(children="Minimum size of a cluster of systematic stops (DBSCAN minPts parameter): "))
             web_components.append(dcc.Input(id=self.id_class + '-systematic_threshold',
                                             value=5,
                                             type='number',
