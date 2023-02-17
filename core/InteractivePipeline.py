@@ -29,7 +29,7 @@ class InteractivePipeline():
         for module in list_modules : self.pipeline[module.id_class] = module(app, self)
         
         
-        # Make each module aware of the identifier of the module that comes next.
+        # Make each module aware of the module that comes before.
         prev = None
         for k, v in self.pipeline.items() :
             if prev is None :
