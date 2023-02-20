@@ -256,12 +256,13 @@ class RDFBuilder() :
             # Link this Occasional Stop with all the POIs that may be associated with it.
             for osm, type, name, wd, cat, distance in zip(list_POI['osmid'], list_POI['element_type'], list_POI['name'], list_POI['wikidata'], list_POI['category'], list_POI['distance']) :
                 if not pd.isna(osm) :
-                    poi = URIRef('http://example.org/poi_' + str(osm) + '/')
+                    poi = URIRef(stop_desc + 'poi_' + str(osm) + '/')
                     self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
                     self.g.add((poi, self.STEP.hasOSMValue, Literal(str(osm))))
                     self.g.add((poi, self.STEP.hasOSMName, Literal(str(name))))
                     self.g.add((poi, self.STEP.hasOSMType, Literal(str(type))))
                     self.g.add((poi, self.STEP.hasOSMCategory, Literal(str(cat))))
+                    self.g.add((poi, self.STEP.hasDistance, Literal(float(distance))))
                     if not pd.isna(wd): self.g.add((poi, self.STEP.hasWDValue, URIRef("http://www.wikidata.org/entity/" + str(wd))))
                     self.g.add((stop_desc, self.STEP.hasPOI, poi))
 
@@ -342,12 +343,13 @@ class RDFBuilder() :
             it_pois = zip(df['osmid'], df['element_type'], df['name'], df['wikidata'], df['category'], df['distance'])
             for osm, type_poi, name, wd, cat, distance in it_pois:
                 if not pd.isna(osm):
-                    poi = URIRef('http://example.org/poi_' + str(osm) + '/')
+                    poi = URIRef(stop_desc + 'poi_' + str(osm) + '/')
                     self.g.add((poi, RDF.type, self.STEP.PointOfInterest))
                     self.g.add((poi, self.STEP.hasOSMValue, Literal(str(osm))))
                     self.g.add((poi, self.STEP.hasOSMName, Literal(str(name))))
                     self.g.add((poi, self.STEP.hasOSMType, Literal(str(type_poi))))
                     self.g.add((poi, self.STEP.hasOSMCategory, Literal(str(cat))))
+                    self.g.add((poi, self.STEP.hasDistance, Literal(float(distance))))
                     if not pd.isna(wd): self.g.add(
                         (poi, self.STEP.hasWDValue, URIRef("http://www.wikidata.org/entity/" + str(wd))))
                     self.g.add((stop_desc, self.STEP.hasPOI, poi))

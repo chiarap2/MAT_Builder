@@ -61,6 +61,17 @@
     
 
 
+    <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasDistance -->
+
+    <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasDistance">
+        <rdfs:domain rdf:resource="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#Point_of_Interest"/>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+        <rdfs:comment>This property represents the distance the POI has with respect to the centroid of the stop it is associated with.</rdfs:comment>
+        <rdfs:label>hasDistance</rdfs:label>
+    </owl:DatatypeProperty>
+    
+
+
     <!-- http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasID -->
 
     <owl:DatatypeProperty rdf:about="http://www.semanticweb.org/franc/ontologies/2022/4/step_specialized#hasID">
