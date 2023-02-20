@@ -428,11 +428,9 @@ class Enrichment(ModuleInterface):
         # compute the distance between the stop point and the POI geometry
         enriched_stops['distance'] = enriched_stops['geometry_stop'].distance(enriched_stops['geometry_' + suffix])
 
-        # Remove the rows for which it was not possible to associate a stop to a POI.
-        # To this end, examine whether the distance is NaN.
-        enriched_stops = enriched_stops.loc[~enriched_stops['distance'].isna(), :]
+        # NOTE: Keep the rows for which it was not possible to associate a stop to a POI.
 
-        # sort by distance
+        # Sort by distance
         enriched_stops = enriched_stops.sort_values(['tid', 'stop_id', 'distance'])
         enriched_stops.reset_index(drop = True, inplace = True)
 
