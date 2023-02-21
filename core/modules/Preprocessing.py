@@ -21,22 +21,25 @@ class Preprocessing(ModuleInterface) :
     def core(self) -> bool :
 
         self._results = None
-        gdf = self._trajectories
+        gdf = self._trajectories.copy()
 
         # ## PREPROCESSING
 
         # eliminate trajectories with a number of points lower than num_point
-        grouped = gdf.groupby('traj_id')
-        gdf = grouped.filter(lambda x: len(x) >= self._num_point)
+        print(f"Filtering trajectories with less than {self._num_point} samples...")
+        gdf = gdf[gdf['traj_id'].groupby(gdf['traj_id']).transform('size') >= self._num_point]
 
         # convert GeoDataFrame into pandas DataFrame
-        df = pd.DataFrame(gdf)
+        # df = pd.DataFrame(gdf)
 
         # now create a TrajDataFrame from the pandas DataFrame
-        tdf = skmob.TrajDataFrame(df, latitude = 'lat', longitude = 'lon',
+        tdf = skmob.TrajDataFrame(gdf, latitude = 'lat', longitude = 'lon',
                                   datetime = 'time', user_id = 'user', trajectory_id = 'traj_id')
+
+        print("Filtering out the outliers...")
         ftdf = filtering.filter(tdf, max_speed_kmh = self._kmh)
 
+        print("Compressing the trajectories...")
         ctdf = compression.compress(ftdf, spatial_radius_km = 0.2) if self.compress else None
 
         self._results = ctdf if ctdf is not None else ftdf
