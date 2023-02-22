@@ -137,8 +137,8 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             
             
             # Stop enrichment with POIs
-            web_components.append(html.H5(children = "Occasional and systematic stop augmentation with POIs"))
-            web_components.append(html.Span(children = "Download from OpenStreetMap the POIs of this city: "))
+            web_components.append(html.H5(children = "Stop augmentation with POIs"))
+            web_components.append(html.Span(children = "Download from OpenStreetMap the POIs of location: "))
             web_components.append(dcc.Input(id = self.id_class + '-place',
                                             value = "Rome, Italy",
                                             type = 'text',
