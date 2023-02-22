@@ -337,7 +337,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         num_systematic = self.get_systematic(user)
         num_occasional = self.get_occasional(user)
 
-        outputs.append(html.H6(children='Aspects concerning the stops:',
+        outputs.append(html.H6(children='Regularity aspect',
                                style={'font-weight':'bold'}))
         outputs.append(html.Span(children='Number of systematic stops: ',
                                  style={'font-weight':'bold'}))
@@ -396,7 +396,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             else:
                 duration_taxi = duration_taxi[0]
 
-            outputs.append(html.H6(children='Aspects concerning the moves (transportation means and duration):',
+            outputs.append(html.H6(children='Move aspect (transportation means and duration):',
                                    style={'font-weight':'bold'}))
             outputs.append(html.Span(children='Walk: ',style={'font-weight':'bold'}))
             outputs.append(html.Span(children=str(duration_walk)+' \t'))
@@ -426,7 +426,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         tweets = self.get_tweets(user)
         if len(tweets) != 0:
         
-            outputs.append(html.H6(children='Aspects concerning social media:',style={'font-weight':'bold'}))
+            outputs.append(html.H6(children='Social media aspect',style={'font-weight':'bold'}))
             children_list = []
             for t in tweets: children_list.append(html.Li(children='Tweet text: ' + str(t)))
             outputs.append(html.Ul(children = children_list))
