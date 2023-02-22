@@ -120,7 +120,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
 
             # Systematic and occasional stop detection
-            web_components.append(html.H5(children="Systematic and occasional stop detection"))
+            web_components.append(html.H5(children="Regularity aspect: systematic and occasional stops"))
             web_components.append(html.Span(children="Distance below which a stop can be included in a systematic stop (DBSCAN epsilon parameter): "))
             web_components.append(dcc.Input(id=self.id_class + '-dbscan_epsilon',
                                             value=50,
