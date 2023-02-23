@@ -31,6 +31,12 @@ class Enrichment(ModuleInterface):
     The KG is populated according to a customized version of the STEPv2 ontology.
     '''
 
+    ### CLASS PUBLIC STATIC FIELDS ###
+
+    id_class = 'Enrichment'
+
+
+
     ### CLASS PROTECTED METHODS ###
 
     ### METHODS RELATED TO THE MOVES ENRICHMENT ###
@@ -444,6 +450,7 @@ class Enrichment(ModuleInterface):
     def __init__(self) :
 
         # Here we initialize the various class fields.
+        print(f"Executing constructor of class {self.id_class}!")
         self.reset_state()
         
     

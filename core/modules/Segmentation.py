@@ -12,15 +12,18 @@ class Segmentation(ModuleInterface):
     Segmentation models a class which instances segment trajectories according to the stop and move paradigm.
     '''
 
+    ### CLASS PUBLIC STATIC FIELDS ###
+
+    id_class = 'Segmentation'
+
+
 
     ### PUBLIC CLASS CONSTRUCTOR ###
     
     def __init__(self) :
-        self.radius = None
-        self.duration = None
-        self.trajectories = None
-        self.stops = None
-        self.moves = None
+
+        print(f"Executing constructor of class {self.id_class}!")
+        self.reset_state()
         
         
 

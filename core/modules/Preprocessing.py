@@ -9,9 +9,17 @@ from core.ModuleInterface import ModuleInterface
 
 class Preprocessing(ModuleInterface) :
 
+    ### CLASS PUBLIC STATIC FIELDS ###
+
+    id_class = 'Preprocessing'
+
+
+
     ### PUBLIC CLASS CONSTRUCTOR ###
 
     def __init__(self) :
+
+        print(f"Executing constructor of class {self.id_class}!")
         self.reset_state()
 
 
