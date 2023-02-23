@@ -69,8 +69,7 @@ The ```Enrichment``` module allows practioners to enrich different "entities" of
 If you use MAT-Builder, please cite the following paper:
 
 C. Pugliese, F. Lettich, C. Renso, F. Pinelli, Mat-builder: a system to build semantically
-enriched trajectories, in: The 23rd IEEE International Conference on Mobile Data Manage-
-ment, Cyprus, 2022
+enriched trajectories, in: The 23rd IEEE International Conference on Mobile Data Management, Cyprus, 2022
 
 ```
 @inproceedings{Pugliese22,
