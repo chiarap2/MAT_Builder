@@ -22,7 +22,7 @@ class InteractiveSegmentation(InteractiveModuleInterface):
 
     ### PRIVATE METHODS ###
 
-    def _info_stops(self, user):
+    def _info_segmentation(self, user):
 
         outputs = []
 
@@ -31,11 +31,18 @@ class InteractiveSegmentation(InteractiveModuleInterface):
         outputs.append(html.Br())
         num_trajs = self._get_trajectories(user)
         outputs.append(html.P(children='Number of trajectories found for this user: {}'.format(num_trajs)))
-        num_stops = self._get_stops(user)
+
+        num_moves = self._get_num_moves(user)
+        outputs.append(html.P(children='Number of moves found for this user: {}'.format(num_moves)))
+        if num_moves :
+            avg_move_duration = self._get_avg_move_duration(user)
+            outputs.append(html.P(children='Move average duration: {} minutes'.format(avg_move_duration)))
+
+        num_stops = self._get_num_stops(user)
         outputs.append(html.P(children='Number of stops found for this user: {}'.format(num_stops)))
         if num_stops :
-            mean_duration = self._get_duration(user)
-            outputs.append(html.P(children='Stop average duration: {} minutes'.format(mean_duration)))
+            avg_stop_duration = self._get_avg_stop_duration(user)
+            outputs.append(html.P(children='Stop average duration: {} minutes'.format(avg_stop_duration)))
 
         return outputs
 
@@ -47,16 +54,27 @@ class InteractiveSegmentation(InteractiveModuleInterface):
 
         return len(self.moves[self.moves['uid'] == uid]['tid'].unique())
 
-    def _get_stops(self, uid):
+    def _get_num_stops(self, uid):
 
         return len(self.stops[self.stops['uid'] == uid])
 
-    def _get_duration(self, uid):
+    def _get_num_moves(self, uid):
+        print(f"{self.moves}")
+        return self.moves[self.moves['uid'] == uid]['move_id'].nunique()
 
-        s = self.stops[self.stops['uid'] == uid]
+    def _get_avg_stop_duration(self, uid):
+
+        s = self.stops[self.stops['uid'] == uid].copy()
         s['duration'] = (s['leaving_datetime'] - s['datetime']).astype('timedelta64[m]')
 
         return round(s['duration'].mean(), 2)
+
+    def _get_avg_move_duration(self, uid):
+
+        gb = self.moves[self.moves['uid'] == uid].groupby('move_id')
+        df = gb.agg({'datetime' : ['last', 'first']})
+        df['duration'] = (df[('datetime','last')] - df[('datetime','first')]).astype('timedelta64[m]')
+        return round(df['duration'].mean(), 2)
 
     def _save_output(self):
 
@@ -82,7 +100,7 @@ class InteractiveSegmentation(InteractiveModuleInterface):
         (
             Output(component_id = 'user_result-'  + self.id_class, component_property = 'children'),   
             Input(component_id = 'user_sel-' + self.id_class, component_property = 'value')
-        )(self._info_stops)
+        )(self._info_segmentation)
 
 
         ### Here we define and register all the callbacks that must be managed by the instance of this class ###
