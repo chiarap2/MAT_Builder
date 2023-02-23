@@ -728,12 +728,12 @@ class Enrichment(ModuleInterface):
         print("Enrichment complete!")
            
     def get_results(self) -> dict:
-        return {'moves' : self.moves,
-                'occasional' : self.occasional,
-                'systematic' : self.systematic,
-                'enriched_systematic': self.enriched_systematic,
-                'enriched_occasional' : self.enriched_occasional,
-                'tweets' : self.tweets}
+        return {'moves' : self.moves.copy() if self.moves is not None else None,
+                'occasional' : self.occasional.copy() if self.occasional is not None else None,
+                'systematic' : self.systematic.copy() if self.systematic is not None else None,
+                'enriched_systematic': self.enriched_systematic.copy() if self.enriched_systematic is not None else None,
+                'enriched_occasional' : self.enriched_occasional.copy() if self.enriched_occasional is not None else None,
+                'tweets' : self.tweets.copy() if self.tweets is not None else None}
 
     def get_params_input(self) -> list[str] :
         return ['trajectories',
@@ -749,7 +749,7 @@ class Enrichment(ModuleInterface):
                 'create_rdf']
 
     def get_params_output(self) -> list[str] :
-        return ['moves', 'occasional', 'systematic', 'enriched_systematic', 'enriched_occasional', 'tweets']
+        return list(self.get_results().keys())
         
     def reset_state(self) :
         # These are the auxiliary fields internally used during the enrichment execution.

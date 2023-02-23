@@ -66,7 +66,7 @@ class Preprocessing(ModuleInterface) :
         return ['trajectories', 'speed' 'n_points', 'compress']
 
     def get_params_output(self) -> list[str] :
-        return ['preprocessed_trajectories']
+        return list(self.get_results().keys())
 
     def reset_state(self) :
         self._trajectories = None

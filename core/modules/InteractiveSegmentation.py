@@ -44,6 +44,7 @@ class InteractiveSegmentation(InteractiveModuleInterface):
             avg_stop_duration = self._get_avg_stop_duration(user)
             outputs.append(html.P(children='Stop average duration: {} minutes'.format(avg_stop_duration)))
 
+
         return outputs
 
     def _get_users(self):
