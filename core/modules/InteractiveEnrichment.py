@@ -29,6 +29,429 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
 
 
+    ### PROTECTED METHODS ###
+
+    def _get_users(self):
+        moves = self.results_enrichment['moves'].copy()
+        moves.reset_index(inplace=True)
+        return moves['uid'].unique()
+
+    def _calc_temporal_span_traj_user(self, df : pd.DataFrame, uid: str) -> tuple[pd.Timestamp, pd.Timestamp]:
+
+        view = df[df['uid'] == uid]
+        return view['datetime'].min(), view['datetime'].max()
+
+    def _calc_avg_duration_traj_user(self, df : pd.DataFrame, uid: str) -> float:
+
+        view = df[df['uid'] == uid]
+        res_gb = view.groupby('tid').agg({'datetime': ['min', 'max']})
+        res_gb['duration'] = res_gb['datetime', 'max'] - res_gb['datetime', 'min']
+
+        return res_gb['duration'].mean().total_seconds()
+
+    def _calc_avg_sampling_traj(self, df : pd.DataFrame, uid: str) -> float:
+
+        view = df.loc[df['uid'] == uid, ['tid', 'datetime']].sort_values(by=['tid', 'datetime'])
+
+        view['difference'] = view.groupby('tid', sort=False).shift(1)
+        view['difference'] = (view['datetime'] - view['difference'])
+
+        res = view.groupby('tid', sort=False)['difference'].mean().mean().total_seconds()
+        return res if pd.notna(res) else 0
+
+    def _calc_avg_gap_traj(self, df : pd.DataFrame, uid: str) -> float:
+
+        view = df[df['uid'] == uid].sort_values(by=['tid', 'datetime'])
+        res_gb = view.groupby('tid').agg({'datetime': ['min', 'max']})
+
+        res_gb['gap'] = res_gb['datetime', 'max'].shift(1)
+        res_gb['gap'] = (res_gb['datetime', 'min'] - res_gb['gap'])
+
+        res = res_gb['gap'].mean().total_seconds()
+        return res if pd.notna(res) else 0
+
+    def _get_trajectories(self, uid : str):
+        moves = self.results_enrichment['moves'].copy()
+        return moves[moves['uid'] == uid]['tid'].unique()
+
+    def _get_systematic(self, uid):
+        systematic = self.results_enrichment['systematic'].copy()
+        return len(systematic[systematic['uid'] == uid])
+
+    def _get_occasional(self, uid):
+        occasional = self.results_enrichment['occasional'].copy()
+        return len(occasional[occasional['uid'] == uid])
+
+    def _get_transport_duration(self, uid):
+
+        moves = self.results_enrichment['moves'].copy()
+
+        first_transport = moves[moves['uid'] == uid].groupby(['label', 'tid']).first()['datetime']
+        last_transport = moves[moves['uid'] == uid].groupby(['label', 'tid']).last()['datetime']
+
+        duration_tid = last_transport - first_transport
+
+        duration = pd.DataFrame(duration_tid.groupby('label').sum())
+        duration.reset_index(inplace=True)
+
+        return duration
+
+    def _get_tweets(self, uid):
+
+        if self.results_enrichment['tweets'] is not None:
+            tweets = self.results_enrichment['tweets']
+            return tweets[tweets['uid'] == uid]['text'].unique()
+        else:
+            return []
+
+    def _get_enriched_stop_move(self, uid, traj_id):
+
+        moves = self.results_enrichment['moves'].copy()
+        enriched_occasional = self.results_enrichment['enriched_occasional'].copy()
+        systematic = self.results_enrichment['systematic'].copy()
+
+        return moves[(moves['uid'] == uid) & (moves['tid'] == traj_id)], \
+            enriched_occasional[(enriched_occasional['uid'] == uid) & (enriched_occasional['tid'] == traj_id)], \
+            systematic[(systematic['uid'] == uid) & (systematic['tid'] == traj_id)]
+
+    def _info_user(self, user):
+
+        outputs = []
+
+        if user is None:
+            return None
+
+        # Display trajectories information...
+        outputs.append(html.H6(children="General characteristics of the user's trajectories:",
+                               style={'font-weight': 'bold'}))
+
+        outputs.append(html.Span(children='Number of trajectories: ',
+                                 style={'font-weight': 'bold'}))
+        num_trajs = self.get_results()['trajectories']
+        num_trajs = num_trajs[num_trajs['uid'] == user]['tid'].nunique()
+        outputs.append(html.Span(children= f"{num_trajs}\t"))
+        outputs.append(html.Br())
+
+        outputs.append(html.Span(children='Temporal interval spanned: ',
+                                 style={'font-weight': 'bold'}))
+        trajs_temporal_interval = self._calc_temporal_span_traj_user(self.get_results()['trajectories'], user)
+        outputs.append(html.Span(children= f"Start: {trajs_temporal_interval[0]} -- end: {trajs_temporal_interval[1]}\t"))
+        outputs.append(html.Br())
+
+        outputs.append(html.Span(children='Average duration trajectories: ',
+                                 style={'font-weight': 'bold'}))
+        trajs_avg_duration = self._calc_avg_duration_traj_user(self.get_results()['trajectories'], user)
+        outputs.append(html.Span(children=f"{round(trajs_avg_duration / 60, 2)} minutes\t"))
+        outputs.append(html.Br())
+
+        outputs.append(html.Span(children='Average sampling trajectories: ',
+                                 style={'font-weight': 'bold'}))
+        trajs_avg_sampling = self._calc_avg_sampling_traj(self.get_results()['trajectories'], user)
+        outputs.append(html.Span(children=f"{round(trajs_avg_sampling, 2)} seconds\t"))
+        outputs.append(html.Br())
+
+        outputs.append(html.Span(children='Average gap between trajectories: ',
+                                 style={'font-weight': 'bold'}))
+        trajs_avg_gap = self._calc_avg_gap_traj(self.get_results()['trajectories'], user)
+        outputs.append(html.Span(children=f"{round(trajs_avg_gap / 60, 2)} minutes\t"))
+        outputs.append(html.Br())
+        outputs.append(html.Br())
+
+
+        # Display stops information...
+        num_systematic = self._get_systematic(user)
+        num_occasional = self._get_occasional(user)
+
+        outputs.append(html.H6(children='Regularity aspect',
+                               style={'font-weight': 'bold'}))
+        outputs.append(html.Span(children='Number of systematic stops: ',
+                                 style={'font-weight': 'bold'}))
+        outputs.append(html.Span(children=str(num_systematic) + ' \t'))
+        outputs.append(html.Br())
+        outputs.append(html.Span(children='Number of occasional stops: ',
+                                 style={'font-weight': 'bold'}))
+        outputs.append(html.Span(children=str(num_occasional)))
+        outputs.append(html.Br())
+        outputs.append(html.Br())
+
+        # Display transportation means information, if the moves have been enriched.
+        if self.enrich_moves:
+            duration_transport = self._get_transport_duration(user)
+            duration_walk = duration_transport[duration_transport['label'] == 0]['datetime'].astype(str).values
+            duration_bike = duration_transport[duration_transport['label'] == 1]['datetime'].astype(str).values
+            duration_bus = duration_transport[duration_transport['label'] == 2]['datetime'].astype(str).values
+            duration_car = duration_transport[duration_transport['label'] == 3]['datetime'].astype(str).values
+            duration_subway = duration_transport[duration_transport['label'] == 4]['datetime'].astype(str).values
+            duration_train = duration_transport[duration_transport['label'] == 5]['datetime'].astype(str).values
+            duration_taxi = duration_transport[duration_transport['label'] == 6]['datetime'].astype(str).values
+
+            if len(duration_walk) == 0:
+                duration_walk = 0
+            else:
+                duration_walk = duration_walk[0]
+
+            if len(duration_bike) == 0:
+                duration_bike = 0
+            else:
+                duration_bike = duration_bike[0]
+
+            if len(duration_bus) == 0:
+                duration_bus = 0
+            else:
+                duration_bus = duration_bus[0]
+
+            if len(duration_car) == 0:
+                duration_car = 0
+            else:
+                duration_car = duration_car[0]
+
+            if len(duration_subway) == 0:
+                duration_subway = 0
+            else:
+                duration_subway = duration_subway[0]
+
+            if len(duration_train) == 0:
+                duration_train = 0
+            else:
+                duration_train = duration_train[0]
+
+            if len(duration_taxi) == 0:
+                duration_taxi = 0
+            else:
+                duration_taxi = duration_taxi[0]
+
+            outputs.append(html.H6(children='Move aspect (transportation means and duration):',
+                                   style={'font-weight': 'bold'}))
+            outputs.append(html.Span(children='Walk: ', style={'font-weight': 'bold'}))
+            outputs.append(html.Span(children=str(duration_walk) + ' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Bike: ', style={'font-weight': 'bold'}))
+            outputs.append(html.Span(children=str(duration_bike) + ' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Bus: ', style={'font-weight': 'bold'}))
+            outputs.append(html.Span(children=str(duration_bus) + ' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Car: ', style={'font-weight': 'bold'}))
+            outputs.append(html.Span(children=str(duration_car) + ' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Train: ', style={'font-weight': 'bold'}))
+            outputs.append(html.Span(children=str(duration_train) + ' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Subway: ', style={'font-weight': 'bold'}))
+            outputs.append(html.Span(children=str(duration_subway) + ' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Span(children='Taxi: ', style={'font-weight': 'bold'}))
+            outputs.append(html.Span(children=str(duration_taxi) + ' \t'))
+            outputs.append(html.Br())
+            outputs.append(html.Br())
+
+        # Display social media information...
+        tweets = self._get_tweets(user)
+        if len(tweets) != 0:
+
+            outputs.append(html.H6(children='Social media aspect', style={'font-weight': 'bold'}))
+            children_list = []
+            for t in tweets: children_list.append(html.Li(children='Tweet text: ' + str(t)))
+            outputs.append(html.Ul(children=children_list))
+            outputs.append(html.Br())
+
+        ### Plot the systematic and occasional stops ###
+        occasional = self.results_enrichment['enriched_occasional']
+        systematic = self.results_enrichment['systematic']
+        fig = go.Figure()
+
+        ### Plot the systematic stops. ###
+        center_map = None
+        mats_systematic = systematic[systematic['uid'] == user].copy()
+        if len(mats_systematic):
+            ### Preparing the information concerning the systematic stops ###
+            mats_systematic['systematic_id'] = mats_systematic['systematic_id'].astype(str)
+            mats_systematic['home'] = round((mats_systematic['home'] * 100), 2).astype(str)
+            mats_systematic['work'] = round((mats_systematic['work'] * 100), 2).astype(str)
+            mats_systematic['other'] = round((mats_systematic['other'] * 100), 2).astype(str)
+            mats_systematic['importance'] = round((mats_systematic['importance'] * 100), 2).astype(str)
+            mats_systematic['frequency'] = mats_systematic['frequency'].astype(str)
+            mats_systematic['start'] = mats_systematic['datetime'].astype(str)
+            mats_systematic['duration'] = (mats_systematic['leaving_datetime'] - mats_systematic['datetime']).astype(
+                str)
+            mats_systematic['weekday'] = mats_systematic['datetime'].dt.weekday.astype(str)
+
+            mats_systematic['description'] = '</br><b>Systematic ID</b>: ' + mats_systematic['systematic_id'] \
+                                             + '</br><b>Start time</b>: ' + mats_systematic['start'] \
+                                             + '</br><b>Day of the week</b>: ' + mats_systematic['weekday'] \
+                                             + '</br><b>Duration</b>: ' + mats_systematic['duration'] \
+                                             + '</br><b>Home</b>: ' + mats_systematic['home'] \
+                                             + '%</br><b>Work</b>: ' + mats_systematic['work'] \
+                                             + '%</br><b>Other</b>: ' + mats_systematic['other'] \
+                                             + '%</br><b>Importance</b>: ' + mats_systematic['importance'] \
+                                             + '%</br><b>Frequency </b>: ' + mats_systematic['frequency']
+            systematic_desc = list(mats_systematic['description'])
+
+            fig.add_trace(go.Scattermapbox(mode="markers", name='systematic stops',
+                                           lon=mats_systematic.lng,
+                                           lat=mats_systematic.lat,
+                                           text=systematic_desc,
+                                           hoverinfo='text',
+                                           marker={'size': 10, 'color': 'blue'}))
+
+            center_map = {'lat': mats_systematic.lat.mean(), 'lon': mats_systematic.lng.mean()}
+
+        ### Plot the occasional stops. ###
+        mats_stops = occasional[occasional['uid'] == user].copy()
+        if len(mats_stops):
+            mats_stops['distance'] = round(mats_stops['distance'], 2)
+            mats_stops['description'] = '</br><b>PoI category</b>: ' + \
+                                        mats_stops['category'] + \
+                                        ' <b>Distance</b>: ' + \
+                                        mats_stops['distance'].astype(str)
+
+            limit_pois = 8
+            gb_occ_stops = mats_stops.groupby('stop_id')
+            matched_lat = gb_occ_stops['lat'].first().tolist()
+            matched_lng = gb_occ_stops['lng'].first().tolist()
+            matched_pois = []
+            for key, item in gb_occ_stops:
+                tmp = item['description']
+                size = tmp.shape[0]
+                limit = min(size, limit_pois)
+
+                stringa = ''
+                if ~item['distance'].isna().all():
+                    tmp = tmp.head(limit)
+                    stringa = tmp.str.cat(sep="")
+                    if size > limit_pois:
+                        stringa = stringa + f"</br>(...and other {size - limit_pois} POIs)"
+                else:
+                    stringa = 'No POI could be associated with this occasional stop!'
+
+                matched_pois.append(stringa)
+
+            fig.add_trace(go.Scattermapbox(mode="markers", name='occasional stops',
+                                           lon=mats_stops.lng.unique(),
+                                           lat=mats_stops.lat.unique(),
+                                           text=matched_pois,
+                                           hoverinfo='text',
+                                           marker={'size': 10, 'color': 'red'}))
+
+            if center_map is None: center_map = {'lat': mats_stops.lat.mean(), 'lon': mats_stops.lng.mean()}
+
+        # Plot the map with the systematic and occasional stops if at least one of them have been found.
+        if center_map is not None:
+            fig.update_layout(showlegend=True,
+                              legend_title="Types of stops",
+                              mapbox_style="open-street-map",
+                              margin={"r": 0, "t": 0, "l": 0, "b": 0},
+                              mapbox=dict(center=center_map,
+                                          zoom=10))
+            outputs.append(html.H6(children='Overall distribution of the systematic and occasional stops:',
+                                   style={'font-weight': 'bold'}))
+            outputs.append(dcc.Graph(figure=fig))
+
+        return outputs
+
+    def _display_user_trajectory(self, user, traj):
+
+        # Dictionary holding the transportation modes mapping.
+        transport = {
+            0: 'walk',
+            1: 'bike',
+            2: 'bus',
+            3: 'car',
+            4: 'subway',
+            5: 'train',
+            6: 'taxi'}
+
+        if user is None or traj is None:
+            return None
+
+        # Get the dataframes of interest from the enrichment class.
+        mats_moves, mats_stops, mats_systematic = self._get_enriched_stop_move(user, traj)
+
+        ### Preparing the information concerning the moves ###
+
+        # print(f"DEBUG PLOT MOVES: {mats_moves}")
+        mats_moves['label'] = mats_moves['label'].map(transport) if self.enrich_moves else 'NA'
+        fig = px.line_mapbox(mats_moves,
+                             lat="lat",
+                             lon="lng",
+                             color="tid",
+                             hover_data=["label", "temperature", "w_conditions"],
+                             labels={"label": "transportation mean", "w_conditions": "weather condition"})
+
+        ### Prepare the information concerning the occasional stops... ###
+
+        mats_stops['distance'] = round(mats_stops['distance'], 2)
+        mats_stops['description'] = '</br><b>PoI category</b>: ' + \
+                                    mats_stops['category'] + \
+                                    ' <b>Distance</b>: ' + \
+                                    mats_stops['distance'].astype(str)
+
+        limit_pois = 10
+        gb_occ_stops = mats_stops.groupby('stop_id')
+        matched_pois = []
+        for key, item in gb_occ_stops:
+            tmp = item['description']
+            size = tmp.shape[0]
+            limit = min(size, limit_pois)
+
+            stringa = ''
+            if ~item['distance'].isna().all():
+                tmp = tmp.head(limit)
+                stringa = tmp.str.cat(sep="")
+                if size > limit_pois:
+                    stringa = stringa + f"</br>(...and other {size - limit_pois} POIs)"
+            else:
+                stringa = 'No POI could be associated with this occasional stop!'
+
+            matched_pois.append(stringa)
+
+        fig.add_trace(go.Scattermapbox(mode="markers", name='occasional stops',
+                                       lon=mats_stops.lng.unique(),
+                                       lat=mats_stops.lat.unique(),
+                                       text=matched_pois,
+                                       hoverinfo='text',
+                                       marker={'size': 10, 'color': '#F14C2B'}))
+
+        ### Preparing the information concerning the systematic stops ###
+
+        mats_systematic['systematic_id'] = mats_systematic['systematic_id'].astype(str)
+        mats_systematic['home'] = round((mats_systematic['home'] * 100), 2).astype(str)
+        mats_systematic['work'] = round((mats_systematic['work'] * 100), 2).astype(str)
+        mats_systematic['other'] = round((mats_systematic['other'] * 100), 2).astype(str)
+        mats_systematic['importance'] = round((mats_systematic['importance'] * 100), 2).astype(str)
+        mats_systematic['frequency'] = mats_systematic['frequency'].astype(str)
+        mats_systematic['start'] = mats_systematic['datetime'].astype(str)
+        mats_systematic['duration'] = (mats_systematic['leaving_datetime'] - mats_systematic['datetime']).astype(str)
+        mats_systematic['weekday'] = mats_systematic['datetime'].dt.weekday.astype(str)
+
+        mats_systematic['description'] = '</br><b>Systematic ID</b>: ' + mats_systematic['systematic_id'] \
+                                         + '</br><b>Start time</b>: ' + mats_systematic['start'] \
+                                         + '</br><b>Day of the week</b>: ' + mats_systematic['weekday'] \
+                                         + '</br><b>Duration</b>: ' + mats_systematic['duration'] \
+                                         + '</br><b>Home</b>: ' + mats_systematic['home'] \
+                                         + '%</br><b>Work</b>: ' + mats_systematic['work'] \
+                                         + '%</br><b>Other</b>: ' + mats_systematic['other'] \
+                                         + '%</br><b>Importance</b>: ' + mats_systematic['importance'] \
+                                         + '%</br><b>Frequency </b>: ' + mats_systematic['frequency']
+        systematic_desc = list(mats_systematic['description'])
+
+        fig.add_trace(go.Scattermapbox(mode="markers", name='systematic stops',
+                                       lon=mats_systematic.lng,
+                                       lat=mats_systematic.lat,
+                                       text=systematic_desc,
+                                       hoverinfo='text',
+                                       marker={'size': 10, 'color': '#2BD98C'}))
+
+        ### Setting the figure's last parameters... ###
+
+        fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=12,
+                          margin={"r": 0, "t": 0, "l": 0, "b": 0})
+        fig.update_traces(line=dict(color='#2B37F1', width=2))
+
+        return dcc.Graph(figure=fig)
+
+
+
     ### CLASS CONSTRUCTOR ###
     
     def __init__(self, app : Dash, pipeline : InteractivePipeline) :
@@ -77,7 +500,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         (
             Output(component_id = 'user_info-' + self.id_class, component_property = 'children'),
             Input(component_id = 'user_sel-' + self.id_class, component_property = 'value')
-        )(self.info_user)
+        )(self._info_user)
         
         
         # This is the callback in charge of plotting a trajectory.
@@ -86,7 +509,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             Output(component_id = 'traj_display-' + self.id_class, component_property = 'children'),
             State(component_id = 'user_sel-' + self.id_class, component_property='value'),
             Input(component_id = 'traj_sel-' + self.id_class, component_property='value')
-        )(self.display_user_trajectory)
+        )(self._display_user_trajectory)
         
     
     
@@ -282,7 +705,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             
             
             # Inizializza il dropdown con la lista di utenti da mostrare nell'area di output dell'interfaccia web.
-            list_users = [{'label': u, 'value': u} for u in self.get_users()]
+            list_users = [{'label': u, 'value': u} for u in self._get_users()]
             outputs.append(html.Div(id='users-' + self.id_class,
                                     children = [html.P(children = 'User:'),
                                                 dcc.Dropdown(id = 'user_sel-' + self.id_class,
@@ -302,7 +725,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
         options = []
         if user is not None:
-            trajectories = self.get_trajectories(user)
+            trajectories = self._get_trajectories(user)
             systematic = self.results_enrichment['systematic']
             occasional = self.results_enrichment['occasional']
 
@@ -322,322 +745,6 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                             html.Div(id = 'traj_display-' + self.id_class)])
 
         return options
-
-
-    def info_user(self, user):
-
-        outputs = []
-
-
-        if user is None:
-            return None
-
-
-        # Display stops information...
-        num_systematic = self.get_systematic(user)
-        num_occasional = self.get_occasional(user)
-
-        outputs.append(html.H6(children='Regularity aspect',
-                               style={'font-weight':'bold'}))
-        outputs.append(html.Span(children='Number of systematic stops: ',
-                                 style={'font-weight':'bold'}))
-        outputs.append(html.Span(children=str(num_systematic)+' \t'))
-        outputs.append(html.Br())
-        outputs.append(html.Span(children='Number of occasional stops: ',
-                                 style={'font-weight':'bold'}))
-        outputs.append(html.Span(children=str(num_occasional)))
-        outputs.append(html.Br())
-        outputs.append(html.Br())
-        
-        
-        # Display transportation means information, if the moves have been enriched.
-        if self.enrich_moves :
-            duration_transport = self.get_transport_duration(user)
-            duration_walk = duration_transport[duration_transport['label']==0]['datetime'].astype(str).values
-            duration_bike = duration_transport[duration_transport['label']==1]['datetime'].astype(str).values
-            duration_bus = duration_transport[duration_transport['label']==2]['datetime'].astype(str).values
-            duration_car = duration_transport[duration_transport['label']==3]['datetime'].astype(str).values
-            duration_subway = duration_transport[duration_transport['label']==4]['datetime'].astype(str).values
-            duration_train = duration_transport[duration_transport['label']==5]['datetime'].astype(str).values
-            duration_taxi = duration_transport[duration_transport['label']==6]['datetime'].astype(str).values
-
-            if len(duration_walk) == 0:
-                duration_walk = 0
-            else:
-                duration_walk = duration_walk[0]
-
-            if len(duration_bike) == 0:
-                duration_bike = 0
-            else:
-                duration_bike = duration_bike[0]
-
-            if len(duration_bus) == 0:
-                duration_bus = 0
-            else:
-                duration_bus = duration_bus[0]
-
-            if len(duration_car) == 0:
-                duration_car = 0
-            else:
-                duration_car = duration_car[0]
-
-            if len(duration_subway) == 0:
-                duration_subway = 0
-            else:
-                duration_subway = duration_subway[0]
-
-            if len(duration_train) == 0:
-                duration_train = 0
-            else:
-                duration_train = duration_train[0]
-
-            if len(duration_taxi) == 0:
-                duration_taxi = 0
-            else:
-                duration_taxi = duration_taxi[0]
-
-            outputs.append(html.H6(children='Move aspect (transportation means and duration):',
-                                   style={'font-weight':'bold'}))
-            outputs.append(html.Span(children='Walk: ',style={'font-weight':'bold'}))
-            outputs.append(html.Span(children=str(duration_walk)+' \t'))
-            outputs.append(html.Br())
-            outputs.append(html.Span(children='Bike: ',style={'font-weight':'bold'}))
-            outputs.append(html.Span(children=str(duration_bike)+' \t'))
-            outputs.append(html.Br())
-            outputs.append(html.Span(children='Bus: ',style={'font-weight':'bold'}))
-            outputs.append(html.Span(children=str(duration_bus)+' \t'))
-            outputs.append(html.Br())
-            outputs.append(html.Span(children='Car: ',style={'font-weight':'bold'}))
-            outputs.append(html.Span(children=str(duration_car)+' \t'))
-            outputs.append(html.Br())
-            outputs.append(html.Span(children='Train: ',style={'font-weight':'bold'}))
-            outputs.append(html.Span(children=str(duration_train)+' \t'))
-            outputs.append(html.Br())
-            outputs.append(html.Span(children='Subway: ',style={'font-weight':'bold'}))
-            outputs.append(html.Span(children=str(duration_subway)+' \t'))
-            outputs.append(html.Br())
-            outputs.append(html.Span(children='Taxi: ',style={'font-weight':'bold'}))
-            outputs.append(html.Span(children=str(duration_taxi)+' \t'))
-            outputs.append(html.Br())
-            outputs.append(html.Br())
-
-
-        # Display social media information...
-        tweets = self.get_tweets(user)
-        if len(tweets) != 0:
-        
-            outputs.append(html.H6(children='Social media aspect',style={'font-weight':'bold'}))
-            children_list = []
-            for t in tweets: children_list.append(html.Li(children='Tweet text: ' + str(t)))
-            outputs.append(html.Ul(children = children_list))
-            outputs.append(html.Br())
-
-
-        ### Plot the systematic and occasional stops ###
-        occasional = self.results_enrichment['enriched_occasional']
-        systematic = self.results_enrichment['systematic']
-        fig = go.Figure()
-
-        ### Plot the systematic stops. ###
-        center_map = None
-        mats_systematic = systematic[systematic['uid'] == user].copy()
-        if len(mats_systematic) :
-
-            ### Preparing the information concerning the systematic stops ###
-            mats_systematic['systematic_id'] = mats_systematic['systematic_id'].astype(str)
-            mats_systematic['home'] = round((mats_systematic['home'] * 100), 2).astype(str)
-            mats_systematic['work'] = round((mats_systematic['work'] * 100), 2).astype(str)
-            mats_systematic['other'] = round((mats_systematic['other'] * 100), 2).astype(str)
-            mats_systematic['importance'] = round((mats_systematic['importance'] * 100), 2).astype(str)
-            mats_systematic['frequency'] = mats_systematic['frequency'].astype(str)
-            mats_systematic['start'] = mats_systematic['datetime'].astype(str)
-            mats_systematic['duration'] = (mats_systematic['leaving_datetime'] - mats_systematic['datetime']).astype(str)
-            mats_systematic['weekday'] = mats_systematic['datetime'].dt.weekday.astype(str)
-
-            mats_systematic['description'] = '</br><b>Systematic ID</b>: ' + mats_systematic['systematic_id'] \
-                                             + '</br><b>Start time</b>: ' + mats_systematic['start'] \
-                                             + '</br><b>Day of the week</b>: ' + mats_systematic['weekday'] \
-                                             + '</br><b>Duration</b>: ' + mats_systematic['duration'] \
-                                             + '</br><b>Home</b>: ' + mats_systematic['home'] \
-                                             + '%</br><b>Work</b>: ' + mats_systematic['work'] \
-                                             + '%</br><b>Other</b>: ' + mats_systematic['other'] \
-                                             + '%</br><b>Importance</b>: ' + mats_systematic['importance'] \
-                                             + '%</br><b>Frequency </b>: ' + mats_systematic['frequency']
-            systematic_desc = list(mats_systematic['description'])
-
-            fig.add_trace(go.Scattermapbox(mode="markers", name='systematic stops',
-                                           lon=mats_systematic.lng,
-                                           lat=mats_systematic.lat,
-                                           text=systematic_desc,
-                                           hoverinfo='text',
-                                           marker={'size': 10, 'color': 'blue'}))
-
-            center_map = {'lat' : mats_systematic.lat.mean(), 'lon' : mats_systematic.lng.mean()}
-
-
-        ### Plot the occasional stops. ###
-        mats_stops = occasional[occasional['uid'] == user].copy()
-        if len(mats_stops) :
-            mats_stops['distance'] = round(mats_stops['distance'], 2)
-            mats_stops['description'] = '</br><b>PoI category</b>: ' + \
-                                        mats_stops['category'] + \
-                                        ' <b>Distance</b>: ' + \
-                                        mats_stops['distance'].astype(str)
-
-            limit_pois = 8
-            gb_occ_stops = mats_stops.groupby('stop_id')
-            matched_lat = gb_occ_stops['lat'].first().tolist()
-            matched_lng = gb_occ_stops['lng'].first().tolist()
-            matched_pois = []
-            for key, item in gb_occ_stops:
-                tmp = item['description']
-                size = tmp.shape[0]
-                limit = min(size, limit_pois)
-
-                stringa = ''
-                if ~item['distance'].isna().all():
-                    tmp = tmp.head(limit)
-                    stringa = tmp.str.cat(sep="")
-                    if size > limit_pois:
-                        stringa = stringa + f"</br>(...and other {size - limit_pois} POIs)"
-                else:
-                    stringa = 'No POI could be associated with this occasional stop!'
-
-                matched_pois.append(stringa)
-
-            fig.add_trace(go.Scattermapbox(mode="markers", name='occasional stops',
-                                           lon=mats_stops.lng.unique(),
-                                           lat=mats_stops.lat.unique(),
-                                           text=matched_pois,
-                                           hoverinfo='text',
-                                           marker={'size': 10, 'color': 'red'}))
-
-            if center_map is None : center_map = {'lat' : mats_stops.lat.mean(), 'lon' : mats_stops.lng.mean()}
-
-        # Plot the map with the systematic and occasional stops if at least one of them have been found.
-        if center_map is not None :
-            fig.update_layout(showlegend=True,
-                              legend_title="Types of stops",
-                              mapbox_style="open-street-map",
-                              margin={"r": 0, "t": 0, "l": 0, "b": 0},
-                              mapbox=dict(center=center_map,
-                                          zoom=10))
-            outputs.append(html.H6(children='Overall distribution of the systematic and occasional stops:',
-                                   style={'font-weight': 'bold'}))
-            outputs.append(dcc.Graph(figure=fig))
-
-        return outputs      
-
-
-    def display_user_trajectory(self, user, traj):
-
-        # Dictionary holding the transportation modes mapping. 
-        transport = { 
-            0: 'walk',
-            1: 'bike',
-            2: 'bus',
-            3: 'car',
-            4: 'subway',
-            5: 'train',
-            6: 'taxi'}
-
-        if user is None or traj is None:
-            return None
-
-        # Get the dataframes of interest from the enrichment class.
-        mats_moves, mats_stops, mats_systematic = self.get_enriched_stop_move(user, traj)
-
-
-        ### Preparing the information concerning the moves ###
-
-        # print(f"DEBUG PLOT MOVES: {mats_moves}")
-        mats_moves['label'] = mats_moves['label'].map(transport) if self.enrich_moves else 'NA'
-        fig = px.line_mapbox(mats_moves,
-                             lat="lat",
-                             lon="lng",
-                             color="tid",
-                             hover_data=["label","temperature","w_conditions"],
-                             labels={"label":"transportation mean", "w_conditions":"weather condition"})
-        
-        
-        
-        ### Prepare the information concerning the occasional stops... ###
-
-        mats_stops['distance'] = round(mats_stops['distance'], 2)
-        mats_stops['description'] = '</br><b>PoI category</b>: ' +\
-                                    mats_stops['category'] +\
-                                    ' <b>Distance</b>: ' +\
-                                    mats_stops['distance'].astype(str)
-        
-        limit_pois = 10
-        gb_occ_stops = mats_stops.groupby('stop_id')
-        matched_pois = []
-        for key, item in gb_occ_stops:
-            tmp = item['description']
-            size = tmp.shape[0]
-            limit = min(size, limit_pois)
-            
-            stringa = ''
-            if ~item['distance'].isna().all() :
-                tmp = tmp.head(limit)
-                stringa = tmp.str.cat(sep = "")
-                if size > limit_pois : 
-                    stringa = stringa + f"</br>(...and other {size - limit_pois} POIs)"
-            else :          
-                stringa = 'No POI could be associated with this occasional stop!'
-                
-            matched_pois.append(stringa)
-
-
-        fig.add_trace(go.Scattermapbox(mode = "markers", name = 'occasional stops',
-                                       lon = mats_stops.lng.unique(),
-                                       lat = mats_stops.lat.unique(),
-                                       text = matched_pois,
-                                       hoverinfo = 'text',
-                                       marker = {'size': 10, 'color': '#F14C2B'}))
-
-
-
-        ### Preparing the information concerning the systematic stops ###
-
-        mats_systematic['systematic_id'] = mats_systematic['systematic_id'].astype(str)
-        mats_systematic['home'] = round((mats_systematic['home']*100),2).astype(str)
-        mats_systematic['work'] = round((mats_systematic['work']*100),2).astype(str)
-        mats_systematic['other'] = round((mats_systematic['other']*100),2).astype(str)
-        mats_systematic['importance'] = round((mats_systematic['importance'] * 100), 2).astype(str)
-        mats_systematic['frequency'] = mats_systematic['frequency'].astype(str)
-        mats_systematic['start'] = mats_systematic['datetime'].astype(str)
-        mats_systematic['duration'] = (mats_systematic['leaving_datetime'] - mats_systematic['datetime']).astype(str)
-        mats_systematic['weekday'] = mats_systematic['datetime'].dt.weekday.astype(str)
-
-        mats_systematic['description'] = '</br><b>Systematic ID</b>: ' + mats_systematic['systematic_id'] \
-                                         + '</br><b>Start time</b>: ' + mats_systematic['start'] \
-                                         + '</br><b>Day of the week</b>: ' + mats_systematic['weekday'] \
-                                         + '</br><b>Duration</b>: ' + mats_systematic['duration']\
-                                         + '</br><b>Home</b>: ' + mats_systematic['home']\
-                                         + '%</br><b>Work</b>: ' + mats_systematic['work']\
-                                         + '%</br><b>Other</b>: ' + mats_systematic['other'] \
-                                         + '%</br><b>Importance</b>: ' + mats_systematic['importance'] \
-                                         + '%</br><b>Frequency </b>: ' + mats_systematic['frequency']
-        systematic_desc = list(mats_systematic['description'])
-
-        fig.add_trace(go.Scattermapbox(mode = "markers", name = 'systematic stops',
-                                       lon = mats_systematic.lng,
-                                       lat = mats_systematic.lat,
-                                       text = systematic_desc,
-                                       hoverinfo = 'text',
-                                       marker = {'size': 10,'color': '#2BD98C'}))
-        
-        
-        
-        ### Setting the figure's last parameters... ###
-        
-        fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=12,
-                          margin={"r":0,"t":0,"l":0,"b":0})
-        fig.update_traces(line=dict(color='#2B37F1',width=2))
-
-        return dcc.Graph(figure=fig)        
-           
            
     def get_results(self) :
         return self.enrichment.get_results()
@@ -646,59 +753,3 @@ class InteractiveEnrichment(InteractiveModuleInterface):
     def reset_state(self) :
         print(f"Resetting state of the module {self.id_class}")
         self.enrichment.reset_state()
-                     
-        
-    def get_users(self):
-        moves = self.results_enrichment['moves'].copy()
-        moves.reset_index(inplace=True)
-        return moves['uid'].unique()
-
-
-    def get_trajectories(self, uid):
-        moves = self.results_enrichment['moves'].copy()
-        return moves[moves['uid']==uid]['tid'].unique()
-
-
-    def get_systematic(self, uid):
-        systematic = self.results_enrichment['systematic'].copy()
-        return len(systematic[systematic['uid']==uid])
-
-
-    def get_occasional(self, uid):
-        occasional = self.results_enrichment['occasional'].copy()
-        return len(occasional[occasional['uid']==uid])
-
-
-    def get_transport_duration(self,uid):
-
-        moves = self.results_enrichment['moves'].copy()
-
-        first_transport = moves[moves['uid']==uid].groupby(['label','tid']).first()['datetime']
-        last_transport = moves[moves['uid']==uid].groupby(['label','tid']).last()['datetime']
-
-        duration_tid = last_transport - first_transport
-        
-        duration = pd.DataFrame(duration_tid.groupby('label').sum())
-        duration.reset_index(inplace=True)
-
-        return duration
-
-
-    def get_tweets(self,uid):
-
-        if self.results_enrichment['tweets'] is not None :
-            tweets = self.results_enrichment['tweets']
-            return tweets[tweets['uid']==uid]['text'].unique()
-        else :
-            return []
-
-
-    def get_enriched_stop_move(self, uid, traj_id):
-
-        moves = self.results_enrichment['moves'].copy()
-        enriched_occasional = self.results_enrichment['enriched_occasional'].copy()
-        systematic = self.results_enrichment['systematic'].copy()
-
-        return moves[(moves['uid']==uid) & (moves['tid'] == traj_id)],\
-               enriched_occasional[(enriched_occasional['uid']==uid) & (enriched_occasional['tid']==traj_id)],\
-               systematic[(systematic['uid']==uid) & (systematic['tid']==traj_id)]

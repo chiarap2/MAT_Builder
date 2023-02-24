@@ -735,7 +735,8 @@ class Enrichment(ModuleInterface):
         print("Enrichment complete!")
            
     def get_results(self) -> dict:
-        return {'moves' : self.moves.copy() if self.moves is not None else None,
+        return {'trajectories' : self.trajectories if self.trajectories is not None else None,
+                'moves' : self.moves.copy() if self.moves is not None else None,
                 'occasional' : self.occasional.copy() if self.occasional is not None else None,
                 'systematic' : self.systematic.copy() if self.systematic is not None else None,
                 'enriched_systematic': self.enriched_systematic.copy() if self.enriched_systematic is not None else None,
