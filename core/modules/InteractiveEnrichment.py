@@ -145,7 +145,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         outputs.append(html.Span(children=f"{str(trajs_avg_duration)}\t"))
         outputs.append(html.Br())
 
-        outputs.append(html.Span(children='Average sampling trajectories: ',
+        outputs.append(html.Span(children='Average sampling rate trajectories: ',
                                  style={'font-weight': 'bold'}))
         trajs_avg_sampling = self._calc_avg_sampling_traj(self.get_results()['trajectories'], user)
         outputs.append(html.Span(children=f"{str(trajs_avg_sampling)}\t"))
