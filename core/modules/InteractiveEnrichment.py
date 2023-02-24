@@ -47,27 +47,28 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         res_gb = view.groupby('tid').agg({'datetime': ['min', 'max']})
         res_gb['duration'] = res_gb['datetime', 'max'] - res_gb['datetime', 'min']
 
-        return res_gb['duration'].mean().total_seconds()
+        return res_gb['duration'].mean()
 
     def _calc_avg_sampling_traj(self, df : pd.DataFrame, uid: str) -> float:
 
-        view = df.loc[df['uid'] == uid, ['tid', 'datetime']].sort_values(by=['tid', 'datetime'])
+        view = df.loc[df['uid'] == uid, ['tid', 'datetime']].sort_values(by='datetime')
 
         view['difference'] = view.groupby('tid', sort=False).shift(1)
         view['difference'] = (view['datetime'] - view['difference'])
 
-        res = view.groupby('tid', sort=False)['difference'].mean().mean().total_seconds()
+        res = view.groupby('tid', sort=False)['difference'].mean().mean()
         return res if pd.notna(res) else 0
 
     def _calc_avg_gap_traj(self, df : pd.DataFrame, uid: str) -> float:
 
-        view = df[df['uid'] == uid].sort_values(by=['tid', 'datetime'])
+        view = df[df['uid'] == uid].sort_values(by='datetime')
         res_gb = view.groupby('tid').agg({'datetime': ['min', 'max']})
+        res_gb.sort_values(by=('datetime', 'min'), inplace=True)
 
         res_gb['gap'] = res_gb['datetime', 'max'].shift(1)
         res_gb['gap'] = (res_gb['datetime', 'min'] - res_gb['gap'])
 
-        res = res_gb['gap'].mean().total_seconds()
+        res = res_gb['gap'].mean()
         return res if pd.notna(res) else 0
 
     def _get_trajectories(self, uid : str):
@@ -135,25 +136,25 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         outputs.append(html.Span(children='Temporal interval spanned: ',
                                  style={'font-weight': 'bold'}))
         trajs_temporal_interval = self._calc_temporal_span_traj_user(self.get_results()['trajectories'], user)
-        outputs.append(html.Span(children= f"Start: {trajs_temporal_interval[0]} -- end: {trajs_temporal_interval[1]}\t"))
+        outputs.append(html.Span(children= f"[{trajs_temporal_interval[0]}, {trajs_temporal_interval[1]}]\t"))
         outputs.append(html.Br())
 
         outputs.append(html.Span(children='Average duration trajectories: ',
                                  style={'font-weight': 'bold'}))
         trajs_avg_duration = self._calc_avg_duration_traj_user(self.get_results()['trajectories'], user)
-        outputs.append(html.Span(children=f"{round(trajs_avg_duration / 60, 2)} minutes\t"))
+        outputs.append(html.Span(children=f"{str(trajs_avg_duration)}\t"))
         outputs.append(html.Br())
 
         outputs.append(html.Span(children='Average sampling trajectories: ',
                                  style={'font-weight': 'bold'}))
         trajs_avg_sampling = self._calc_avg_sampling_traj(self.get_results()['trajectories'], user)
-        outputs.append(html.Span(children=f"{round(trajs_avg_sampling, 2)} seconds\t"))
+        outputs.append(html.Span(children=f"{str(trajs_avg_sampling)}\t"))
         outputs.append(html.Br())
 
         outputs.append(html.Span(children='Average gap between trajectories: ',
                                  style={'font-weight': 'bold'}))
         trajs_avg_gap = self._calc_avg_gap_traj(self.get_results()['trajectories'], user)
-        outputs.append(html.Span(children=f"{round(trajs_avg_gap / 60, 2)} minutes\t"))
+        outputs.append(html.Span(children=f"{str(trajs_avg_gap)}\t"))
         outputs.append(html.Br())
         outputs.append(html.Br())
 
