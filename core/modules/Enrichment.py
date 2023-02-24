@@ -728,7 +728,7 @@ class Enrichment(ModuleInterface):
             if tweets_RDF is not None :
                 builder.add_social(tweets_RDF)
             
-            # Output the RDF graph to disk in Turtle format.
+            # Output the RDF graph to disk in Turtle format
             print("Saving the KG to disk!")
             builder.serialize_graph('kg.ttl')
 

@@ -121,7 +121,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         if user is None:
             return None
 
-        # Display trajectories information...
+        # Display trajectories information
         outputs.append(html.H6(children="General characteristics of the user's trajectories:",
                                style={'font-weight': 'bold'}))
 
