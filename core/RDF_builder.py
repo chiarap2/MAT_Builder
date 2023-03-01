@@ -201,12 +201,14 @@ class RDFBuilder() :
         df_occasional_stops['datetime'] = pd.to_datetime(df_occasional_stops['datetime'], utc = True)
         df_occasional_stops['leaving_datetime'] = pd.to_datetime(df_occasional_stops['leaving_datetime'], utc = True)
         # print(f"Dataframe of the occasional stops used to generate RDF triples: {df_occasional_stops.info()}")
-
         view_stop_data = df_occasional_stops[['stop_id', 'uid', 'tid', 'datetime', 'leaving_datetime', 'osmid', 'element_type', 'name', 'wikidata', 'category', 'distance']]
         #print(view_stop_data)
         print(f"Number of occasional stops that will be added to the RDF graph: {view_stop_data['stop_id'].nunique()}")
 
+
+        # Store in the KG the OccasionalStop class internal hierarchy of subclasses.
         self.g.add((self.STEP.OccasionalStop, RDFS.subClassOf, self.STEP.Stop))
+
 
         gb = view_stop_data.groupby(['stop_id'])
         for key in gb.groups.keys() :
@@ -292,17 +294,18 @@ class RDFBuilder() :
         print(f"Number of stops belonging to some systematic stop that will be added to the RDF graph: {sys_stops['stop_id'].nunique()}")
         if (sys_stops.shape[0] == 0): return
 
-        # Report the SystematicStop internal class hierarchy within the KG.
+
+        # Store in the KG the SystematicStop class internal hierarchy of subclasses.
         self.g.add((self.STEP.SystematicStop, RDFS.subClassOf, self.STEP.Stop))
         for key, val in self.dic_sys_stop.items() :
             self.g.add((val, RDFS.subClassOf, self.STEP.SystematicStop))
+
 
         sys_stops['datetime'] = pd.to_datetime(sys_stops['datetime'], utc=True)
         sys_stops['leaving_datetime'] = pd.to_datetime(sys_stops['leaving_datetime'], utc=True)
         sys_stops['type_stop'] = sys_stops[['home', 'work', 'other']].idxmax(axis=1)
         # print(sys_stops)
         # print(sys_stops.columns)
-
         gb = sys_stops.groupby(['uid', 'tid', 'stop_id'])
         for (uid, tid, stop_id), df in gb:
 
@@ -390,7 +393,7 @@ class RDFBuilder() :
         #print(df_moves.info())
 
 
-        # Report the Move internal class hierarchy within the KG.
+        # Store in the KG the information concerning the Move class internal hierarchy of subclasses.
         for key, val in self.dic_moves.items():
             self.g.add((val, RDFS.subClassOf, self.STEP.Move))
 
