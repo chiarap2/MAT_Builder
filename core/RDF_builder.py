@@ -205,7 +205,9 @@ class RDFBuilder() :
         view_stop_data = df_occasional_stops[['stop_id', 'uid', 'tid', 'datetime', 'leaving_datetime', 'osmid', 'element_type', 'name', 'wikidata', 'category', 'distance']]
         #print(view_stop_data)
         print(f"Number of occasional stops that will be added to the RDF graph: {view_stop_data['stop_id'].nunique()}")
-        
+
+        self.g.add((self.STEP.OccasionalStop, RDFS.subClassOf, self.STEP.Stop))
+
         gb = view_stop_data.groupby(['stop_id'])
         for key in gb.groups.keys() :
             
@@ -250,7 +252,6 @@ class RDFBuilder() :
             # Semantic description (Occasional Stop) node.
             stop_desc = URIRef(URI_episode + 'desc/')
             self.g.add((stop_desc, RDF.type, self.STEP.OccasionalStop))
-            # self.g.add((stop_desc, RDFS.subClassOf, self.STEP.Stop))
             self.g.add((episode, self.STEP.hasSemanticDescription, stop_desc))
 
             # Link this Occasional Stop with all the POIs that may be associated with it.
@@ -290,6 +291,11 @@ class RDFBuilder() :
         sys_stops = df_sys_stops.copy()
         print(f"Number of stops belonging to some systematic stop that will be added to the RDF graph: {sys_stops['stop_id'].nunique()}")
         if (sys_stops.shape[0] == 0): return
+
+        # Report the SystematicStop internal class hierarchy within the KG.
+        self.g.add((self.STEP.SystematicStop, RDFS.subClassOf, self.STEP.Stop))
+        for key, val in self.dic_sys_stop.items() :
+            self.g.add((val, RDFS.subClassOf, self.STEP.SystematicStop))
 
         sys_stops['datetime'] = pd.to_datetime(sys_stops['datetime'], utc=True)
         sys_stops['leaving_datetime'] = pd.to_datetime(sys_stops['leaving_datetime'], utc=True)
@@ -382,6 +388,12 @@ class RDFBuilder() :
         print(f"Number of moves that will be added to the RDF graph: {df_moves['move_id'].nunique()}")
         #print(df_moves)
         #print(df_moves.info())
+
+
+        # Report the Move internal class hierarchy within the KG.
+        for key, val in self.dic_moves.items():
+            self.g.add((val, RDFS.subClassOf, self.STEP.Move))
+
         
         # Compute a groupby on the enriched moves in order to extract the relevant information.
         res_gb = None
@@ -424,7 +436,8 @@ class RDFBuilder() :
 
             # Semantic description node.
             move_desc = URIRef(URI_episode + 'desc/')
-            self.g.add((move_desc, RDF.type, self.dic_moves[type_move] if enriched_moves else self.STEP.Move))
+            move_type = self.dic_moves[type_move] if enriched_moves else self.STEP.Move
+            self.g.add((move_desc, RDF.type, move_type))
             self.g.add((episode, self.STEP.hasSemanticDescription, move_desc))
 
             # Spatiotemporal extent.
