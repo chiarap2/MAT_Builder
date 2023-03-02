@@ -587,7 +587,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                                                
             web_components.append(html.Span(children = "... or provide a path to a POI dataset (write 'no' to use OSM) "))
             web_components.append(dcc.Input(id = self.id_class + '-poi_file',
-                                            value = "./data/Rome/poi/pois.parquet",
+                                            value = "./datasets/rome/poi/pois.parquet",
                                             type = 'text',
                                             placeholder = 'Path to the POI dataset...'))   
             web_components.append(html.Br())
@@ -605,7 +605,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             web_components.append(html.H5(children = "Enrich trajectory users with social media posts: "))
             web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done): "))
             web_components.append(dcc.Input(id = self.id_class + '-social_en',
-                                            value = './data/tweets/tweets_rome.parquet',
+                                            value = './datasets/rome/tweets/tweets_rome.parquet',
                                             type = 'text',
                                             placeholder = 'Path to file containing the posts...'))
             web_components.append(html.Br())
@@ -616,7 +616,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             web_components.append(html.H5(children = "Enrich trajectories with weather information: "))
             web_components.append(html.Span(children = "Path to file containing the posts (write 'no' if no enrichment should be done):"))
             web_components.append(dcc.Input(id = self.id_class + '-weather_en',
-                                            value = './data/weather/weather_conditions.parquet',
+                                            value = './datasets/rome/weather/weather_conditions.parquet',
                                             type = 'text',
                                             placeholder = 'Path to file containing weather information...'))
             web_components.append(html.Br())

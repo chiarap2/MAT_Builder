@@ -71,7 +71,7 @@ class InteractivePreprocessing(InteractiveModuleInterface):
         
         web_components.append(html.Span(children = "Path to the raw trajectory dataset: "))
         web_components.append(dcc.Input(id = self.id_class + '-path',
-                                        value = './data/Rome/rome.parquet',
+                                        value = './datasets/rome/rome.parquet',
                                         type = 'text',
                                         placeholder = 'path'))
         web_components.append(html.Br())
@@ -87,9 +87,9 @@ class InteractivePreprocessing(InteractiveModuleInterface):
         
         web_components.append(html.Span(children = "Minimum number of samples a trajectory must have: "))
         web_components.append(dcc.Input(id = self.id_class + '-n_points',
-                                        value = 3000,
+                                        value = 1500,
                                         type = 'number',
-                                        placeholder = 3000))
+                                        placeholder = 1500))
         web_components.append(html.Br())
         web_components.append(html.Br())
 
