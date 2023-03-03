@@ -54,13 +54,13 @@ class InteractivePreprocessing(InteractiveModuleInterface):
             State(component_id = self.id_class + '-n_points', component_property='value'),
             State(component_id = self.id_class + '-compress', component_property='value'),
             Input(component_id = self.id_class + '-run', component_property='n_clicks')
-        )(self.get_input_and_execute)
+        )(self.get_input_and_execute_task)
 
 
 
     ### PUBLIC CLASS METHODS ###
     
-    def register_prev_module(self, prev_module) :
+    def register_module(self, prev_module) :
         
         print(f"Registering prev module {prev_module} in module {self.id_class}")
         self.prev_module = prev_module
@@ -106,7 +106,7 @@ class InteractivePreprocessing(InteractiveModuleInterface):
         
         return web_components
         
-    def get_input_and_execute(self, path, speed, n_points, compress, button_state) :
+    def get_input_and_execute_task(self, path, speed, n_points, compress, button_state) :
     
         print(f"Eseguo get_input_and_execute del modulo {self.id_class}! Button state: {button_state}")
     

@@ -484,7 +484,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
             State(component_id = self.id_class + '-weather_en', component_property='value'),
             State(component_id = self.id_class + '-write_rdf', component_property='value'),
             Input(component_id = self.id_class + '-run', component_property='n_clicks')
-        )(self.get_input_and_execute)
+        )(self.get_input_and_execute_task)
         
         
         # This is the callback in charge of creating a dropdown menu containing the trajectories
@@ -516,7 +516,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
     
     ### CLASS PUBLIC METHODS ###
     
-    def register_prev_module(self, prev_module : InteractiveModuleInterface) :
+    def register_module(self, prev_module : InteractiveModuleInterface) :
         
         print(f"Registering prev module {prev_module} in module {self.id_class}")
         self.prev_module = prev_module
@@ -638,18 +638,18 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         return web_components
         
         
-    def get_input_and_execute(self,
-                              move_enrichment,
-                              poi_place,
-                              poi_categories,
-                              path_poi,
-                              max_dist,
-                              dbscan_epsilon,
-                              systematic_threshold,
-                              social_enrichment,
-                              weather_enrichment,
-                              create_rdf,
-                              button_state):
+    def get_input_and_execute_task(self,
+                                   move_enrichment,
+                                   poi_place,
+                                   poi_categories,
+                                   path_poi,
+                                   max_dist,
+                                   dbscan_epsilon,
+                                   systematic_threshold,
+                                   social_enrichment,
+                                   weather_enrichment,
+                                   create_rdf,
+                                   button_state):
         
         outputs = []
         if button_state is not None :

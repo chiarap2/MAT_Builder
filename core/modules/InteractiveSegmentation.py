@@ -113,13 +113,13 @@ class InteractiveSegmentation(InteractiveModuleInterface):
             State(component_id = self.id_class + '-duration', component_property='value'),
             State(component_id = self.id_class + '-radius', component_property='value'),
             Input(component_id = self.id_class + '-run', component_property='n_clicks')
-        )(self.get_input_and_execute)
+        )(self.get_input_and_execute_task)
 
         
         
     ### CLASS PUBLIC METHODS ###
     
-    def register_prev_module(self, prev_module : InteractiveModuleInterface) :
+    def register_module(self, prev_module : InteractiveModuleInterface) :
         
         print(f"Registering prev module {prev_module} in module {self.id_class}")
         self.prev_module = prev_module  
@@ -169,7 +169,7 @@ class InteractiveSegmentation(InteractiveModuleInterface):
         return web_components
     
     
-    def get_input_and_execute(self, path, duration, radius, button_state):
+    def get_input_and_execute_task(self, path, duration, radius, button_state):
         
         print(f"Eseguo get_input_and_execute del modulo {self.id_class}! Button state: {button_state}")
     

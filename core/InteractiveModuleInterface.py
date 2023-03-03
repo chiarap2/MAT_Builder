@@ -6,7 +6,7 @@ class InteractiveModuleInterface(ABC) :
     ### INTERFACE METHODS ###
     
     @abstractmethod
-    def register_prev_module(self, prev_module) :
+    def register_module(self, prev_module) :
         pass
     
     @abstractmethod   
@@ -14,7 +14,7 @@ class InteractiveModuleInterface(ABC) :
         pass
         
     @abstractmethod
-    def get_input_and_execute(self, **kwargs) :
+    def get_input_and_execute_task(self, **kwargs) :
         pass
         
     @abstractmethod

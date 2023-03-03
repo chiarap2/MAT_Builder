@@ -35,7 +35,7 @@ class InteractivePipeline():
             if prev is None :
                 prev = v
             else :
-                v.register_prev_module(prev)
+                v.register_module(prev)
                 prev = v
           
           
