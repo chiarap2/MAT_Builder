@@ -1,6 +1,5 @@
 ## **MAT-Builder: a System to Build Semantically Enriched Trajectories**
 
----
 The notion of **multiple aspect trajectory** (MAT) has
 been recently introduced in the literature to represent movement
 data that is heavily semantically enriched with dimensions
@@ -22,6 +21,9 @@ and extensibility in mind, thus enabling practitioners to easily add
 new functionalities to the system and set up their own semantic
 enrichment processes.
 
+---
+
+
 ## **Installation procedure**
 
 MAT-Builder consists of a set of Python scripts (plus a set of additional assets) which make exclusively use of open-source libraries. In the following we illustrate the installation procedure needed to execute MAT-Builder. The installation procedure has been tested on Windows 10, Ubuntu (version > 20.x), and macOS.
@@ -40,8 +42,7 @@ To use ```MAT-Builder``` with the graphical interface, run ```mat_builder_ui_exa
 
 
 
-### **MAT-building pipeline** and **modules**
----
+## **MAT-building pipeline** and **modules**
 
 ``MAT-Builder`` revolves around the notion of ***MAT-building pipeline***, which is a
 semantic enrichment process orchestrated conducted according to a sequence of steps. Each step
