@@ -19,9 +19,7 @@ but also allows the use of a variety of external data sources.
 Furthermore, ```MAT-Builder``` has been designed with modularity
 and extensibility in mind, thus enabling practitioners to easily add
 new functionalities to the system and set up their own semantic
-enrichment processes. 
-
-To use ```MAT-Builder``` with the graphical interface, run ```mat_builder.py```
+enrichment processes.
 
 
 ## **Installation procedure**
@@ -39,34 +37,85 @@ MAT-Builder consists of a set of Python scripts (plus a set of additional assets
 ### **Usage**
 ---
 
-To use ```MAT-Builder``` the raw trajectory dataset must have the following data:
-- trajectory ID
-- user ID
-- latitude
-- longitude
-- timestamp
+To use ```MAT-Builder``` with the graphical interface, run ```mat_builder_ui_example.py```
 
-``MAT-Builder`` is organized in modules. Each module corresponds to a step of the ***semantic enrichment process*** (i.e., preprocessing, segmentation, and enrichment). Users can of course customize the entire process. 
 
-The ``preprocessing`` module allows users to:
+
+### **MAT-building pipeline** and **modules**
+---
+
+``MAT-Builder`` revolves around the notion of ***MAT-building pipeline***, which is a
+semantic enrichment process orchestrated conducted according to a sequence of steps. Each step
+represents a specific macro-task and is implemented via a module that extends the
+``InteractiveModuleInterface`` abstract class. Currently, there are three modules that have been
+included in ``MAT-Builder``'s current version: ***trajectory preprocessing***, ***trajectory 
+segmentation***, and ***enrichment***. To see how the modules can be used to set up a MAT-building pipeline please see
+the script ``mat_builder_ui_example.py``. 
+
+
+The ``InteractivePreprocessing`` module implements the trajectory preprocessing step. It takes in input a dataset of raw trajectories and let users:
 - remove outliers
 - remove trajectories with few points
 - compress trajectories
 
-The ``segmentation`` module allows users to find ***stops*** and ***moves***.
+The ``InteractivePreprocessing`` requires the raw trajectory dataset to be stored in a pandas DataFrame,
+stored in the Parquet format, and have the following columns:
+- ```traj_id```: trajectory ID (string)
+- ```user```: user ID (integer)
+- ```lat```: latitude of a trajectory sample (float)
+- ```lon```: longitude of a trajectory sample (float)
+- ```time```: timestamp of a sample (datetime64)
 
-The ```Enrichment``` module allows practioners to enrich different "entities" of a trajectory:
-- **Stop enrichment**: 
-    - categorize stops into:
-        - *systematic stops*: stops that fall in the same area more than a given number of times. They are enriched as *Home*, *Work* or *Other*.
-        - *occasional stops*: stops that are not systematic. They are enriched with the most nearest PoIs. PoI dataset must have an ID, latitude, longitude, and a category at least. If users don't have a PoI dataset, they can download them from OpenStreetMap.
-- **Move enrichment**: users can enrich moves with the transportation mean
-- **Trajectory enrichment**: users can enrich the entire trajectory with the weather conditions that must have an ID, the Trajectory ID and the timestamp. 
-- **User enrichment** : users can enrich the 'users entity' with the social media posts. These data must have an ID, the user ID and the timestamp. If social media posts are geolocated, the enrichment could be based on spatial information (such as for occasional stops).
+The ``InteractiveSegmentation`` module implements the trajectory segmentation step. It takes in input a set of preprocessed trajectories, and segments
+each trajectory into ***stop*** and ***move segments***.
+
+The ```InteractiveEnrichment``` module takes in input the preprocessed trajectories, as well as their stop and move segments, and enriches trajectories and trajectory users with aspects
+(or semantic dimensions). The aspects currently supported by the module are as follows:
+- **Regularity**: stop segments are categorized into:
+  - *systematic stops*: stops that fall in the same area more than a given number of times. They are augmented with the labels  *Home*, *Work* or *Other*.
+  - *occasional stops*: stops that are not systematic.
+    
+  Both occasional and systematic stops are augmented with the nearest POIs. 
+  The POI dataset used to augment the stops can either be downloaded from OpenStreetMap (not recommended, this operation might be quite slow),
+  or supplied via a local file. In the latter case, the POI dataset must be stored in a GeoDataFrame, according to the Parquet format, and must
+  have the following columns:
+  - ```osmid```: POI OSM identifier (integer)
+  - ```element_type```: POI OSM element type (string)
+  - ```name```: POI native name (string)
+  - ```name:en```: POI English name (string) 
+  - ```wikidata```: POI WikiData identifier (string)
+  - ```geometry```: POI geometry (GeoPandas geometry object)
+  - ```category```: POI category (string)
+  For viable examples of POI datasets, please have a look at the datasets in the ```datasets``` folder.
+
+
+- **Move**: trajectories are enriched with the move segments. The segments can also be augmented with the transportation mean probably used.
+
+
+- **Weather**: trajectories are enriched with weather conditions. Such information must be provided via a pandas DataFrame in the form of daily weather conditions, stored according to the 
+  Parquet format, and must have the following columns:
+  - ```DATE```: date in which the weather observation was recorded (string or datetime64).
+  - ```TAVG_C```: average temperature in celsius (float).
+  - ```DESCRIPTION```: weather conditions (string).
+  For viable examples of weather conditions datasets, please look at the datasets in the ```datasets``` folder.
+
+
+- **Social media** : trajectory users are enriched with their social media posts. Social media data must be provided via a pandas DataFrame stored according to 
+  the Parquet format and must have the following columns:
+  - ```tweet_ID```: ID of the tweet (integer)
+  - ```text```: post text (string)
+  - ```tweet_created```: timestamp of the tweet (datetime64)
+  - ```uid```: identifier of the user who posted the tweet.
+
+
+
+### **Datasets**
+---
+For more details on the datasets, please have a look at the ```datasets``` folder.
 
 ### **Citing us**
 ---
-If you use MAT-Builder, please cite the following paper:
+If you use MAT-Builder, please cite the following papers:
 
 C. Pugliese, F. Lettich, C. Renso, F. Pinelli, Mat-builder: a system to build semantically
 enriched trajectories, in: The 23rd IEEE International Conference on Mobile Data Management, Cyprus, 2022
