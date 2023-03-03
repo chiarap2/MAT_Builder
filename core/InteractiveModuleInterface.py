@@ -4,9 +4,13 @@ from abc import ABC, abstractmethod
 class InteractiveModuleInterface(ABC) :
  
     ### INTERFACE METHODS ###
+
+    @abstractmethod
+    def get_dependencies(self) -> list['InteractiveModuleInterface']:
+        pass
     
     @abstractmethod
-    def register_module(self, prev_module) :
+    def register_modules(self, list_modules : list['InteractiveModuleInterface']):
         pass
     
     @abstractmethod   

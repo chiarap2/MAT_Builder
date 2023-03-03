@@ -5,6 +5,7 @@ from dash.dependencies import Input, Output, State, MATCH, ALL
 
 from core.InteractiveModuleInterface import InteractiveModuleInterface
 from core.InteractivePipeline import InteractivePipeline
+from .InteractivePreprocessing import InteractivePreprocessing
 from .Segmentation import Segmentation
 
 
@@ -86,10 +87,11 @@ class InteractiveSegmentation(InteractiveModuleInterface):
     ### CLASS CONSTRUCTOR ###
     
     def __init__(self, app : Dash, pipeline : InteractivePipeline) :
-        
+
+        self.prev_modules = {}
+
         self.app = app
         self.pipeline = pipeline
-        self.prev_module : InteractiveModuleInterface = None
         self.segmentation : Segmentation = Segmentation()
         self.stops = None
         self.moves = None
@@ -118,11 +120,17 @@ class InteractiveSegmentation(InteractiveModuleInterface):
         
         
     ### CLASS PUBLIC METHODS ###
+
+    def get_dependencies(self) -> list[InteractiveModuleInterface]:
+        return [InteractivePreprocessing]
     
-    def register_module(self, prev_module : InteractiveModuleInterface) :
-        
-        print(f"Registering prev module {prev_module} in module {self.id_class}")
-        self.prev_module = prev_module  
+    def register_modules(self, list_modules: list[InteractiveModuleInterface]):
+
+        print(f"Registering prev modules {list_modules} in module {self.id_class}")
+        for m in list_modules :
+            if type(m) == InteractivePreprocessing :
+                print("Registering preprocessing module!")
+                self.prev_modules[InteractivePreprocessing] = m
         
     
     def populate_input_area(self) :
@@ -130,7 +138,8 @@ class InteractiveSegmentation(InteractiveModuleInterface):
         web_components = []
         
         # Here we manage the case where no data is available from the previous module.
-        if(self.prev_module is None) or (next(iter(self.prev_module.get_results().values())) is None) :
+        if(InteractivePreprocessing not in self.prev_modules) or\
+          (next(iter(self.prev_modules[InteractivePreprocessing].get_results().values())) is None) :
             web_components.append(html.Span(children = f"No trajectory dataset available!"))
             web_components.append(html.Br())
             web_components.append(html.Span(children=f"Please, provide a path to one: "))
@@ -190,7 +199,7 @@ class InteractiveSegmentation(InteractiveModuleInterface):
                 except BaseException :
                     outputs.append(html.H5("No file with the preprocessed trajectories found! Please, provide one!"))
                     return None, outputs
-            else : preprocessed_trajs = self.prev_module.get_results()['preprocessed_trajectories']
+            else : preprocessed_trajs = self.prev_modules[InteractivePreprocessing].get_results()['preprocessed_trajectories']
 
             
             # Execute the segmentation module and retrieve the output as well as the execution .

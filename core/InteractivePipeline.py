@@ -29,14 +29,12 @@ class InteractivePipeline():
         for module in list_modules : self.pipeline[module.id_class] = module(app, self)
         
         
-        # Make each module aware of the module that comes before.
-        prev = None
-        for k, v in self.pipeline.items() :
-            if prev is None :
-                prev = v
-            else :
-                v.register_module(prev)
-                prev = v
+        # Make each module aware of the modules from which output it depends.
+        print('Checking dependencies between modules...')
+        for key, module in self.pipeline.items() :
+            list_dependencies = module.get_dependencies()
+            list_references = [x for x in self.pipeline.values() if type(x) in list_dependencies]
+            module.register_modules(list_references)
           
           
         # Set up the CSS styles.
@@ -113,7 +111,7 @@ class InteractivePipeline():
         ### These tabs are added to the list children_tabs, which will be then inserted into the web interface. ###
         children_tabs = []
         for id, instance in self.pipeline.items() :
-            
+
             print(f"Creating tab for: {id} -- {instance}")
             children_tabs.append(dcc.Tab(id=id,
                                          label = id,
@@ -125,7 +123,6 @@ class InteractivePipeline():
 
 
         ### Here we set up the individual components of the web interface ###
-        # TODO: we can move this code in the Pipeline class.
         title = html.Div(id='title',
                          children = [html.Img(src='assets/MAT-Builder-logo.png', 
                                               style={'width':'25%','height':'5%','float':'left'}),

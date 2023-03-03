@@ -7,6 +7,7 @@ from dash.dependencies import Input, Output, State, MATCH, ALL
 import plotly.express as px
 
 from core.InteractiveModuleInterface import InteractiveModuleInterface
+from core.InteractivePipeline import InteractivePipeline
 from .Preprocessing import Preprocessing
 
 
@@ -35,13 +36,12 @@ class InteractivePreprocessing(InteractiveModuleInterface):
 
     ### PUBLIC CLASS CONSTRUCTOR ###
     
-    def __init__(self, app : Dash, pipeline : list[InteractiveModuleInterface]):
+    def __init__(self, app : Dash, pipeline : InteractivePipeline):
 
         ### Here we register the Dash application ###
         self.preprocessing : Preprocessing = Preprocessing()
         self.app = app
         self.pipeline = pipeline
-        self.prev_module = None
         self.path_output = './data/temp_dataset/traj_cleaned.parquet'
 
         ### Here we define and register all the callbacks that must be managed by the instance of this class ###
@@ -59,11 +59,13 @@ class InteractivePreprocessing(InteractiveModuleInterface):
 
 
     ### PUBLIC CLASS METHODS ###
+
+    def get_dependencies(self) -> list[InteractiveModuleInterface]:
+
+        return []
     
-    def register_module(self, prev_module) :
-        
-        print(f"Registering prev module {prev_module} in module {self.id_class}")
-        self.prev_module = prev_module
+    def register_modules(self, list_modules : list[InteractiveModuleInterface]):
+        pass
     
     def populate_input_area(self) :
         

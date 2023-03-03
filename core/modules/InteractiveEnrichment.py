@@ -10,6 +10,8 @@ import plotly.graph_objects as go
 
 from core.InteractiveModuleInterface import InteractiveModuleInterface
 from core.InteractivePipeline import InteractivePipeline
+
+from .InteractiveSegmentation import InteractiveSegmentation
 from .Enrichment import Enrichment
 
 
@@ -457,10 +459,11 @@ class InteractiveEnrichment(InteractiveModuleInterface):
     
     def __init__(self, app : Dash, pipeline : InteractivePipeline) :
 
+        self.prev_modules = {}
+
         self.enrich_moves = None
         self.app = app
         self.pipeline = pipeline
-        self.prev_module = None
 
         self.enrichment = Enrichment()
         self.results_enrichment = None
@@ -515,11 +518,17 @@ class InteractiveEnrichment(InteractiveModuleInterface):
     
     
     ### CLASS PUBLIC METHODS ###
+
+    def get_dependencies(self) -> list[InteractiveModuleInterface]:
+        return [InteractiveSegmentation]
     
-    def register_module(self, prev_module : InteractiveModuleInterface) :
-        
-        print(f"Registering prev module {prev_module} in module {self.id_class}")
-        self.prev_module = prev_module
+    def register_modules(self, list_modules: list[InteractiveModuleInterface]):
+
+        print(f"Registering prev modules {list_modules} in module {self.id_class}")
+        for m in list_modules:
+            if type(m) == InteractiveSegmentation:
+                print("Registering segmentation module!")
+                self.prev_modules[InteractiveSegmentation] = m
         
 
     def populate_input_area(self) :
@@ -527,7 +536,8 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         web_components = []
         
         
-        if (self.prev_module is None) or (next(iter(self.prev_module.get_results().values())) is None) :
+        if (InteractiveSegmentation not in self.prev_modules) or\
+           (next(iter(self.prev_modules[InteractiveSegmentation].get_results().values())) is None) :
             web_components.append(html.H5(children = f"No stop and moves data available!"))
             web_components.append(html.H5(children = f"Please, execute the segmentation module first!"))
         
@@ -686,7 +696,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
 
             # Esegui il core dell'istanza.
-            prev_results = self.prev_module.get_results()
+            prev_results = self.prev_modules[InteractiveSegmentation].get_results()
             self.enrich_moves = True if move_enrichment == 'yes' else False
             dic_params = {'trajectories' : prev_results['trajectories'],
                           'moves' : prev_results['moves'],
