@@ -107,7 +107,7 @@ class Segmentation(ModuleInterface):
         trajs['start_stop'] = np.nan
         trajs['start_stop'].loc[new_start] = 1
         trajs['end_stop'] = np.nan
-        trajs['end_stop'].loc[new_end] = 1  
+        trajs['end_stop'].loc[new_end] = 1
 
         trajs.reset_index(inplace=True)
         start_idx = trajs[trajs['start_stop']==1].index.to_list()
@@ -128,13 +128,18 @@ class Segmentation(ModuleInterface):
         for i, (s, e) in enumerate(zip(start_idx,end_idx), 1):
             trajs['move_id'][s: e+1] = i
 
+
         trajs['move_id'].ffill(inplace=True)
         trajs['move_id'].fillna(0,inplace=True)
         trajs['move_id'][(trajs['start_stop']==1)|(trajs['end_stop']==1)] = -1
         moves = trajs[trajs['move_id']!=-1]
 
         # NOTE: the final moves result set will be a pandas DataFrame built from the skmob dataframe.
+        moves.drop(columns = ['start_stop', 'end_stop'], inplace = True)
+        moves['move_id'] = moves['move_id'].astype(np.uint32)
         self.moves = pd.DataFrame(moves)
+
+        print(self.moves.info())
 
         del end_df, start_df, traj_df
 
