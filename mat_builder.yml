@@ -1,4 +1,4 @@
-name: test
+name: matbuilder
 channels:
   - conda-forge
   - defaults
@@ -19,7 +19,12 @@ dependencies:
   - scikit-learn
   - scikit-mobility=1.2.2
   - shapely
+  - geopy
+  - tesspy
+  - fastapi
+  - uvicorn
+  - python-multipart
   - pip
   - pip:
     - PTRAIL
-prefix: /home/flettich/anaconda3/envs/test
+prefix: /home/flettich/anaconda3/envs/matbuilder

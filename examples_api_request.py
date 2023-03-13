@@ -66,9 +66,7 @@ def test_segmentation() :
     stops = pd.DataFrame.from_dict(res.json()['stops'])
     moves = pd.DataFrame.from_dict(res.json()['moves'])
 
-    print(stops)
     print(stops.info())
-    print(moves)
     print(moves.info())
 
     stops.to_parquet('stops.parquet')
