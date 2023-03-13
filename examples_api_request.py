@@ -72,7 +72,7 @@ def test_segmentation() :
     print(moves.info())
 
     stops.to_parquet('stops.parquet')
-    moves.to_parquet('stops.parquet')
+    moves.to_parquet('moves.parquet')
 
 
 def main() :
