@@ -13,7 +13,7 @@ class API_Segmentation(Segmentation) :
         super().__init__()
 
         # Declare the path function operations associated with the API_Preprocessing class.
-        @app.get("/semantic/" + self.id_class + "/")
+        @app.get("/semantic_processor/" + self.id_class + "/")
         async def segment(file_trajectories : UploadFile,
                           min_duration_stop : int = Form(),
                           max_stop_radius : float = Form()) :

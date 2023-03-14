@@ -139,9 +139,6 @@ class Segmentation(ModuleInterface):
         moves['move_id'] = moves['move_id'].astype(np.uint32)
         self.moves = pd.DataFrame(moves)
 
-        print(self.moves.info())
-
-        del end_df, start_df, traj_df
 
         return True
 

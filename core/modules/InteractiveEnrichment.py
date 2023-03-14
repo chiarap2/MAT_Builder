@@ -695,7 +695,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                 weather_df = pd.read_parquet(weather_enrichment) if weather_enrichment != 'no' else None
 
 
-            # Esegui il core dell'istanza.
+            # Execute the core logic of the Enrichment module.
             prev_results = self.prev_modules[InteractiveSegmentation].get_results()
             self.enrich_moves = True if move_enrichment == 'yes' else False
             dic_params = {'trajectories' : prev_results['trajectories'],
@@ -713,9 +713,13 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                           'create_rdf' : True if create_rdf == 'yes' else False}
             self.enrichment.execute(dic_params)
             self.results_enrichment = self.enrichment.get_results()
+
+
+            # Store the RDF KG to disk if the user requested it.
+            if create_rdf : self.results_enrichment['rdf_graph'].serialize_graph('kg.ttl')
             
             
-            # Inizializza il dropdown con la lista di utenti da mostrare nell'area di output dell'interfaccia web.
+            # Initialize the dropdown menu with the list of users to show in output area of the interface.
             list_users = [{'label': u, 'value': u} for u in self._get_users()]
             outputs.append(html.Div(id='users-' + self.id_class,
                                     children = [html.P(children = 'User:'),
@@ -728,7 +732,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                                                 html.Div(id = 'traj-' + self.id_class)]))
             
             
-        # Ritorna gli output finali per l'interfaccia web.
+        # Return the output components for the web interface.
         return None, outputs
 
 

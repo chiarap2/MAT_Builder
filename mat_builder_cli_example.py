@@ -45,6 +45,7 @@ def main() :
                          "weather_enrichment" : weather_df,
                          'create_rdf' : True}
     enrichment.execute(params_enrichment)
+    enrichment.get_results()['rdf_graph'].serialize_graph('kg.ttl')
 
 
 if __name__ == '__main__':

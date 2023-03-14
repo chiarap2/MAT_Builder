@@ -462,41 +462,41 @@ class Enrichment(ModuleInterface):
         # Parsing the input received from the UI / user...
 
         # 0 - Trajectories
-        self.trajectories = pd.DataFrame(dic_params['trajectories'])
+        self._trajectories = pd.DataFrame(dic_params['trajectories'])
 
         # 1 - moves parameters
-        self.moves = dic_params['moves']
+        self._moves = dic_params['moves']
         if dic_params['move_enrichment']:
-            self.enrich_moves = True
+            self._enrich_moves = True
         else:
-            self.enrich_moves = False
+            self._enrich_moves = False
 
 
         # 2 - Stops and POIs parameters
-        self.stops = dic_params['stops']
-        self.poi_place = dic_params['poi_place']
-        self.list_pois = [] if dic_params['poi_categories'] is None else dic_params['poi_categories']
-        self.path_poi = dic_params['path_poi']
-        self.max_distance = dic_params['max_dist']
-        self.dbscan_epsilon = dic_params['dbscan_epsilon']
-        self.systematic_threshold = dic_params['systematic_threshold']
+        self._stops = dic_params['stops']
+        self._poi_place = dic_params['poi_place']
+        self._list_pois = [] if dic_params['poi_categories'] is None else dic_params['poi_categories']
+        self._path_poi = dic_params['path_poi']
+        self._max_distance = dic_params['max_dist']
+        self._dbscan_epsilon = dic_params['dbscan_epsilon']
+        self._systematic_threshold = dic_params['systematic_threshold']
 
         # 3 - Social media posts parameters
         if dic_params['social_enrichment'] is None:
-            self.tweet_user = False
+            self._tweet_user = False
         else:
-            self.tweet_user = True
-            self.upload_social = dic_params['social_enrichment']
+            self._tweet_user = True
+            self._upload_social = dic_params['social_enrichment']
 
         # 4 - weather parameters
         if dic_params['weather_enrichment'] is None:
-            self.weather = False
+            self._weather = False
         else:
-            self.weather = True
-            self.upload_weather = dic_params['weather_enrichment']
+            self._weather = True
+            self._upload_weather = dic_params['weather_enrichment']
 
         # 5 - RDF knowledge graph creation parameters
-        self.rdf = dic_params['create_rdf']
+        self._create_rdf_graph = dic_params['create_rdf']
 
 
         # 6 - Core execution.
@@ -513,18 +513,18 @@ class Enrichment(ModuleInterface):
         #################################
 
         # 1 - Case in which we augment the moves with the estimated transportation means.
-        if self.enrich_moves:
+        if self._enrich_moves:
             print("Executing move enrichment...")
 
             # load random forest classifier
             model = pickle.load(open('models/best_rf.sav', 'rb'))
-            self.moves = self._moves_enrichment(self.moves.copy(), model)
-            self.moves.to_parquet('data/enriched_moves.parquet')
+            self._moves = self._moves_enrichment(self._moves.copy(), model)
+            self._moves.to_parquet('data/enriched_moves.parquet')
 
         # 2 - Case in which we do not augment the moves: just make the dataframe compatible with the subsequent steps.
         else :
-            self.moves.set_index(['tid', 'move_id'], inplace=True)
-            self.moves.to_parquet('data/enriched_moves.parquet')
+            self._moves.set_index(['tid', 'move_id'], inplace=True)
+            self._moves.to_parquet('data/enriched_moves.parquet')
 
 
 
@@ -534,17 +534,17 @@ class Enrichment(ModuleInterface):
 
         # Here stops' index contains the IDs of the stops. We reset the index such
         # that the old index becomes a column.
-        self.stops.reset_index(inplace=True)
-        self.stops.rename(columns={'index': 'stop_id'}, inplace=True)
+        self._stops.reset_index(inplace=True)
+        self._stops.rename(columns={'index': 'stop_id'}, inplace=True)
 
         # Get a POI dataset, either from OSM or from a file.
         df_poi = None
-        if self.path_poi is None:
+        if self._path_poi is None:
             print(
-                f"Downloading POIs from OSM for the location of {self.poi_place}. Selected types of POIs: {self.list_pois}")
-            df_poi = self._download_poi_osm(self.list_pois, self.poi_place)
+                f"Downloading POIs from OSM for the location of {self._poi_place}. Selected types of POIs: {self._list_pois}")
+            df_poi = self._download_poi_osm(self._list_pois, self._poi_place)
         else:
-            df_poi = self.path_poi
+            df_poi = self._path_poi
             print(f"Using a POI file: {df_poi}!")
         print(f"A few info on the POIs that will be used to enrich the occasional stops: {df_poi.info()}")
 
@@ -557,16 +557,16 @@ class Enrichment(ModuleInterface):
         #self.systematic = self._systematic_enrichment_geohash(self.stops.copy(),
         #                                                      geohash_precision = self.geohash_precision,
         #                                                      min_frequency_sys = self.systematic_threshold)
-        self.systematic = self._systematic_enrichment_dbscan(self.stops.copy(),
-                                                             epsilon = self.dbscan_epsilon,
-                                                             min_frequency_sys = self.systematic_threshold)
+        self._systematic = self._systematic_enrichment_dbscan(self._stops.copy(),
+                                                              epsilon = self._dbscan_epsilon,
+                                                              min_frequency_sys = self._systematic_threshold)
 
         print("Executing systematic stop augmentation with POIs...")
-        self.enriched_systematic = self._stop_enrichment_with_pois(self.systematic,
-                                                                   df_poi,
+        self._enriched_systematic = self._stop_enrichment_with_pois(self._systematic,
+                                                                    df_poi,
                                                                    'poi',
-                                                                   self.max_distance)
-        self.enriched_systematic.to_parquet('data/enriched_systematic.parquet')
+                                                                    self._max_distance)
+        self._enriched_systematic.to_parquet('data/enriched_systematic.parquet')
 
 
         ############################################
@@ -574,15 +574,15 @@ class Enrichment(ModuleInterface):
         ############################################
 
         print("Executing occasional stop augmentation with POIs...")
-        self.occasional = self.stops[~self.stops['stop_id'].isin(self.systematic['stop_id'])]
+        self._occasional = self._stops[~self._stops['stop_id'].isin(self._systematic['stop_id'])]
 
         # Calling functions internal to this method...
-        self.enriched_occasional = self._stop_enrichment_with_pois(self.occasional,
-                                                                   df_poi,
+        self._enriched_occasional = self._stop_enrichment_with_pois(self._occasional,
+                                                                    df_poi,
                                                                    'poi',
-                                                                   self.max_distance)
+                                                                    self._max_distance)
         # mat.set_index(['stop_id','lat','lng'],inplace=True)
-        self.enriched_occasional.to_parquet('data/enriched_occasional.parquet')
+        self._enriched_occasional.to_parquet('data/enriched_occasional.parquet')
         
         
         
@@ -641,20 +641,20 @@ class Enrichment(ModuleInterface):
             
             
         df_weather_enrichment = None
-        print(f"Valore self.weather: {self.weather}")
-        if self.weather :
+        print(f"Valore self.weather: {self._weather}")
+        if self._weather :
             print("Adding weather info to the trajectories...")
 
-            weather = self.upload_weather
+            weather = self._upload_weather
             
-            df_weather_enrichment = weather_enrichment(self.trajectories.copy(), weather)
+            df_weather_enrichment = weather_enrichment(self._trajectories.copy(), weather)
             df_weather_enrichment.to_parquet('./data/weather_enrichment.parquet')
         
             # Set up the moves dataframe to have temperature and weather conditions (needed later on by
             # the component plotting the trajectories).
-            self.moves = move_weather_enrichment(self.moves, weather)
+            self._moves = move_weather_enrichment(self._moves, weather)
         else :
-            self.moves = move_weather_enrichment(self.moves, None)
+            self._moves = move_weather_enrichment(self._moves, None)
         
         
         
@@ -663,31 +663,31 @@ class Enrichment(ModuleInterface):
         ##############################################
         
         tweets_RDF = None
-        print(f"Valore self.tweet_user: {self.tweet_user}")        
-        if self.tweet_user :
+        print(f"Valore self.tweet_user: {self._tweet_user}")
+        if self._tweet_user :
             print("Enriching users with social media posts!")
             
-            tweets = self.upload_social
+            tweets = self._upload_social
             tweets_RDF = tweets.copy()
             
-            self.moves['date'] = self.moves['datetime'].dt.date
+            self._moves['date'] = self._moves['datetime'].dt.date
             tweets['tweet_created'] = tweets['tweet_created'].astype('datetime64')
             tweets['tweet_created'] = tweets['tweet_created'].dt.date
-            self.moves['tweet'] = ''
+            self._moves['tweet'] = ''
 
-            self.moves.reset_index(inplace=True)  
+            self._moves.reset_index(inplace=True)
 
-            self.moves.set_index(['date','uid'],inplace=True)   
+            self._moves.set_index(['date', 'uid'], inplace=True)
             tweets.set_index(['tweet_created','uid'],inplace=True)      
-            matched_tweets = self.moves.join(tweets,how='inner')
+            matched_tweets = self._moves.join(tweets, how='inner')
 
-            self.moves.reset_index(inplace=True)
+            self._moves.reset_index(inplace=True)
             matched_tweets.reset_index(inplace=True)
 
-            self.tweets = matched_tweets.copy()    
+            self._tweets = matched_tweets.copy()
         
         else :
-            self.tweets = None
+            self._tweets = None
 
 
 
@@ -695,7 +695,7 @@ class Enrichment(ModuleInterface):
         # its index on the trajectory identifiers. This is required as previous enrichment steps
         # modified this dataframe's index.
         # TODO: review and simplify the code to eliminate this need.
-        self.moves.reset_index(inplace=True)
+        self._moves.reset_index(inplace=True)
 
 
 
@@ -703,45 +703,42 @@ class Enrichment(ModuleInterface):
         ###       RDF KNOWLEDGE GRAPH SAVE         ###
         ##############################################
         
-        if self.rdf :
+        if self._create_rdf_graph :
             
             print("Creating and then saving to disk the RDF graph...")
 
             # Instantiate RDF-builder
-            builder = RDFBuilder()
+            self._rdf_graph = RDFBuilder()
 
             # Add the users and the information associated to their raw-trajectories to the graph.
-            builder.add_trajectories(self.trajectories.copy())
+            self._rdf_graph.add_trajectories(self._trajectories.copy())
 
             # Add to the RDF graph the stops, the moves, and the semantic information 
             # associated with the trajectories (social media posts, weather), the stops (type of stop, POIs),
             # and the moves (transportation mean).
-            builder.add_moves(self.moves, self.enrich_moves)
-            builder.add_occasional_stops(self.enriched_occasional)
-            builder.add_systematic_stops(self.enriched_systematic)
+            self._rdf_graph.add_moves(self._moves, self._enrich_moves)
+            self._rdf_graph.add_occasional_stops(self._enriched_occasional)
+            self._rdf_graph.add_systematic_stops(self._enriched_systematic)
             
             # Add weather information to the trajectories.
             if df_weather_enrichment is not None :
-                builder.add_weather(df_weather_enrichment)
+                self._rdf_graph.add_weather(df_weather_enrichment)
                 
             # Add weather information to the trajectories.
             if tweets_RDF is not None :
-                builder.add_social(tweets_RDF)
-            
-            # Output the RDF graph to disk in Turtle format
-            print("Saving the KG to disk!")
-            builder.serialize_graph('kg.ttl')
+                self._rdf_graph.add_social(tweets_RDF)
 
         print("Enrichment complete!")
            
     def get_results(self) -> dict:
-        return {'trajectories' : self.trajectories if self.trajectories is not None else None,
-                'moves' : self.moves.copy() if self.moves is not None else None,
-                'occasional' : self.occasional.copy() if self.occasional is not None else None,
-                'systematic' : self.systematic.copy() if self.systematic is not None else None,
-                'enriched_systematic': self.enriched_systematic.copy() if self.enriched_systematic is not None else None,
-                'enriched_occasional' : self.enriched_occasional.copy() if self.enriched_occasional is not None else None,
-                'tweets' : self.tweets.copy() if self.tweets is not None else None}
+        return {'trajectories' : self._trajectories if self._trajectories is not None else None,
+                'moves' : self._moves.copy() if self._moves is not None else None,
+                'occasional' : self._occasional.copy() if self._occasional is not None else None,
+                'systematic' : self._systematic.copy() if self._systematic is not None else None,
+                'enriched_systematic': self._enriched_systematic.copy() if self._enriched_systematic is not None else None,
+                'enriched_occasional' : self._enriched_occasional.copy() if self._enriched_occasional is not None else None,
+                'tweets' : self._tweets.copy() if self._tweets is not None else None,
+                'rdf_graph' : self._rdf_graph if self._rdf_graph is not None else None}
 
     def get_params_input(self) -> list[str] :
         return ['trajectories',
@@ -761,27 +758,29 @@ class Enrichment(ModuleInterface):
         
     def reset_state(self) :
         # These are the auxiliary fields internally used during the enrichment execution.
-        self.dbscan_epsilon = None
-        self.systematic_threshold = None
-        self.rdf = None
-        self.upload_weather = None
-        self.weather = None
-        self.upload_social = None
-        self.tweet_user = None
-        self.max_distance = None
-        self.path_poi = None
-        self.list_pois = None
-        self.poi_place = None
-        self.enrich_moves = None
+        self._dbscan_epsilon = None
+        self._systematic_threshold = None
+        self._create_rdf_graph = None
+        self._upload_weather = None
+        self._weather = None
+        self._upload_social = None
+        self._tweet_user = None
+        self._max_distance = None
+        self._path_poi = None
+        self._list_pois = None
+        self._poi_place = None
+        self._enrich_moves = None
 
         # These are the fundamental fields internally used during the enrichment execution, and that may
         # be exposed by a class instance (e.g., if the instance is used via a UI wrapper).
-        self.trajectories = None
-        self.stops = None
-        self.moves = None
+        self._trajectories = None
+        self._stops = None
+        self._moves = None
 
-        self.enriched_systematic = None
-        self.enriched_occasional = None
-        self.systematic = None
-        self.occasional = None
-        self.tweets = None
+        self._enriched_systematic = None
+        self._enriched_occasional = None
+        self._systematic = None
+        self._occasional = None
+        self._tweets = None
+
+        self._rdf_graph = None

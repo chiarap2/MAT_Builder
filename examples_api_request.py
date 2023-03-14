@@ -6,7 +6,7 @@ import pandas as pd
 
 def test_json() :
 
-    url = "http://127.0.0.1:8000/Preprocessing/"
+    url = "http://127.0.0.1:8000/semantic_processor/Preprocessing/"
     data = {'name': 'test', 'price': 300}
 
     res = requests.get(url, json = data)
@@ -16,7 +16,7 @@ def test_json() :
 
 def test_form() :
 
-    url = "http://127.0.0.1:8000/Preprocessing/"
+    url = "http://127.0.0.1:8000/semantic_processor/Preprocessing/"
     files = \
     {
         'num_samples': (None, 1500),
@@ -31,7 +31,7 @@ def test_form() :
 
 def test_preprocessing() :
 
-    url = "http://127.0.0.1:8000/semantic/Preprocessing/"
+    url = "http://127.0.0.1:8000/semantic_processor/Preprocessing/"
     files = \
     {
         'file_trajectories': ('trajectories.parquet', open('test_3.parquet', 'rb')),
@@ -51,7 +51,7 @@ def test_preprocessing() :
 
 def test_segmentation() :
 
-    url = "http://127.0.0.1:8000/semantic/Segmentation/"
+    url = "http://127.0.0.1:8000/semantic_processor/Segmentation/"
     files = \
     {
         'file_trajectories': ('trajectories.parquet', open('preprocessed_trajectories.parquet', 'rb')),
@@ -65,7 +65,6 @@ def test_segmentation() :
 
     stops = pd.DataFrame.from_dict(res.json()['stops'])
     moves = pd.DataFrame.from_dict(res.json()['moves'])
-
     print(stops.info())
     print(moves.info())
 
@@ -78,6 +77,7 @@ def main() :
     # test_form()
     test_preprocessing()
     test_segmentation()
+    # test_enrichment()
 
 
 if __name__ == '__main__':
