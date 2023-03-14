@@ -1,4 +1,5 @@
 import pandas as pd
+import geopandas as gpd
 import uuid
 import os
 
@@ -36,7 +37,7 @@ class API_Enrichment(Enrichment) :
                                  'stops': pd.read_parquet(file_stops.file),
                                  'poi_place': 'Rome, Italy',  # IGNORED, if path_poi is not None.
                                  'poi_categories': None,  # ['amenity'],  # IGNORED, if path_poi is not None.
-                                 'path_poi': pd.read_parquet(file_pois.file),
+                                 'path_poi': gpd.read_parquet(file_pois.file),
                                  'max_dist': max_dist,
                                  'dbscan_epsilon': dbscan_epsilon,
                                  'systematic_threshold': systematic_threshold,
@@ -47,7 +48,7 @@ class API_Enrichment(Enrichment) :
 
             # Now create a temporary file on disk, and instruct FASTAPI to delete the file once the function has terminated.
             namefile = str(uuid.uuid4()) + ".ttl"
-            self._graph.serialize_graph(namefile)
+            self._rdf_graph.serialize_graph(namefile)
             background_tasks.add_task(os.remove, namefile)
 
             # Return the response (will be a file).
