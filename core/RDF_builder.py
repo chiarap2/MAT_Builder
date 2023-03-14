@@ -1,7 +1,4 @@
-import geopandas as gpd
 import pandas as pd
-import math
-
 import itertools
 
 from rdflib import Graph, Namespace
@@ -113,7 +110,7 @@ class RDFBuilder() :
     
     
     ### METODI PUBBLICI ###
-    
+
     def add_trajectories(self, df_raw_traj) :
         
         df_raw_traj['datetime'] = pd.to_datetime(df_raw_traj['datetime'], utc = True)
