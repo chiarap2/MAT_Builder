@@ -46,10 +46,12 @@ class API_Enrichment(Enrichment) :
                                  'create_rdf': True}
             self.execute(params_enrichment)
 
+
             # Now create a temporary file on disk, and instruct FASTAPI to delete the file once the function has terminated.
             namefile = str(uuid.uuid4()) + ".ttl"
             self._rdf_graph.serialize_graph(namefile)
             background_tasks.add_task(os.remove, namefile)
+
 
             # Return the response (will be a file).
             return FileResponse(path = namefile, filename = 'results.ttl')
