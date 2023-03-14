@@ -111,7 +111,7 @@ The ```InteractiveEnrichment``` module takes in input the preprocessed trajector
 
 ## **Datasets**
 
-For more details on the datasets, please have a look at the ```datasets``` folder.
+For more details, please have a look at the ```datasets``` folder.
 
 ## **Citing us**
 
