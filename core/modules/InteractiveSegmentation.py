@@ -11,7 +11,8 @@ from .Segmentation import Segmentation
 
 class InteractiveSegmentation(InteractiveModuleInterface):
     '''
-    `stops_and_moves` models a class which instances segment trajectories according to the stop and move paradigm.
+    `InteractiveSegmentation` acts as a graphical wrapper of a `Segmentation` module instance.
+    An instance of this class must be used within an instance of the 'InteractivePipeline' class.
     '''
     
     

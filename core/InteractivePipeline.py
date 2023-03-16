@@ -8,15 +8,24 @@ from dash.dependencies import Input, Output, State, MATCH, ALL
 
 class InteractivePipeline():
     '''
-    Class `InteractivePipeline` models an entity that contains a list of modules that should be run
-    sequentially -- for instance,  `preprocessing`, `segmentation`, and `enrichment`.
+    The class `InteractivePipeline` models an interactive pipeline that must manage a sequence of modules making up a semantic enrichment process.
+    The pipeline executes the task logics of the modules sequentially -- for instance, a semantic enrichment process that includes the tasks
+    `preprocessing`, `segmentation`, and `enrichment` will execute the task logic of the associated modules in that order.
     '''
 
     ### CLASS CONSTRUCTOR ###
 
-    def __init__(self, app, list_modules : list[InteractiveModuleInterface]):
+    def __init__(self, app : Dash, list_modules : list[InteractiveModuleInterface]):
         '''
-        The constructor of this class defines the modules that will be applied, and the order of application.
+        The constructor of this class takes in input the type references of the modules that must manage, the order of execution,
+        and the dependencies between their inputs and their outputs.
+
+        Parameters
+        ----------
+        app : Dash
+            Dash UI interface.
+        list_modules : list[InteractiveModuleInterface]
+            Type references of the interactive modules that must be executed by the interactive pipeline.
         '''
         
         ### Here we register the Dash app within the pipeline ###
@@ -58,7 +67,7 @@ class InteractivePipeline():
     
     def _setup_css_styles(self) :
         '''
-        This function defines the CSS style to be used for the UI.
+        This method defines the CSS style to be used for the UI.
         '''
     
         # CSS style parameters declarations/definitions #
@@ -106,6 +115,13 @@ class InteractivePipeline():
     
     
     def _setup_app_layout(self) :
+        '''
+        This method sets up the initial state of the UI. The UI will be arranged according to the following areas:
+            - Tab selector area: here the user will be able to select the module they want to execute.
+            - Input area: area used by the modules to show to the users which input parameters are required, and to get from the
+              users the values for such parameters.
+            - Output area: area used by the modules to give graphical feedback once they have executed their internal task logic.
+        '''
     
         ### Here we set up the tabs, which depend on the subclasses found in demo. ###
         ### These tabs are added to the list children_tabs, which will be then inserted into the web interface. ###
@@ -157,6 +173,15 @@ class InteractivePipeline():
     ### PUBLIC METHODS ###
     
     def setup_input_output_areas(self, name_module : str):
+        '''
+        This method is invoked when a user selects a specific module in the tab selector area, and prepares the input and output areas
+        specifically for the needs of the selected module.
+
+        Parameters
+        ----------
+        name_module : str
+            Identifier of the module that has been selected by the user in the tab selector area.
+        '''
 
         print(f"show_input invoked! Tab: {name_module}")
         

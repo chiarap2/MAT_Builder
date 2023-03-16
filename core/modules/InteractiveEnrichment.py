@@ -17,11 +17,8 @@ from .Enrichment import Enrichment
 
 class InteractiveEnrichment(InteractiveModuleInterface):
     '''
-    `InteractiveEnrichment` is a class that models the semantic enrichment module. This class allows to:
-    1) enrich moves with transportation mean
-    2) enrich stops labeling them as occasional and systematic ones
-        2.a) occasional stops are enriched with PoIs, weather, etc.
-        2.b) systematic stops are enriched as home/work or other
+    `InteractiveEnrichment` acts as a graphical wrapper of a `Enrichment` module instance.
+    An instance of this class must be used within an instance of the 'InteractivePipeline' class.
     '''
 
 

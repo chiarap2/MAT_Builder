@@ -18,16 +18,16 @@ from core.RDF_builder import RDFBuilder
 
 class Enrichment(ModuleInterface):
     '''
-    `Enrichment` is a class that models the semantic enrichment module. An instance of this class:
+    This class models the semantic enrichment module. More specifically, an instance of this class:
 
-    1) enriches the trajectories with the moves, along with the estimated transportation means
-    2) enriches the trajectories with stops, either occasional or systematic. Moreover:
-        2.a) occasional stops are further augmented with PoIs, weather, etc.
-        2.b) systematic stops are further augmented with labels indicating whether they represent home, work, or other.
-    3) enriches the trajectories with weather information.
-    4) enriches the trajectory users with the social media posts they have written.
+    - enriches the trajectories with the moves, and if requested augments the moves with the estimated transportation means
+    - enriches the trajectories with stops, either occasional or systematic. Moreover:
+        - occasional stops are further augmented with PoIs, and weather conditions.
+        - systematic stops are further augmented with the activity associated with them, i.e., home, work, or other.
+    - enriches the trajectories with weather information.
+    - enriches the trajectory users with the social media posts they have written.
 
-    Finally, the class uses the RDF_Builder class to build a knowledge graph containing the enriched trajectories.
+    Finally, the class uses the `RDF_Builder` class to build a knowledge graph containing the enriched trajectories.
     The KG is populated according to a customized version of the STEPv2 ontology.
     '''
 
@@ -458,8 +458,37 @@ class Enrichment(ModuleInterface):
     ### CLASS PUBLIC METHODS ###
         
     def execute(self, dic_params : dict) -> bool :
+        """
+        This method executes the task logic associated with the Enrichment module.
 
-        # Parsing the input received from the UI / user...
+        Parameters
+        ----------
+        dic_params : dict
+            Dictionary that provides the input required by the module to execute its internal task logic.
+            The dictionary contains (key,value) pairs, where key is the name of a specific input parameter and value
+            the value passed for that input parameter.
+            The input parameters that must be passed within 'dic_params' are:
+                - 'trajectories': pandas DataFrame containing the trajectory dataset.
+                - 'moves': pandas DataFrame containing the move segments.
+                - 'move_enrichment': bool value specifying whether the move segments must be augmented with the estimated transportation means.
+                - 'stops': pandas DataFrame containing the stop segments.
+                - 'poi_place': address of the region whose POIs will be downloaded from OpenStreetMap. NOTE: ignored if 'path_poi' is not None.
+                - 'poi_categories': categories of the POIs that will be downloaded from OpenStreetMap. NOTE: ignored if 'path_poi' is not None.
+                - 'path_poi': GeoPandas DataFrame containing the POI dataset (pass 'None' if POIs must be downloaded from OSM).
+                - 'max_dist': int parameter specifying the maximum distance beyond which a POI won't be associated with a stop segment.
+                - 'dbscan_epsilon': float parameter specifying the epsilon distance used by DBSCAN while clustering stop segments in order to find systematic stops.
+                - 'systematic_threshold': int parameter specifying the minimum size required for a cluster of stops to exist (used internally by DBSCAN).
+                - 'social_enrichment': pandas DataFrame containing the dataset of social media posts. If 'None', the social media aspect will be ignored.
+                - 'weather_enrichment': pandas DataFrame containing the dataset of historical weather information. If 'None', the weather aspect will be ignored.
+                - 'create_rdf': bool value indicating whether a final RDF knowledge graph containing the multiple aspect trajectories must be generated.
+
+        Returns
+        -------
+            execution_status : bool
+                'True' if the execution went well, 'False' otherwise.
+        """
+
+        # Parsing the input received from the user.
 
         # 0 - Trajectories
         self._trajectories = pd.DataFrame(dic_params['trajectories'])

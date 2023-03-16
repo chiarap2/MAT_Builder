@@ -13,8 +13,8 @@ from .Preprocessing import Preprocessing
 
 class InteractivePreprocessing(InteractiveModuleInterface):
     '''
-    `InteractivePreprocessing` acts as a graphical wrapper of a `Preprocessing` instance. To be used within an
-    'InteractivePipeline' object.
+    `InteractivePreprocessing` acts as a graphical wrapper of a `Preprocessing` module instance.
+    An instance of this class must be used within an instance of the 'InteractivePipeline' class.
     '''
 
 
@@ -61,7 +61,6 @@ class InteractivePreprocessing(InteractiveModuleInterface):
     ### PUBLIC CLASS METHODS ###
 
     def get_dependencies(self) -> list[InteractiveModuleInterface]:
-
         return []
     
     def register_modules(self, list_modules : list[InteractiveModuleInterface]):

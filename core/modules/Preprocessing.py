@@ -8,6 +8,13 @@ from core.ModuleInterface import ModuleInterface
 
 
 class Preprocessing(ModuleInterface) :
+    '''
+    This class models the preprocessing module. More specifically, an instance of this class takes in input a dataset of trajectories and:
+
+    1) Filters out the outliers from the trajectories, i.e., samples which have an anomalous speed.
+    2) removes the trajectories that have a number of samples below a specified threshold.
+    3) If requested by the user, compresses the trajectories obtained after applying the steps 1 and 2.
+    '''
 
     ### CLASS PUBLIC STATIC FIELDS ###
 
@@ -57,6 +64,27 @@ class Preprocessing(ModuleInterface) :
         self._results.to_parquet(self.path_output)
 
     def execute(self, dic_params: dict) -> bool :
+        """
+        This method executes the task logic associated with the Preprocessing module.
+
+        Parameters
+        ----------
+        dic_params : dict
+            Dictionary that provides the input required by the module to execute its internal task logic.
+            The dictionary contains (key,value) pairs, where key is the name of a specific input parameter and value
+            the value passed for that input parameter.
+            The input parameters that must be passed within 'dic_params' are:
+                - 'trajectories': pandas DataFrame containing the trajectory dataset.
+                - 'speed': float value specifying the speed beyond which a trajectory sample is considered an outlier to be removed.
+                - 'n_points': int value specifying the number of samples below which a trajectory will be removed from the dataset.
+                - 'compress': bool value specifying whether the trajectory dataset must be compressed or not. Such step is perfomed
+                              after the outliers have been removed and the trjectories with few samples have been removed from the dataset.
+
+        Returns
+        -------
+            execution_status : bool
+                'True' if the execution went well, 'False' otherwise.
+        """
 
         # Salva nei campi dell'istanza l'input passato
         self._trajectories = dic_params['trajectories']

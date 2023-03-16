@@ -9,7 +9,7 @@ from core.ModuleInterface import ModuleInterface
 
 class Segmentation(ModuleInterface):
     '''
-    Segmentation models a class which instances segment trajectories according to the stop and move paradigm.
+    'Segmentation' models a class that segments a dataset of trajectories according to the stop and move paradigm.
     '''
 
     ### CLASS PUBLIC STATIC FIELDS ###
@@ -29,6 +29,25 @@ class Segmentation(ModuleInterface):
 
     ### CLASS PUBLIC METHODS ###
     def execute(self, dic_params: dict) -> bool:
+        """
+        This method executes the task logic associated with the Segmentation module.
+
+        Parameters
+        ----------
+        dic_params : dict
+            Dictionary that provides the input required by the module to execute its internal task logic.
+            The dictionary contains (key,value) pairs, where key is the name of a specific input parameter and value
+            the value passed for that input parameter.
+            The input parameters that must be passed within 'dic_params' are:
+                - 'trajectories': pandas DataFrame containing the trajectory dataset.
+                - 'duration': int value specifying the minimum duration of a stop.
+                - 'radius': float value specifying the maximum radius a stop can have.
+
+        Returns
+        -------
+            execution_status : bool
+                'True' if the execution went well, 'False' otherwise.
+        """
 
         # Salva nei campi dell'istanza l'input passato
         self.trajectories = dic_params['trajectories']
