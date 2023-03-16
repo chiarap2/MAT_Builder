@@ -24,7 +24,7 @@ class API_Enrichment(Enrichment) :
 
     ### PUBLIC CLASS CONSTRUCTOR ###
 
-    def __init__(self, app : FastAPI):
+    def __init__(self, app : FastAPI) :
 
         # Execute the superclass constructor.
         super().__init__()
