@@ -28,7 +28,7 @@ class API_Preprocessing(Preprocessing) :
         super().__init__()
 
         # Declare the path function operations associated with the API_Preprocessing class.
-        @app.get("/semantic_processor/" + Preprocessing.id_class + "/")
+        @app.get("/semantic_processor/" + Preprocessing.id_class + "/", response_class=FileResponse)
         def preprocess(background_tasks : BackgroundTasks,
                        file_trajectories: UploadFile,
                        params: API_Preprocessing.Params = Depends()) -> FileResponse :

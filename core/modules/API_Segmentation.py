@@ -14,6 +14,10 @@ class API_Segmentation(Segmentation) :
         min_duration_stop: int = Query(...)
         max_stop_radius: float = Query(...)
 
+    class Results(BaseModel):
+        stops : dict
+        moves : dict
+
 
 
     ### PUBLIC CLASS CONSTRUCTOR ###
@@ -26,7 +30,7 @@ class API_Segmentation(Segmentation) :
         # Declare the path function operations associated with the API_Preprocessing class.
         @app.get("/semantic_processor/" + Segmentation.id_class + "/")
         def segment(file_trajectories : UploadFile,
-                    params: API_Segmentation.Params = Depends()) :
+                    params: API_Segmentation.Params = Depends()) -> API_Segmentation.Results:
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
             params_segmentation = {'trajectories': pd.read_parquet(file_trajectories.file),
