@@ -38,7 +38,12 @@ MAT-Builder consists of a set of Python scripts (plus a set of additional assets
 
 ## **Usage**
 
-To use ```MAT-Builder``` with the graphical interface, run ```mat_builder_ui_example.py```
+- For an example on how to use ```MAT-Builder``` via a graphical interface, run ```mat_builder_ui_example.py```.
+  The script also shows how different interactive semantic enrichment processes can be easily instantiated.
+- To use ```MAT-Builder``` via the command line interface run the script ```mat_builder_cli_example.py```.
+- To use the modules provided with ```MAT-Builder```as API services, please execute the script ```mat_builder_api_example.py```, which sets up the API
+  services associated with the modules, and subsequently the script ```examples_api_request```, which uses the aforementioned
+  services via API requests.
 
 
 
@@ -47,13 +52,13 @@ To use ```MAT-Builder``` with the graphical interface, run ```mat_builder_ui_exa
 ``MAT-Builder`` revolves around the notion of ***MAT-building pipeline***, which is a
 semantic enrichment process orchestrated conducted according to a sequence of steps. Each step
 represents a specific macro-task and is implemented via a module that extends the
-``InteractiveModuleInterface`` abstract class. Currently, there are three modules that have been
-included in ``MAT-Builder``'s current version: ***trajectory preprocessing***, ***trajectory 
-segmentation***, and ***enrichment***. To see how the modules can be used to set up a MAT-building pipeline please see
-the script ``mat_builder_ui_example.py``. 
+``InteractiveModuleInterface`` abstract class. Currently, there are three interactive modules that have been
+included in ``MAT-Builder``'s current version: ```InteractivePreprocessing```, ```InteractiveSegmentation```, and ```InteractiveEnrichment```. To see how the modules can be used to set up a MAT-building pipeline please see
+the script ``mat_builder_ui_example.py``. For more detailed information on the modules included with ```MAT-Builder```, see the 
+README.md within the ```core``` folder.
 
 
-The ``InteractivePreprocessing`` module implements the trajectory preprocessing step. It takes in input a dataset of raw trajectories and let users:
+The ``InteractivePreprocessing`` module provides a graphical interface to the ```Preprocessing``` module. It takes in input a dataset of raw trajectories and let users:
 - remove outliers
 - remove trajectories with few points
 - compress trajectories
@@ -66,10 +71,10 @@ stored in the Parquet format, and have the following columns:
 - ```lon```: longitude of a trajectory sample (float)
 - ```time```: timestamp of a sample (datetime64)
 
-The ``InteractiveSegmentation`` module implements the trajectory segmentation step. It takes in input a set of preprocessed trajectories, and segments
+The ``InteractiveSegmentation`` module provides a graphical interface to the ```Segmentation``` module. It takes in input a set of preprocessed trajectories, and segments
 each trajectory into ***stop*** and ***move segments***.
 
-The ```InteractiveEnrichment``` module takes in input the preprocessed trajectories, as well as their stop and move segments, and enriches trajectories and trajectory users with aspects
+The ``InteractiveEnrichment`` module provides a graphical interface to the ```Enrichment``` module. The ```InteractiveEnrichment``` module takes in input the preprocessed trajectories, as well as their stop and move segments, and enriches trajectories and trajectory users with aspects
 (or semantic dimensions). The aspects currently supported by the module are as follows:
 - **Regularity**: stop segments are categorized into:
   - *systematic stops*: stops that fall in the same area more than a given number of times. They are augmented with the labels  *Home*, *Work* or *Other*.
@@ -111,7 +116,7 @@ The ```InteractiveEnrichment``` module takes in input the preprocessed trajector
 
 ## **Datasets**
 
-For more details, please have a look at the ```datasets``` folder.
+For more details, please see the ```README.md``` in the ```datasets``` folder.
 
 ## **Citing us**
 
@@ -122,9 +127,11 @@ enriched trajectories, in: The 23rd IEEE International Conference on Mobile Data
 
 ```
 @inproceedings{Pugliese22,
-author = {Chiara Pugliese  and Francesco Lettich  and Chiara Renso and Fabio Pinelli},
-title = { MAT-Builder: a System to Build Semantically Enriched Trajectories},
-booktitle = {The 23rd IEEE International Conference on Mobile Data Management, Cyprus},
-year = {2022}
+title={Mat-builder: a system to build semantically enriched trajectories},
+author={Pugliese, Chiara and Lettich, Francesco and Renso, Chiara and Pinelli, Fabio},
+booktitle={2022 23rd IEEE International Conference on Mobile Data Management (MDM)},
+pages={274--277},
+year={2022},
+organization={IEEE}
 }
 ```
