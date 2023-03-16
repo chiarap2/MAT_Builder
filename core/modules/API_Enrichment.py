@@ -30,15 +30,15 @@ class API_Enrichment(Enrichment) :
         super().__init__()
 
         # Declare the path function operations associated with the API_Preprocessing class.
-        @app.get("/semantic_processor/" + self.id_class + "/")
-        async def enrich(file_trajectories : UploadFile,
-                         file_moves : UploadFile,
-                         file_stops: UploadFile,
-                         file_pois: UploadFile,
-                         file_social: UploadFile,
-                         file_weather: UploadFile,
-                         params: API_Enrichment.Params = Depends(),
-                         background_tasks : BackgroundTasks = None) -> FileResponse :
+        @app.get("/semantic_processor/" + Enrichment.id_class + "/")
+        def enrich(background_tasks : BackgroundTasks,
+                   file_trajectories : UploadFile,
+                   file_moves : UploadFile,
+                   file_stops: UploadFile,
+                   file_pois: UploadFile,
+                   file_social: UploadFile,
+                   file_weather: UploadFile,
+                   params: API_Enrichment.Params = Depends()) -> FileResponse :
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
             params_enrichment = {'trajectories': pd.read_parquet(file_trajectories.file),
@@ -60,8 +60,10 @@ class API_Enrichment(Enrichment) :
             # Now create a temporary file on disk, and instruct FASTAPI to delete the file once the function has terminated.
             namefile = str(uuid.uuid4()) + ".ttl"
             self._rdf_graph.serialize_graph(namefile)
-            background_tasks.add_task(os.remove, namefile)
 
+            # Reset the object state and remove the temporary file once it's been transmitted to the user.
+            self.reset_state()
+            background_tasks.add_task(os.remove, namefile)
 
             # Return the response (will be a file).
             return FileResponse(path = namefile, filename = 'results.ttl')

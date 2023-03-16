@@ -96,9 +96,9 @@ def test_enrichment(path_trajs : str,
 
 
 def main() :
-    # test_preprocessing('./datasets/rome/rome.parquet')
+    test_preprocessing('./datasets/rome/rome.parquet')
     # test_segmentation('./preprocessed_trajectories.parquet')
-    test_enrichment('./preprocessed_trajectories.parquet', './moves.parquet', './stops.parquet', './datasets/rome/poi/pois.parquet', './datasets/rome/tweets/tweets_rome.parquet', './datasets/rome/weather/weather_conditions.parquet')
+    # test_enrichment('./preprocessed_trajectories.parquet', './moves.parquet', './stops.parquet', './datasets/rome/poi/pois.parquet', './datasets/rome/tweets/tweets_rome.parquet', './datasets/rome/weather/weather_conditions.parquet')
 
 
 if __name__ == '__main__':

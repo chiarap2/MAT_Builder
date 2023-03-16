@@ -28,10 +28,10 @@ class API_Preprocessing(Preprocessing) :
         super().__init__()
 
         # Declare the path function operations associated with the API_Preprocessing class.
-        @app.get("/semantic_processor/" + self.id_class + "/")
-        async def preprocess(file_trajectories: UploadFile,
-                             params: API_Preprocessing.Params = Depends(),
-                             background_tasks : BackgroundTasks = None) -> FileResponse :
+        @app.get("/semantic_processor/" + Preprocessing.id_class + "/")
+        def preprocess(background_tasks : BackgroundTasks,
+                       file_trajectories: UploadFile,
+                       params: API_Preprocessing.Params = Depends()) -> FileResponse :
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
             params_preprocessing = {'trajectories': pd.read_parquet(file_trajectories.file),
@@ -43,7 +43,10 @@ class API_Preprocessing(Preprocessing) :
             # Now create a temporary file on disk, and instruct FASTAPI to delete the file once the function has terminated.
             namefile = str(uuid.uuid4()) + ".parquet"
             self._results.to_parquet(namefile)
+
+            # Reset the object internal state and delete the file once it has been transmitted in the response.
             background_tasks.add_task(os.remove, namefile)
+            self.reset_state()
 
             # Return the response (will be a file).
             return FileResponse(path = namefile, filename = 'preprocessed_trajectories.parquet')

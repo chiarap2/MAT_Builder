@@ -24,9 +24,9 @@ class API_Segmentation(Segmentation) :
         super().__init__()
 
         # Declare the path function operations associated with the API_Preprocessing class.
-        @app.get("/semantic_processor/" + self.id_class + "/")
-        async def segment(file_trajectories : UploadFile,
-                          params: API_Segmentation.Params = Depends()) :
+        @app.get("/semantic_processor/" + Segmentation.id_class + "/")
+        def segment(file_trajectories : UploadFile,
+                    params: API_Segmentation.Params = Depends()) :
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
             params_segmentation = {'trajectories': pd.read_parquet(file_trajectories.file),
@@ -36,8 +36,12 @@ class API_Segmentation(Segmentation) :
             self.execute(params_segmentation)
 
 
-            # Return a JSON response containing the stops and moves dataframes (translated to JSON).
+            # Construct the (dict) response, containing the stops and moves dataframes (will be automatically translated to JSON by FastAPI).
+            results = {'stops' : self.stops.to_dict(),
+                       'moves' : self.moves.to_dict()}
 
-            # 2 - we can then return a dict containing the stops and moves dataframes.
-            return {'stops' : self.stops.to_dict(),
-                    'moves' : self.moves.to_dict()}
+            # Reset the object internal state.
+            self.reset_state()
+
+            # Return the results.
+            return results
