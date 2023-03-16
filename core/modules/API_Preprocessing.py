@@ -2,13 +2,25 @@ import pandas as pd
 import uuid
 import os
 
-from .Preprocessing import Preprocessing
-
-from fastapi import FastAPI, Form, UploadFile, BackgroundTasks
+from pydantic import BaseModel
+from fastapi import FastAPI, Depends, Query, UploadFile, BackgroundTasks
 from fastapi.responses import FileResponse
+
+from .Preprocessing import Preprocessing
 
 
 class API_Preprocessing(Preprocessing) :
+
+    ### INNER CLASSES ###
+
+    class Params(BaseModel):
+        min_num_samples: int = Query(...)
+        max_speed: float = Query(...)
+        compress_trajectories: bool = Query(...)
+
+
+
+    ### PUBLIC CLASS CONSTRUCTOR ###
 
     def __init__(self, app : FastAPI):
 
@@ -17,17 +29,15 @@ class API_Preprocessing(Preprocessing) :
 
         # Declare the path function operations associated with the API_Preprocessing class.
         @app.get("/semantic_processor/" + self.id_class + "/")
-        async def preprocess(background_tasks : BackgroundTasks,
-                             file_trajectories : UploadFile,
-                             min_num_samples : int = Form(),
-                             max_speed : float = Form(),
-                             compress_trajectories : bool = Form()) :
+        async def preprocess(file_trajectories: UploadFile,
+                             params: API_Preprocessing.Params = Depends(),
+                             background_tasks : BackgroundTasks = None) -> FileResponse :
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
             params_preprocessing = {'trajectories': pd.read_parquet(file_trajectories.file),
-                                    'speed': max_speed,
-                                    'n_points': min_num_samples,
-                                    'compress': compress_trajectories}
+                                    'speed': params.max_speed,
+                                    'n_points': params.min_num_samples,
+                                    'compress': params.compress_trajectories}
             self.execute(params_preprocessing)
 
             # Now create a temporary file on disk, and instruct FASTAPI to delete the file once the function has terminated.
@@ -37,6 +47,3 @@ class API_Preprocessing(Preprocessing) :
 
             # Return the response (will be a file).
             return FileResponse(path = namefile, filename = 'preprocessed_trajectories.parquet')
-
-
-

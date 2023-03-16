@@ -5,11 +5,24 @@ import os
 
 from .Enrichment import Enrichment
 
-from fastapi import FastAPI, Form, UploadFile, BackgroundTasks
+from pydantic import BaseModel
+from fastapi import FastAPI, Depends, Query, UploadFile, BackgroundTasks
 from fastapi.responses import FileResponse
 
 
 class API_Enrichment(Enrichment) :
+
+    ### INNER CLASSES ###
+
+    class Params(BaseModel):
+        move_enrichment: bool = Query(...)
+        max_dist: int = Query(...)
+        dbscan_epsilon: int = Query(...)
+        systematic_threshold : int = Query(...)
+
+
+
+    ### PUBLIC CLASS CONSTRUCTOR ###
 
     def __init__(self, app : FastAPI):
 
@@ -18,29 +31,26 @@ class API_Enrichment(Enrichment) :
 
         # Declare the path function operations associated with the API_Preprocessing class.
         @app.get("/semantic_processor/" + self.id_class + "/")
-        async def enrich(background_tasks : BackgroundTasks,
-                         file_trajectories : UploadFile,
+        async def enrich(file_trajectories : UploadFile,
                          file_moves : UploadFile,
                          file_stops: UploadFile,
                          file_pois: UploadFile,
                          file_social: UploadFile,
                          file_weather: UploadFile,
-                         move_enrichment : bool = Form(),
-                         max_dist : int = Form(),
-                         dbscan_epsilon : int = Form(),
-                         systematic_threshold : int = Form()) :
+                         params: API_Enrichment.Params = Depends(),
+                         background_tasks : BackgroundTasks = None) -> FileResponse :
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
             params_enrichment = {'trajectories': pd.read_parquet(file_trajectories.file),
                                  'moves': pd.read_parquet(file_moves.file),
-                                 'move_enrichment': move_enrichment,
+                                 'move_enrichment': params.move_enrichment,
                                  'stops': pd.read_parquet(file_stops.file),
                                  'poi_place': 'Rome, Italy',  # IGNORED, if path_poi is not None.
                                  'poi_categories': None,  # ['amenity'],  # IGNORED, if path_poi is not None.
                                  'path_poi': gpd.read_parquet(file_pois.file),
-                                 'max_dist': max_dist,
-                                 'dbscan_epsilon': dbscan_epsilon,
-                                 'systematic_threshold': systematic_threshold,
+                                 'max_dist': params.max_dist,
+                                 'dbscan_epsilon': params.dbscan_epsilon,
+                                 'systematic_threshold': params.systematic_threshold,
                                  'social_enrichment': pd.read_parquet(file_social.file),
                                  "weather_enrichment": pd.read_parquet(file_weather.file),
                                  'create_rdf': True}

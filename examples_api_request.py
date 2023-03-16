@@ -6,42 +6,12 @@ import re
 url_service = "http://127.0.0.1:8000/semantic_processor/"
 
 
-def test_json() :
+def test_preprocessing(pathfile : str) :
 
     url = url_service + "Preprocessing/"
-    data = {'name': 'test', 'price': 300}
-
-    res = requests.get(url, json = data)
-    print(res.status_code)
-    print(res.json())
-
-
-def test_form() :
-
-    url = url_service + "Preprocessing/"
-    files = \
-    {
-        'num_samples': (None, 1500),
-        'speed': (None, 300),
-        'compression': (None, True)
-    }
-
-    res = requests.get(url, files = files)
-    print(res.status_code)
-    print(res.json())
-
-
-def test_preprocessing() :
-
-    url = url_service + "Preprocessing/"
-    files = \
-    {
-        'file_trajectories': ('trajectories.parquet', open('./datasets/rome/rome.parquet', 'rb')),
-        'min_num_samples': (None, 1500),
-        'max_speed': (None, 300),
-        'compress_trajectories': (None, True)
-    }
-    res = requests.get(url, files = files)
+    parameters = {'max_speed' : 300, 'min_num_samples' : 1500, 'compress_trajectories' : True}
+    files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
+    res = requests.get(url, params = parameters, files = files)
 
 
     print(res)
@@ -59,17 +29,13 @@ def test_preprocessing() :
     print(test_file.info())
 
 
-def test_segmentation() :
+def test_segmentation(pathfile : str) :
 
     url = url_service + "Segmentation/"
-    files = \
-    {
-        'file_trajectories': ('trajectories.parquet', open('preprocessed_trajectories.parquet', 'rb')),
-        'min_duration_stop': (None, '10'),
-        'max_stop_radius': (None, '0.2')
-    }
+    params = {'min_duration_stop': 10, 'max_stop_radius': 0.2}
+    files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
 
-    res = requests.get(url, files = files)
+    res = requests.get(url, params = params, files = files)
     print(res)
     print(res.status_code)
 
@@ -90,23 +56,31 @@ def test_segmentation() :
     moves.to_parquet('moves.parquet')
 
 
-def test_enrichment() :
+def test_enrichment(path_trajs : str,
+                    path_moves : str,
+                    path_stops : str,
+                    path_pois : str,
+                    path_social : str,
+                    path_weather : str) :
 
     url = url_service + "Enrichment/"
+    params =\
+    {
+        'move_enrichment': True,
+        'max_dist': 50,
+        'dbscan_epsilon': 50,
+        'systematic_threshold': 5
+    }
     files = \
     {
-        'file_trajectories': ('trajectories.parquet', open('./preprocessed_trajectories.parquet', 'rb')),
-        'file_moves': ('moves.parquet', open('./moves.parquet', 'rb')),
-        'file_stops': ('stops.parquet', open('./stops.parquet', 'rb')),
-        'file_pois': ('pois.parquet', open('./datasets/rome/poi/pois.parquet', 'rb')),
-        'file_social': ('social.parquet', open('./datasets/rome/tweets/tweets_rome.parquet', 'rb')),
-        'file_weather': ('weather.parquet', open('./datasets/rome/weather/weather_conditions.parquet', 'rb')),
-        'move_enrichment': (None, True),
-        'max_dist': (None, 50),
-        'dbscan_epsilon': (None, 50),
-        'systematic_threshold': (None, 5)
+        'file_trajectories': ('trajectories.parquet', open(path_trajs, 'rb')),
+        'file_moves': ('moves.parquet', open(path_moves, 'rb')),
+        'file_stops': ('stops.parquet', open(path_stops, 'rb')),
+        'file_pois': ('pois.parquet', open(path_pois, 'rb')),
+        'file_social': ('social.parquet', open(path_social, 'rb')),
+        'file_weather': ('weather.parquet', open(path_weather, 'rb'))
     }
-    res = requests.get(url, files = files)
+    res = requests.get(url, params = params, files = files)
 
 
     print(res)
@@ -122,9 +96,9 @@ def test_enrichment() :
 
 
 def main() :
-    # test_preprocessing()
-    # test_segmentation()
-    test_enrichment()
+    # test_preprocessing('./datasets/rome/rome.parquet')
+    # test_segmentation('./preprocessed_trajectories.parquet')
+    test_enrichment('./preprocessed_trajectories.parquet', './moves.parquet', './stops.parquet', './datasets/rome/poi/pois.parquet', './datasets/rome/tweets/tweets_rome.parquet', './datasets/rome/weather/weather_conditions.parquet')
 
 
 if __name__ == '__main__':
