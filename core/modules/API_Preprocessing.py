@@ -3,7 +3,7 @@ import uuid
 import os
 
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, Depends, Query, UploadFile, File, BackgroundTasks
+from fastapi import FastAPI, APIRouter, Depends, Query, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse
 
 from .Preprocessing import Preprocessing
@@ -22,15 +22,15 @@ class API_Preprocessing(Preprocessing) :
 
     ### PUBLIC CLASS CONSTRUCTOR ###
 
-    def __init__(self, app : FastAPI):
+    def __init__(self, router : APIRouter):
 
         # Execute the superclass constructor.
         super().__init__()
 
         # Declare the path function operations associated with the API_Preprocessing class.
-        @app.get("/semantic_processor/" + Preprocessing.id_class + "/",
-                 description="This path operation returns a dataset of preprocessed trajectories. The result is returned as a pandas DataFrame, stored in a Parquet file.",
-                 response_class=FileResponse)
+        @router.get("/" + Preprocessing.id_class + "/",
+                    description="This path operation returns a dataset of preprocessed trajectories. The result is returned as a pandas DataFrame, stored in a Parquet file.",
+                    response_class=FileResponse)
         def preprocess(background_tasks : BackgroundTasks,
                        file_trajectories: UploadFile = File(description="pandas DataFrame, stored in a Parquet file, containing a dataset of trajectories."),
                        params: API_Preprocessing.Params = Depends(API_Preprocessing.Params)) -> FileResponse :

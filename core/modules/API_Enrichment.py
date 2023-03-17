@@ -6,7 +6,7 @@ import os
 from .Enrichment import Enrichment
 
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, Depends, Query, UploadFile, File, BackgroundTasks
+from fastapi import FastAPI, APIRouter, Depends, Query, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse
 
 
@@ -24,15 +24,15 @@ class API_Enrichment(Enrichment) :
 
     ### PUBLIC CLASS CONSTRUCTOR ###
 
-    def __init__(self, app : FastAPI) :
+    def __init__(self, router : APIRouter) :
 
         # Execute the superclass constructor.
         super().__init__()
 
         # Declare the path function operations associated with the API_Preprocessing class.
-        @app.get("/semantic_processor/" + Enrichment.id_class + "/",
-                 description="This path operation returns a RDF knowledge graph. The result is returned in a Turtle (ttl) file.",
-                 response_class=FileResponse)
+        @router.get("/" + Enrichment.id_class + "/",
+                    description="This path operation returns a RDF knowledge graph. The result is returned in a Turtle (ttl) file.",
+                    response_class=FileResponse)
         def enrich(background_tasks : BackgroundTasks,
                    file_trajectories : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the trajectory dataset."),
                    file_moves : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the move segment dataset."),

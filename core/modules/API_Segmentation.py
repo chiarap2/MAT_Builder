@@ -1,7 +1,7 @@
 import pandas as pd
 
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, UploadFile, File, Query, Depends
+from fastapi import FastAPI, APIRouter, UploadFile, File, Query, Depends
 
 from .Segmentation import Segmentation
 
@@ -22,13 +22,13 @@ class API_Segmentation(Segmentation) :
 
     ### PUBLIC CLASS CONSTRUCTOR ###
 
-    def __init__(self, app : FastAPI):
+    def __init__(self, router : APIRouter):
 
         # Execute the superclass constructor.
         super().__init__()
 
         # Declare the path function operations associated with the API_Preprocessing class.
-        @app.get("/semantic_processor/" + Segmentation.id_class + "/")
+        @router.get("/" + Segmentation.id_class + "/")
         def segment(file_trajectories : UploadFile = File(description="pandas DataFrame, stored in a Parquet file, containing a dataset of trajectories."),
                     params: API_Segmentation.Params = Depends()) -> API_Segmentation.Results:
 
