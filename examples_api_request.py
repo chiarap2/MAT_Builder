@@ -3,7 +3,7 @@ import pandas as pd
 import re
 
 
-url_service = "http://127.0.0.1:8000/semantic_processor/"
+url_service = "http://127.0.0.1:8000/semantic/"
 
 
 def test_preprocessing(pathfile : str) :
@@ -16,6 +16,9 @@ def test_preprocessing(pathfile : str) :
 
     print(res)
     print(res.status_code)
+    if res.status_code != 200 :
+        print(f"Some error occurred. Code returned by the server: {res.status_code}")
+        return
 
 
     filename = "preprocessed_trajectories.parquet"
@@ -38,6 +41,9 @@ def test_segmentation(pathfile : str) :
     res = requests.get(url, params = params, files = files)
     print(res)
     print(res.status_code)
+    if res.status_code != 200 :
+        print(f"Some error occurred. Code returned by the server: {res.status_code}")
+        return
 
     # Translate the received stops and moves from json to dataframes.
     stops = pd.DataFrame.from_dict(res.json()['stops'])
@@ -85,6 +91,9 @@ def test_enrichment(path_trajs : str,
 
     print(res)
     print(res.status_code)
+    if res.status_code != 200 :
+        print(f"Some error occurred. Code returned by the server: {res.status_code}")
+        return
 
 
     filename = "kg.ttl"
@@ -98,7 +107,12 @@ def test_enrichment(path_trajs : str,
 def main() :
     test_preprocessing('./datasets/rome/rome.parquet')
     test_segmentation('./preprocessed_trajectories.parquet')
-    test_enrichment('./preprocessed_trajectories.parquet', './moves.parquet', './stops.parquet', './datasets/rome/poi/pois.parquet', './datasets/rome/tweets/tweets_rome.parquet', './datasets/rome/weather/weather_conditions.parquet')
+    test_enrichment('./preprocessed_trajectories.parquet',
+                    './moves.parquet',
+                    './stops.parquet',
+                    './datasets/rome/poi/pois.parquet',
+                    './datasets/rome/tweets/tweets_rome.parquet',
+                    './datasets/rome/weather/weather_conditions.parquet')
 
 
 if __name__ == '__main__':

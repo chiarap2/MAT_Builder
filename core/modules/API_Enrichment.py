@@ -29,10 +29,17 @@ class API_Enrichment(Enrichment) :
         # Execute the superclass constructor.
         super().__init__()
 
+
+        # Set up the HTTP responses that can be sent to the requesters.
+        responses = {200: {"content": {"application/octet-stream": {}},
+                           "description": "Return a RDF knowledge graph, stored in Turtle (ttl) format."},
+                     500: {"description" : "Some error occurred during the enrichment. Check the correctness of the files being provided in input!"}}
+
         # Declare the path function operations associated with the API_Preprocessing class.
         @router.get("/" + Enrichment.id_class + "/",
                     description="This path operation returns a RDF knowledge graph. The result is returned in a Turtle (ttl) file.",
-                    response_class=FileResponse)
+                    response_class=FileResponse,
+                    responses=responses)
         def enrich(background_tasks : BackgroundTasks,
                    file_trajectories : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the trajectory dataset."),
                    file_moves : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the move segment dataset."),

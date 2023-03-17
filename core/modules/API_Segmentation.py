@@ -27,8 +27,14 @@ class API_Segmentation(Segmentation) :
         # Execute the superclass constructor.
         super().__init__()
 
+
+        # Set up the HTTP responses that can be sent to the requesters.
+        responses = {500: {"description" : "Some error occurred during the trajectory segmentation. Check the correctness of the trajectory dataset being passed!"}}
+
         # Declare the path function operations associated with the API_Preprocessing class.
-        @router.get("/" + Segmentation.id_class + "/")
+        @router.get("/" + Segmentation.id_class + "/",
+                    description="This path operation segments a dataset of trajectories into stop and move segments. The operation returns the pandas DataFrames of the stops and the moves translated into the JSON format.",
+                    responses=responses)
         def segment(file_trajectories : UploadFile = File(description="pandas DataFrame, stored in a Parquet file, containing a dataset of trajectories."),
                     params: API_Segmentation.Params = Depends()) -> API_Segmentation.Results:
 

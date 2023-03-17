@@ -27,13 +27,20 @@ class API_Preprocessing(Preprocessing) :
         # Execute the superclass constructor.
         super().__init__()
 
+
+        # Set up the HTTP responses that can be sent to the requesters.
+        responses = {200: {"content": {"application/octet-stream": {}},
+                           "description": "Return a pandas DataFrame, stored in Parquet, containing the preprocessed trajectory dataset."},
+                     500: {"description" : "Some error occurred during the preprocessing. Check the correctness of the trajectory dataset being passed!"}}
+
         # Declare the path function operations associated with the API_Preprocessing class.
         @router.get("/" + Preprocessing.id_class + "/",
                     description="This path operation returns a dataset of preprocessed trajectories. The result is returned as a pandas DataFrame, stored in a Parquet file.",
-                    response_class=FileResponse)
+                    response_class=FileResponse,
+                    responses=responses)
         def preprocess(background_tasks : BackgroundTasks,
                        file_trajectories: UploadFile = File(description="pandas DataFrame, stored in a Parquet file, containing a dataset of trajectories."),
-                       params: API_Preprocessing.Params = Depends(API_Preprocessing.Params)) -> FileResponse :
+                       params: API_Preprocessing.Params = Depends(API_Preprocessing.Params)) :
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
             params_preprocessing = {'trajectories': pd.read_parquet(file_trajectories.file),
