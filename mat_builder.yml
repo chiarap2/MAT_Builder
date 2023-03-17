@@ -12,7 +12,6 @@ dependencies:
   - pandas
   - plotly
   - pyarrow
-  - pygeos
   - python=3.9
   - rdflib
   - jupyterlab
