@@ -2,8 +2,8 @@ import pandas as pd
 import uuid
 import os
 
-from pydantic import BaseModel
-from fastapi import FastAPI, Depends, Query, UploadFile, BackgroundTasks
+from pydantic import BaseModel, Field
+from fastapi import FastAPI, Depends, Query, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse
 
 from .Preprocessing import Preprocessing
@@ -14,9 +14,9 @@ class API_Preprocessing(Preprocessing) :
     ### INNER CLASSES ###
 
     class Params(BaseModel):
-        min_num_samples: int = Query(...)
-        max_speed: float = Query(...)
-        compress_trajectories: bool = Query(...)
+        min_num_samples: int = Field(Query(..., description="Minimum number of samples a trajectory must have to be considered."))
+        max_speed: float = Field(Query(..., description="Maximum speed a sample can have in a trajectory (in km/h)."))
+        compress_trajectories: bool = Field(Query(..., description="Boolean value determining whether the trajectories should be compressed. This can likely speed up subsequent enrichment steps."))
 
 
 
@@ -28,10 +28,12 @@ class API_Preprocessing(Preprocessing) :
         super().__init__()
 
         # Declare the path function operations associated with the API_Preprocessing class.
-        @app.get("/semantic_processor/" + Preprocessing.id_class + "/", response_class=FileResponse)
+        @app.get("/semantic_processor/" + Preprocessing.id_class + "/",
+                 description="This path operation returns a dataset of preprocessed trajectories. The result is returned as a pandas DataFrame, stored in a Parquet file.",
+                 response_class=FileResponse)
         def preprocess(background_tasks : BackgroundTasks,
-                       file_trajectories: UploadFile,
-                       params: API_Preprocessing.Params = Depends()) -> FileResponse :
+                       file_trajectories: UploadFile = File(description="pandas DataFrame, stored in a Parquet file, containing a dataset of trajectories."),
+                       params: API_Preprocessing.Params = Depends(API_Preprocessing.Params)) -> FileResponse :
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
             params_preprocessing = {'trajectories': pd.read_parquet(file_trajectories.file),
@@ -49,4 +51,4 @@ class API_Preprocessing(Preprocessing) :
             self.reset_state()
 
             # Return the response (will be a file).
-            return FileResponse(path = namefile, filename = 'preprocessed_trajectories.parquet')
+            return FileResponse(path = namefile, filename = 'preprocessed_trajectories.parquet', media_type='application/octet-stream')

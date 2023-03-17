@@ -1,7 +1,7 @@
 import pandas as pd
 
-from pydantic import BaseModel
-from fastapi import FastAPI, UploadFile, Query, Depends
+from pydantic import BaseModel, Field
+from fastapi import FastAPI, UploadFile, File, Query, Depends
 
 from .Segmentation import Segmentation
 
@@ -11,12 +11,12 @@ class API_Segmentation(Segmentation) :
     ### INNER CLASSES ###
 
     class Params(BaseModel):
-        min_duration_stop: int = Query(...)
-        max_stop_radius: float = Query(...)
+        min_duration_stop: int = Field(Query(..., description="Minimum duration of a stop (in minutes)."))
+        max_stop_radius: float = Field(Query(..., description="Maximum radius a stop can have (in kilometers)"))
 
     class Results(BaseModel):
-        stops : dict
-        moves : dict
+        stops : dict = Field(description="pandas DataFrame (translated in JSON) containing the stop segments.")
+        moves : dict = Field(description="pandas DataFrame (translated in JSON) containing the move segments.")
 
 
 
@@ -29,7 +29,7 @@ class API_Segmentation(Segmentation) :
 
         # Declare the path function operations associated with the API_Preprocessing class.
         @app.get("/semantic_processor/" + Segmentation.id_class + "/")
-        def segment(file_trajectories : UploadFile,
+        def segment(file_trajectories : UploadFile = File(description="pandas DataFrame, stored in a Parquet file, containing a dataset of trajectories."),
                     params: API_Segmentation.Params = Depends()) -> API_Segmentation.Results:
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...

@@ -5,8 +5,8 @@ import os
 
 from .Enrichment import Enrichment
 
-from pydantic import BaseModel
-from fastapi import FastAPI, Depends, Query, UploadFile, BackgroundTasks
+from pydantic import BaseModel, Field
+from fastapi import FastAPI, Depends, Query, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse
 
 
@@ -15,10 +15,10 @@ class API_Enrichment(Enrichment) :
     ### INNER CLASSES ###
 
     class Params(BaseModel):
-        move_enrichment: bool = Query(...)
-        max_dist: int = Query(...)
-        dbscan_epsilon: int = Query(...)
-        systematic_threshold : int = Query(...)
+        move_enrichment: bool = Field(Query(..., description="Boolean value specifying if the move segments should be augmented with the estimated transportation means."))
+        max_dist: int = Field(Query(..., description="Maximum distance beyond which a POI won't be associated with a stop segment."))
+        dbscan_epsilon: int = Field(Query(..., description="DBSCAN parameter: used to cluster stop segments (and thus find systematic stops). Determines the distance below which a stop can be included in an existing cluster."))
+        systematic_threshold : int = Field(Query(..., description="DBSCAN parameter: minimum size a cluster of stops must have to be considered a cluster of systematic stops."))
 
 
 
@@ -30,14 +30,16 @@ class API_Enrichment(Enrichment) :
         super().__init__()
 
         # Declare the path function operations associated with the API_Preprocessing class.
-        @app.get("/semantic_processor/" + Enrichment.id_class + "/", response_class=FileResponse)
+        @app.get("/semantic_processor/" + Enrichment.id_class + "/",
+                 description="This path operation returns a RDF knowledge graph. The result is returned in a Turtle (ttl) file.",
+                 response_class=FileResponse)
         def enrich(background_tasks : BackgroundTasks,
-                   file_trajectories : UploadFile,
-                   file_moves : UploadFile,
-                   file_stops: UploadFile,
-                   file_pois: UploadFile,
-                   file_social: UploadFile,
-                   file_weather: UploadFile,
+                   file_trajectories : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the trajectory dataset."),
+                   file_moves : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the move segment dataset."),
+                   file_stops: UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the stop segment dataset."),
+                   file_pois: UploadFile = File(description="GeoPandas DataFrame, stored in Parquet format, containing the POI dataset. Its content must be structured according to the GeoPandas DataFrames downloaded from OpenStreetMap via the OSMnx library."),
+                   file_social: UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the social media post dataset."),
+                   file_weather: UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the historical weather dataset."),
                    params: API_Enrichment.Params = Depends()) -> FileResponse :
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
