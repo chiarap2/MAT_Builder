@@ -7,6 +7,9 @@ from .Segmentation import Segmentation
 
 
 class API_Segmentation(Segmentation) :
+    '''
+    This class exposes the functionalities provided by the Segmentation module via an API endpoint.
+    '''
 
     ### INNER CLASSES ###
 

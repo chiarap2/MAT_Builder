@@ -10,6 +10,9 @@ from .Preprocessing import Preprocessing
 
 
 class API_Preprocessing(Preprocessing) :
+    '''
+    This class exposes the functionalities provided by the Preprocessing module via an API endpoint.
+    '''
 
     ### INNER CLASSES ###
 

@@ -11,6 +11,9 @@ from fastapi.responses import FileResponse
 
 
 class API_Enrichment(Enrichment) :
+    '''
+    This class exposes the functionalities provided by the Enrichment module via an API endpoint.
+    '''
 
     ### INNER CLASSES ###
 
