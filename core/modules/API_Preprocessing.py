@@ -68,12 +68,11 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
         # Set up the HTTP responses that can be sent to the requesters.
         responses_get = {200: {"content": {"application/octet-stream": {}},
                                "description": "Return a pandas DataFrame, stored in Parquet, containing the preprocessed trajectory dataset."},
-                         204: {"content": {"application/json": {}},
-                               "description": "The task is still being processed and thus the results are not available yet."},
+                         204: {"description": "The task is still being processed and thus the results are not available yet."},
                          404: {"content": {"application/json": {}},
                                "description": "Task does not exist."},
                          500: {"content": {"application/json": {}},
-                               "description": "Some error occurred during the preprocessing. Check the correctness of the trajectory dataset being passed."}}
+                               "description": "Some error occurred during the preprocessing. Check the correctness of the trajectory dataset being provided in input."}}
 
 
         # Declare the path function operations associated with the API_Preprocessing class.

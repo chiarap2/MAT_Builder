@@ -147,8 +147,8 @@ def main() :
     # task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
     # test_preprocessing_get("3db3b73c26ae49ce96f20cbfc3af0952")
 
-    # task_id = test_segmentation_post('./preprocessed_trajectories.parquet')
-    test_segmentation_get('b589afa622fc4b08976ff2594dd6acf0')
+    #task_id = test_segmentation_post('./preprocessed_trajectories.parquet')
+    test_segmentation_get('2230269670144674bb09ef25e0af70e4')
 
 
 if __name__ == '__main__':

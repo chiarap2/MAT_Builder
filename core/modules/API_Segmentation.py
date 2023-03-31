@@ -73,21 +73,21 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
 
         # Set up the HTTP responses that can be sent to the requesters.
         responses_get = {200: {"content": {"application/octet-stream": {}},
-                               "description": "Return a zip file containing the stop and move segments stored in two separate pandas Dataframes."},
-                         204: {"content": {"application/json": {}},
-                               "description": "The task is still being processed and thus the results are not available yet."},
+                               "description": "Returns two pandas DataFrames containing the stop and move segments, translated into JSON."},
+                         204: {"description": "The task is still being processed and thus the results are not available yet."},
                          404: {"content": {"application/json": {}},
                                "description": "Task does not exist."},
                          500: {"content": {"application/json": {}},
-                               "description": "Some error occurred during the segmentation. Check the correctness of the trajectory dataset being passed."}}
+                               "description": "Some error occurred during the segmentation. Check the correctness of the trajectory dataset being provided in input."}}
 
         # Declare the path function operations associated with the API_Preprocessing class.
         @router.get("/" + Segmentation.id_class + "/",
-                    description="This path operation returns a dataset of preprocessed trajectories." +
-                                "If ready, the result is returned as a pandas DataFrame, stored in a Parquet file.",
+                    description="If the task execution ended succesfully, the operation returns the pandas DataFrames of the stops" +
+                                " and the moves translated into the JSON format.",
+                    response_model=API_Segmentation.Results,
                     responses=responses_get)
         def segment(task_id : str = Query(description="Task ID associated with a previously done POST request."),
-                    token : str = Query(description="Token sent from the client.")) -> API_Segmentation.Results :
+                    token : str = Query(description="Token sent from the client.")) :
 
             # Now, find out whether the results are ready OR some error occurred OR the task is still being processed...
             # ...OR the task does not exist, and answer accordingly.
@@ -99,7 +99,6 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
 
             # 2 - Task terminated successfully.
             elif self.task_status[task_id] == API_Segmentation.TaskStatus.OK:
-                print("STOP MOVE OK!")
                 results = self.task_results[task_id]
                 del self.task_status[task_id]
                 del self.task_results[task_id]
@@ -117,8 +116,7 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
 
 
         @router.post("/" + Segmentation.id_class + "/",
-                     description="This path operation initiates a task that segments a dataset of trajectories into stop and move segments." +
-                                 "The operation returns the pandas DataFrames of the stops and the moves translated into the JSON format.",
+                     description="This path operation initiates a task that segments a dataset of trajectories into stop and move segments.",
                      responses=self.responses_post)
         def segment(background_tasks: BackgroundTasks,
                     file_trajectories: UploadFile = File(description="pandas DataFrame, stored in a Parquet file, containing a dataset of trajectories."),
