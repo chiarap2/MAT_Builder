@@ -495,6 +495,7 @@ class Enrichment(ModuleInterface):
 
         # 1 - moves parameters
         self._moves = dic_params['moves']
+        self._moves['datetime'] = pd.to_datetime(self._moves['datetime']) # Convert the dates in case they are strings...
         if dic_params['move_enrichment']:
             self._enrich_moves = True
         else:
@@ -503,6 +504,8 @@ class Enrichment(ModuleInterface):
 
         # 2 - Stops and POIs parameters
         self._stops = dic_params['stops']
+        self._stops['datetime'] = pd.to_datetime(self._stops['datetime']) # Convert the dates in case they are strings...
+        self._stops['leaving_datetime'] = pd.to_datetime(self._stops['leaving_datetime']) # Convert the dates in case they are strings...
         self._poi_place = dic_params['poi_place']
         self._list_pois = [] if dic_params['poi_categories'] is None else dic_params['poi_categories']
         self._path_poi = dic_params['path_poi']

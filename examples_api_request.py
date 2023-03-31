@@ -1,65 +1,10 @@
 import requests
 import pandas as pd
 import re
+from typing import Optional
 
 
 url_service = "http://127.0.0.1:8000/semantic/"
-
-
-def test_preprocessing(pathfile : str) :
-
-    url = url_service + "Preprocessing/"
-    parameters = {'max_speed' : 300, 'min_num_samples' : 1500, 'compress_trajectories' : True}
-    files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
-    res = requests.get(url, params = parameters, files = files)
-
-
-    print(res)
-    print(res.status_code)
-    if res.status_code != 200 :
-        print(f"Some error occurred. Code returned by the server: {res.status_code}")
-        return
-
-
-    filename = "preprocessed_trajectories.parquet"
-    if "content-disposition" in res.headers.keys():
-        filename = re.findall("filename=\"(.+)\"", res.headers['content-disposition'])[0]
-    print(f"Writing received file to: {filename}")
-    with open(filename, 'wb') as f:
-        f.write(res.content)
-
-    test_file = pd.read_parquet(filename)
-    print(test_file.info())
-
-
-def test_segmentation(pathfile : str) :
-
-    url = url_service + "Segmentation/"
-    params = {'min_duration_stop': 10, 'max_stop_radius': 0.2}
-    files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
-
-    res = requests.get(url, params = params, files = files)
-    print(res)
-    print(res.status_code)
-    if res.status_code != 200 :
-        print(f"Some error occurred. Code returned by the server: {res.status_code}")
-        return
-
-    # Translate the received stops and moves from json to dataframes.
-    stops = pd.DataFrame.from_dict(res.json()['stops'])
-    moves = pd.DataFrame.from_dict(res.json()['moves'])
-
-    # Translate the datetime fields from string (necessary to represent them in JSON) back to datetime64.
-    stops['datetime'] = pd.to_datetime(stops['datetime'])
-    stops['leaving_datetime'] = pd.to_datetime(stops['leaving_datetime'])
-    moves['datetime'] = pd.to_datetime(moves['datetime'])
-
-    print(stops.info())
-    print(moves.info())
-
-    # Store the dataframes into parquet files.
-    stops.to_parquet('stops.parquet')
-    moves.to_parquet('moves.parquet')
 
 
 def test_enrichment(path_trajs : str,
@@ -104,15 +49,106 @@ def test_enrichment(path_trajs : str,
         f.write(res.content)
 
 
+def test_preprocessing_post(pathfile : str) -> Optional[str]:
+
+    url = url_service + "Preprocessing/"
+    parameters = {'max_speed' : 300, 'min_num_samples' : 1500, 'compress_trajectories' : True, 'token' : 'aaa'}
+    files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
+    res = requests.post(url, params=parameters, files=files)
+
+
+    print(res)
+    if res.status_code != 200 :
+        print(f"Some error occurred. Code returned by the server: {res.status_code}")
+        print(res.json()['message'])
+        return None
+    else :
+        print(f"Message from the server: {res.json()['message']}")
+        return res.json()['task_id']
+
+def test_preprocessing_get(task_id : str):
+
+    url = url_service + "Preprocessing/"
+    parameters = {'task_id' : task_id, 'token' : 'aaa'}
+    res = requests.get(url, params=parameters)
+
+    print(res)
+    if res.status_code != 200 :
+        print(f"HTTP status: {res.status_code}")
+        if res.status_code == 204: print(f"Task {task_id} is still being processed...")
+        else : print(res.json())
+        return None
+    else :
+        filename = "preprocessed_trajectories.parquet"
+        if "content-disposition" in res.headers.keys():
+            filename = re.findall("filename=\"(.+)\"", res.headers['content-disposition'])[0]
+        print(f"Writing received file to: {filename}")
+        with open(filename, 'wb') as f:
+            f.write(res.content)
+
+        # test_file = pd.read_parquet(filename)
+        # print(test_file.info())
+
+
+def test_segmentation_post(pathfile : str) -> Optional[str]:
+
+    url = url_service + "Segmentation/"
+    params = {'min_duration_stop': 10, 'max_stop_radius': 0.2, 'token' : 'aaa'}
+    files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
+
+    res = requests.post(url, params=params, files=files)
+
+    print(res)
+    if res.status_code != 200 :
+        print(f"Some error occurred. Code returned by the server: {res.status_code}")
+        print(res.json()['message'])
+        return None
+    else :
+        print(f"Message from the server: {res.json()['message']}")
+        return res.json()['task_id']
+
+def test_segmentation_get(task_id : str) :
+
+    url = url_service + "Segmentation/"
+    parameters = {'task_id' : task_id, 'token' : 'aaa'}
+
+    res = requests.get(url, params = parameters)
+    print(res)
+    print(res.status_code)
+
+
+    if res.status_code != 200 :
+        print(f"HTTP status: {res.status_code}")
+        if res.status_code == 204: print(f"Task {task_id} is still being processed...")
+        else : print(res.json())
+        return None
+    else :
+        # Translate the received stops and moves from json to dataframes.
+        stops = pd.DataFrame.from_dict(res.json()['stops'])
+        moves = pd.DataFrame.from_dict(res.json()['moves'])
+
+        print(stops.info())
+        print(moves.info())
+
+        # Store the dataframes into parquet files.
+        stops.to_parquet('stops.parquet')
+        moves.to_parquet('moves.parquet')
+
+
 def main() :
-    test_preprocessing('./datasets/rome/rome.parquet')
-    test_segmentation('./preprocessed_trajectories.parquet')
-    test_enrichment('./preprocessed_trajectories.parquet',
-                    './moves.parquet',
-                    './stops.parquet',
-                    './datasets/rome/poi/pois.parquet',
-                    './datasets/rome/tweets/tweets_rome.parquet',
-                    './datasets/rome/weather/weather_conditions.parquet')
+
+    # test_enrichment('./preprocessed_trajectories.parquet',
+    #                './moves.parquet',
+    #                './stops.parquet',
+    #                './datasets/rome/poi/pois.parquet',
+    #                './datasets/rome/tweets/tweets_rome.parquet',
+    #                './datasets/rome/weather/weather_conditions.parquet')
+
+    # task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
+    # test_preprocessing_get("3db3b73c26ae49ce96f20cbfc3af0952")
+
+    # task_id = test_segmentation_post('./preprocessed_trajectories.parquet')
+    test_segmentation_get('b589afa622fc4b08976ff2594dd6acf0')
 
 
 if __name__ == '__main__':
