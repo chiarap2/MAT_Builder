@@ -1,9 +1,10 @@
 import pandas as pd
 import uuid
 import os
+import io
 
 from pydantic import BaseModel, Field
-from fastapi import Response, APIRouter, Depends, Query, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, Depends, Query, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 
 from core.APIModuleInterface import APIModuleInterface
@@ -29,16 +30,13 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
 
     def _preprocess_callback(self, dic_params : dict):
 
+        print(f"Background preprocessing!")
         task_id = dic_params['task_id']
 
-        print(f"Background preprocessing!")
-        params_preprocessing = {'trajectories': pd.read_parquet(dic_params['trajectories'].file),
-                                'speed': dic_params['speed'],
-                                'n_points': dic_params['n_points'],
-                                'compress': dic_params['compress']}
+
         exe_ok = False
         try:
-            exe_ok = self.execute(params_preprocessing)
+            exe_ok = self.execute(dic_params)
         except Exception as e:
             print(f"ERROR: some exception occurred: {e}")
         print(f"Execution outcome: {exe_ok}")
@@ -46,11 +44,11 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
 
         # 1.1 - Now store to disk the DataFrame containing the results.
         if exe_ok :
-            self.task_status[task_id] = API_Preprocessing.TaskStatus.OK
             namefile = task_id + ".parquet"
             self._results.to_parquet(namefile)
         else :
-            self.task_status[task_id] = API_Preprocessing.TaskStatus.ERROR
+            namefile = task_id + ".error"
+            io.open(namefile, 'w').close()
 
         # Reset the object's internal state.
         self.reset_state()
@@ -61,16 +59,16 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
 
     def __init__(self, router : APIRouter):
 
-        # Execute the superclass constructor.
-        super().__init__()
+        # Execute the superclasses constructors.
+        APIModuleInterface.__init__(self)
+        Preprocessing.__init__(self)
 
 
         # Set up the HTTP responses that can be sent to the requesters.
         responses_get = {200: {"content": {"application/octet-stream": {}},
                                "description": "Return a pandas DataFrame, stored in Parquet, containing the preprocessed trajectory dataset."},
-                         204: {"description": "The task is still being processed and thus the results are not available yet."},
                          404: {"content": {"application/json": {}},
-                               "description": "Task does not exist."},
+                               "description": "Task is currently being processed or does not exist."},
                          500: {"content": {"application/json": {}},
                                "description": "Some error occurred during the preprocessing. Check the correctness of the trajectory dataset being provided in input."}}
 
@@ -88,29 +86,25 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
             # Now, find out whether the results are ready OR some error occurred OR the task is still being processed...
             # ...OR the task does not exist, and answer accordingly.
 
-            # 1 - task does not exist.
-            if task_id not in self.task_status :
-                return JSONResponse(status_code=404, content={"message": f"Task {task_id} does not exist!"})
-
-            # 2 - Task terminated successfully.
-            elif self.task_status[task_id] == API_Preprocessing.TaskStatus.OK :
-                namefile = "./" + task_id + ".parquet"
-                background_tasks.add_task(os.remove, namefile)
-                del self.task_status[task_id]
-                return FileResponse(path=namefile,
+            # 1 - Task terminated successfully.
+            namefile_ok = "./" + task_id + ".parquet"
+            namefile_error = "./" + task_id + ".error"
+            if os.path.isfile(namefile_ok) :
+                background_tasks.add_task(os.remove, namefile_ok)
+                return FileResponse(path=namefile_ok,
                                     filename='preprocessed_trajectories.parquet',
                                     media_type='application/octet-stream')
 
-            # 3 - Task terminated with an error.
-            elif self.task_status[task_id] == API_Preprocessing.TaskStatus.ERROR :
-                del self.task_status[task_id]
+            # 2 - Task terminated with an error.
+            elif os.path.isfile(namefile_error) :
+                background_tasks.add_task(os.remove, namefile_error)
                 return JSONResponse(status_code=500,
                                     content={"message": f"Some error occurred during the processing of task {task_id}!"})
 
-            # 2 - Task is still being processed.
+            # 2 - Task is still being processed or does not exist.
             else :
-                print("Caso attesa.")
-                return Response(status_code=204)
+                return JSONResponse(status_code=404,
+                                    content={"message": f"Task {task_id} is still being processed or does not exist!"})
 
 
         @router.post("/" + Preprocessing.id_class + "/",
@@ -125,7 +119,7 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
             # Here we set up the parameters needed by the background preprocessing method.
             task_id = str(uuid.uuid4().hex)
             params_preprocessing = {'task_id' : task_id,
-                                    'trajectories': file_trajectories,
+                                    'trajectories': pd.read_parquet(file_trajectories.file),
                                     'speed': params.max_speed,
                                     'n_points': params.min_num_samples,
                                     'compress': params.compress_trajectories}
@@ -133,9 +127,6 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
 
             # Here we set up the call to the preprocessing method to be executed at a later time.
             background_tasks.add_task(self._preprocess_callback, params_preprocessing)
-
-            # Keep track of this task status.
-            self.task_status[task_id] = API_Preprocessing.TaskStatus.WAITING
 
             # Return the identifier of the task ID associated with the request.
             return API_Preprocessing.ResponsePost(message = f"Task {task_id} queued!",

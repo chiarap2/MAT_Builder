@@ -7,48 +7,6 @@ from typing import Optional
 url_service = "http://127.0.0.1:8000/semantic/"
 
 
-def test_enrichment(path_trajs : str,
-                    path_moves : str,
-                    path_stops : str,
-                    path_pois : str,
-                    path_social : str,
-                    path_weather : str) :
-
-    url = url_service + "Enrichment/"
-    params =\
-    {
-        'move_enrichment': True,
-        'max_dist': 50,
-        'dbscan_epsilon': 50,
-        'systematic_threshold': 5
-    }
-    files = \
-    {
-        'file_trajectories': ('trajectories.parquet', open(path_trajs, 'rb')),
-        'file_moves': ('moves.parquet', open(path_moves, 'rb')),
-        'file_stops': ('stops.parquet', open(path_stops, 'rb')),
-        'file_pois': ('pois.parquet', open(path_pois, 'rb')),
-        'file_social': ('social.parquet', open(path_social, 'rb')),
-        'file_weather': ('weather.parquet', open(path_weather, 'rb'))
-    }
-    res = requests.get(url, params = params, files = files)
-
-
-    print(res)
-    print(res.status_code)
-    if res.status_code != 200 :
-        print(f"Some error occurred. Code returned by the server: {res.status_code}")
-        return
-
-
-    filename = "kg.ttl"
-    if "content-disposition" in res.headers.keys():
-        filename = re.findall("filename=\"(.+)\"", res.headers['content-disposition'])[0]
-    print(f"Writing received file to: {filename}")
-    with open(filename, 'wb') as f:
-        f.write(res.content)
-
-
 def test_preprocessing_post(pathfile : str) -> Optional[str]:
 
     url = url_service + "Preprocessing/"
@@ -56,15 +14,9 @@ def test_preprocessing_post(pathfile : str) -> Optional[str]:
     files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
     res = requests.post(url, params=parameters, files=files)
 
-
     print(res)
-    if res.status_code != 200 :
-        print(f"Some error occurred. Code returned by the server: {res.status_code}")
-        print(res.json()['message'])
-        return None
-    else :
-        print(f"Message from the server: {res.json()['message']}")
-        return res.json()['task_id']
+    print(res.json()['message'])
+
 
 def test_preprocessing_get(task_id : str):
 
@@ -74,9 +26,7 @@ def test_preprocessing_get(task_id : str):
 
     print(res)
     if res.status_code != 200 :
-        print(f"HTTP status: {res.status_code}")
-        if res.status_code == 204: print(f"Task {task_id} is still being processed...")
-        else : print(res.json())
+        print(res.json()['message'])
         return None
     else :
         filename = "preprocessed_trajectories.parquet"
@@ -86,8 +36,8 @@ def test_preprocessing_get(task_id : str):
         with open(filename, 'wb') as f:
             f.write(res.content)
 
-        # test_file = pd.read_parquet(filename)
-        # print(test_file.info())
+        #test_file = pd.read_parquet(filename)
+        #print(test_file.info())
 
 
 def test_segmentation_post(pathfile : str) -> Optional[str]:
@@ -99,13 +49,8 @@ def test_segmentation_post(pathfile : str) -> Optional[str]:
     res = requests.post(url, params=params, files=files)
 
     print(res)
-    if res.status_code != 200 :
-        print(f"Some error occurred. Code returned by the server: {res.status_code}")
-        print(res.json()['message'])
-        return None
-    else :
-        print(f"Message from the server: {res.json()['message']}")
-        return res.json()['task_id']
+    print(res.json()['message'])
+
 
 def test_segmentation_get(task_id : str) :
 
@@ -134,22 +79,83 @@ def test_segmentation_get(task_id : str) :
         stops.to_parquet('stops.parquet')
         moves.to_parquet('moves.parquet')
 
+        def test_segmentation_post(pathfile: str) -> Optional[str]:
+
+            url = url_service + "Segmentation/"
+            params = {'min_duration_stop': 10, 'max_stop_radius': 0.2, 'token': 'aaa'}
+            files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
+
+            res = requests.post(url, params=params, files=files)
+
+            print(res)
+            if res.status_code != 200:
+                print(f"Some error occurred. Code returned by the server: {res.status_code}")
+                print(res.json()['message'])
+                return None
+            else:
+                print(f"Message from the server: {res.json()['message']}")
+                return res.json()['task_id']
+
+
+def test_enrichment_post(path_trajs : str,
+                         path_moves : str,
+                         path_stops : str,
+                         path_pois : str,
+                         path_social : str,
+                         path_weather : str) -> Optional[str]:
+
+    url = url_service + "Enrichment/"
+    params = \
+        {
+            'move_enrichment': True,
+            'max_dist': 50,
+            'dbscan_epsilon': 50,
+            'systematic_threshold': 5
+        }
+    files = \
+        {
+            'file_trajectories': ('trajectories.parquet', open(path_trajs, 'rb')),
+            'file_moves': ('moves.parquet', open(path_moves, 'rb')),
+            'file_stops': ('stops.parquet', open(path_stops, 'rb')),
+            'file_pois': ('pois.parquet', open(path_pois, 'rb')),
+            'file_social': ('social.parquet', open(path_social, 'rb')),
+            'file_weather': ('weather.parquet', open(path_weather, 'rb'))
+        }
+    res = requests.post(url, params=params, files=files)
+
+    print(res)
+    print(res.json()['message'])
+
+def test_enrichment_get(task_id: str):
+
+    url = url_service + "Enrichment/"
+    parameters = {'task_id': task_id, 'token': 'aaa'}
+    res = requests.get(url, params=parameters)
+
+    print(res)
+    if res.status_code != 200:
+        print(res.json()['message'])
+        return None
+    else:
+        filename = "reuslts.ttl"
+        if "content-disposition" in res.headers.keys():
+            filename = re.findall("filename=\"(.+)\"", res.headers['content-disposition'])[0]
+        print(f"Writing received file to: {filename}")
+        with open(filename, 'wb') as f:
+            f.write(res.content)
+
 
 def main() :
 
-    # test_enrichment('./preprocessed_trajectories.parquet',
-    #                './moves.parquet',
-    #                './stops.parquet',
-    #                './datasets/rome/poi/pois.parquet',
-    #                './datasets/rome/tweets/tweets_rome.parquet',
-    #                './datasets/rome/weather/weather_conditions.parquet')
-
     # task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
-    # test_preprocessing_get("3db3b73c26ae49ce96f20cbfc3af0952")
+    # test_preprocessing_get("8415ad562a324af99af4c35e9addbd24")
 
-    #task_id = test_segmentation_post('./preprocessed_trajectories.parquet')
-    test_segmentation_get('2230269670144674bb09ef25e0af70e4')
+    # task_id = test_segmentation_post('./preprocessed_trajectories.parquet')
+    # test_segmentation_get('0fb08ebe68df42e489f9157b30c4c7ba')
 
+    #test_enrichment_post('./preprocessed_trajectories.parquet', './moves.parquet', './stops.parquet', './datasets/rome/poi/pois.parquet',
+    #                     './datasets/rome/tweets/tweets_rome.parquet', './datasets/rome/weather/weather_conditions.parquet')
+    test_enrichment_get("38d07e2f9c49419b8a949da46e026311")
 
 if __name__ == '__main__':
     main()

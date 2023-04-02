@@ -1,9 +1,12 @@
 import pandas as pd
 import uuid
+import os
+import io
+import json
 
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, UploadFile, File, Query, Depends, BackgroundTasks
-from fastapi.responses import Response, JSONResponse
+from fastapi.responses import JSONResponse
 
 from core.APIModuleInterface import APIModuleInterface
 from .Segmentation import Segmentation
@@ -30,16 +33,11 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
 
         task_id = dic_params['task_id']
 
-        # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
-        params_segmentation = {'trajectories': pd.read_parquet(dic_params['trajectories'].file),
-                               'duration': dic_params['duration'],
-                               'radius': dic_params['radius']}
-
 
         print(f"Background segmentation!")
         exe_ok = False
         try:
-            exe_ok = self.execute(params_segmentation)
+            exe_ok = self.execute(dic_params)
         except Exception as e:
             print(f"ERROR: some exception occurred: {e}")
         print(f"Execution outcome: {exe_ok}")
@@ -49,10 +47,11 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
             # Construct the (dict) response, containing the stops and moves dataframes (will be automatically translated to JSON by FastAPI).
             results = {'stops': self.stops.to_dict(),
                        'moves': self.moves.to_dict()}
-            self.task_results[task_id] = results
-            self.task_status[task_id] = API_Segmentation.TaskStatus.OK
+            with open(task_id + '.json', 'w', encoding='utf-8') as out_file:
+                json.dump(results, out_file, default=str, ensure_ascii=False)
         else :
-            self.task_status[task_id] = API_Segmentation.TaskStatus.ERROR
+            namefile = task_id + ".error"
+            io.open(namefile, 'w').close()
 
         # Reset the object internal state.
         self.reset_state()
@@ -63,56 +62,52 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
 
     def __init__(self, router : APIRouter):
 
-        # Execute the superclass constructor.
-        super().__init__()
-
-
-        # Dictionary used to hold the results of the tasks.
-        self.task_results = {}
+        # Execute the superclasses constructors.
+        APIModuleInterface.__init__(self)
+        Segmentation.__init__(self)
 
 
         # Set up the HTTP responses that can be sent to the requesters.
-        responses_get = {200: {"content": {"application/octet-stream": {}},
-                               "description": "Returns two pandas DataFrames containing the stop and move segments, translated into JSON."},
-                         204: {"description": "The task is still being processed and thus the results are not available yet."},
+        responses_get = {200: {"content": {"application/json": {}},
+                               "description": "Returns the two pandas DataFrames containing the stop and move segments, in JSON format."},
                          404: {"content": {"application/json": {}},
-                               "description": "Task does not exist."},
+                               "description": "Task is still being processed or does not exist."},
                          500: {"content": {"application/json": {}},
-                               "description": "Some error occurred during the segmentation. Check the correctness of the trajectory dataset being provided in input."}}
+                               "description": "Some error occurred during the trajectory segmentation. Check the correctness of the" +
+                                              "trajectory dataset being provided in input."}}
 
         # Declare the path function operations associated with the API_Preprocessing class.
         @router.get("/" + Segmentation.id_class + "/",
-                    description="If the task execution ended succesfully, the operation returns the pandas DataFrames of the stops" +
+                    description="If the task execution ended successfully, the operation returns the pandas DataFrames of the stops" +
                                 " and the moves translated into the JSON format.",
                     response_model=API_Segmentation.Results,
                     responses=responses_get)
-        def segment(task_id : str = Query(description="Task ID associated with a previously done POST request."),
+        def segment(background_tasks : BackgroundTasks,
+                    task_id : str = Query(description="Task ID associated with a previously done POST request."),
                     token : str = Query(description="Token sent from the client.")) :
 
             # Now, find out whether the results are ready OR some error occurred OR the task is still being processed...
             # ...OR the task does not exist, and answer accordingly.
 
-            # 1 - task does not exist.
-            if task_id not in self.task_status:
-                return JSONResponse(status_code=404,
-                                    content={"message": f"Task {task_id} does not exist!"})
+            # 1 - Task terminated successfully.
+            namefile_ok = "./" + task_id + ".json"
+            namefile_error = "./" + task_id + ".error"
+            if os.path.isfile(namefile_ok) :
+                background_tasks.add_task(os.remove, namefile_ok)
+                with open(namefile_ok, "r") as f:
+                    results = json.loads(f.read())
+                    return results
 
-            # 2 - Task terminated successfully.
-            elif self.task_status[task_id] == API_Segmentation.TaskStatus.OK:
-                results = self.task_results[task_id]
-                del self.task_status[task_id]
-                del self.task_results[task_id]
-                return results
-
-            # 3 - Task terminated with an error.
-            elif self.task_status[task_id] == API_Segmentation.TaskStatus.ERROR:
-                del self.task_status[task_id]
+            # 2 - Task terminated with an error.
+            elif os.path.isfile(namefile_error):
+                background_tasks.add_task(os.remove, namefile_error)
                 return JSONResponse(status_code=500,
                                     content={"message": f"Some error occurred during the processing of task {task_id}!"})
 
-            # 2 - Task is still being processed.
+            # 3 - Task is still being processed.
             else:
-                return Response(status_code=204)
+                return JSONResponse(status_code=404,
+                                    content={"message": f"Task {task_id} is still being processed or does not exist!"})
 
 
         @router.post("/" + Segmentation.id_class + "/",
@@ -125,16 +120,13 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
             # Here we set up the parameters needed by the background preprocessing method.
             task_id = str(uuid.uuid4().hex)
             params_segmentation = {'task_id': task_id,
-                                   'trajectories': file_trajectories,
+                                   'trajectories': pd.read_parquet(file_trajectories.file),
                                    'duration': params.min_duration_stop,
                                    'radius': params.max_stop_radius}
             print(f"Dictionary passed to the background segmentation: {params_segmentation}")
 
             # Here we set up the call to the preprocessing method to be executed at a later time.
             background_tasks.add_task(self._segment_callback, params_segmentation)
-
-            # Keep track of this task status.
-            self.task_status[task_id] = API_Segmentation.TaskStatus.WAITING
 
             # Return the identifier of the task ID associated with the request.
             return API_Segmentation.ResponsePost(message=f"Task {task_id} queued!",

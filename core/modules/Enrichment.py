@@ -761,6 +761,7 @@ class Enrichment(ModuleInterface):
                 self._rdf_graph.add_social(tweets_RDF)
 
         print("Enrichment complete!")
+        return True
            
     def get_results(self) -> dict:
         return {'trajectories' : self._trajectories if self._trajectories is not None else None,

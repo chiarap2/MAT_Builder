@@ -2,15 +2,17 @@ import pandas as pd
 import geopandas as gpd
 import uuid
 import os
-
-from .Enrichment import Enrichment
+import io
 
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, APIRouter, Depends, Query, UploadFile, File, BackgroundTasks
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, Query, UploadFile, File, BackgroundTasks
+from fastapi.responses import FileResponse, JSONResponse
+
+from core.APIModuleInterface import APIModuleInterface
+from .Enrichment import Enrichment
 
 
-class API_Enrichment(Enrichment) :
+class API_Enrichment(APIModuleInterface, Enrichment) :
     '''
     This class exposes the functionalities provided by the Enrichment module via an API endpoint.
     '''
@@ -25,24 +27,91 @@ class API_Enrichment(Enrichment) :
 
 
 
+    ### PROTECTED METHODS ###
+
+    def _enrichment_callback(self, dic_params : dict) :
+
+        task_id = dic_params['task_id']
+
+
+        exe_ok = False
+        try:
+            exe_ok = self.execute(dic_params)
+        except Exception as e:
+            print(f"ERROR: some exception occurred: {e}")
+        print(f"Execution outcome: {exe_ok}")
+
+
+        # 1.1 - Now store to disk the DataFrame containing the results.
+        if exe_ok:
+            namefile = task_id + ".ttl"
+            self._rdf_graph.serialize_graph(namefile)
+        else:
+            namefile = task_id + ".error"
+            io.open(namefile, 'w').close()
+
+
+        # Reset the object state and remove the temporary file once it's been transmitted to the user.
+        self.reset_state()
+
+
+
     ### PUBLIC CLASS CONSTRUCTOR ###
 
     def __init__(self, router : APIRouter) :
 
-        # Execute the superclass constructor.
-        super().__init__()
+        # Execute the superclasses constructors.
+        APIModuleInterface.__init__(self)
+        Enrichment.__init__(self)
 
 
         # Set up the HTTP responses that can be sent to the requesters.
-        responses = {200: {"content": {"application/octet-stream": {}},
-                           "description": "Return a RDF knowledge graph, stored in Turtle (ttl) format."},
-                     500: {"description" : "Some error occurred during the enrichment. Check the correctness of the files being provided in input!"}}
+        responses_get = {200: {"content": {"application/octet-stream": {}},
+                               "description": "Returns a RDF knowledge graph stored in Turtle (.ttl) format."},
+                         404: {"content": {"application/json": {}},
+                               "description": "Task is currently being processed or does not exist."},
+                         500: {"content": {"application/json": {}},
+                               "description": "Some error occurred during the semantic enrichment. Check the correctness" +
+                                              "of the trajectory dataset being provided in input."}}
+
 
         # Declare the path function operations associated with the API_Preprocessing class.
         @router.get("/" + Enrichment.id_class + "/",
                     description="This path operation returns a RDF knowledge graph. The result is returned in a Turtle (ttl) file.",
                     response_class=FileResponse,
-                    responses=responses)
+                    responses=responses_get)
+        def preprocess(background_tasks: BackgroundTasks,
+                       task_id: str = Query(description="Task ID associated with a previously done POST request."),
+                       token: str = Query(description="Token sent from the client.")):
+
+            # Now, find out whether the results are ready OR some error occurred OR the task is still being processed...
+            # ...OR the task does not exist, and answer accordingly.
+
+            # 1 - Task terminated successfully.
+            namefile_ok = "./" + task_id + ".ttl"
+            namefile_error = "./" + task_id + ".error"
+            if os.path.isfile(namefile_ok):
+                background_tasks.add_task(os.remove, namefile_ok)
+                return FileResponse(path=namefile_ok,
+                                    filename='results.ttl',
+                                    media_type='application/octet-stream')
+
+            # 2 - Task terminated with an error.
+            elif os.path.isfile(namefile_error):
+                background_tasks.add_task(os.remove, namefile_error)
+                return JSONResponse(status_code=500,
+                                    content={"message": f"Some error occurred during the processing of task {task_id}!"})
+
+            # 2 - Task is still being processed or does not exist.
+            else:
+                return JSONResponse(status_code=404,
+                                    content={"message": f"Task {task_id} is still being processed or does not exist!"})
+
+        @router.post("/" + Enrichment.id_class + "/",
+                    description="This path operation returns a task id that can be later used to retrieve" +
+                                " a dataset of preprocessed trajectories. The result is returned as a pandas" +
+                                " DataFrame, stored in a Parquet file.",
+                    responses=self.responses_post)
         def enrich(background_tasks : BackgroundTasks,
                    file_trajectories : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the trajectory dataset."),
                    file_moves : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the move segment dataset."),
@@ -50,10 +119,13 @@ class API_Enrichment(Enrichment) :
                    file_pois: UploadFile = File(description="GeoPandas DataFrame, stored in Parquet format, containing the POI dataset. Its content must be structured according to the GeoPandas DataFrames downloaded from OpenStreetMap via the OSMnx library."),
                    file_social: UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the social media post dataset."),
                    file_weather: UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the historical weather dataset."),
-                   params: API_Enrichment.Params = Depends()) -> FileResponse :
+                   params: API_Enrichment.Params = Depends()) -> API_Enrichment.ResponsePost :
+
+            task_id = str(uuid.uuid4().hex)
 
             # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
-            params_enrichment = {'trajectories': pd.read_parquet(file_trajectories.file),
+            params_enrichment = {'task_id': task_id,
+                                 'trajectories': pd.read_parquet(file_trajectories.file),
                                  'moves': pd.read_parquet(file_moves.file),
                                  'move_enrichment': params.move_enrichment,
                                  'stops': pd.read_parquet(file_stops.file),
@@ -66,16 +138,12 @@ class API_Enrichment(Enrichment) :
                                  'social_enrichment': pd.read_parquet(file_social.file),
                                  "weather_enrichment": pd.read_parquet(file_weather.file),
                                  'create_rdf': True}
-            self.execute(params_enrichment)
+            print(f"Dictionary passed to the background preprocessing: {params_enrichment}")
 
+            # Here we set up the call to the preprocessing method to be executed at a later time.
+            background_tasks.add_task(self._enrichment_callback, params_enrichment)
 
-            # Now create a temporary file on disk, and instruct FASTAPI to delete the file once the function has terminated.
-            namefile = str(uuid.uuid4()) + ".ttl"
-            self._rdf_graph.serialize_graph(namefile)
+            # Return the identifier of the task ID associated with the request.
+            return API_Enrichment.ResponsePost(message=f"Task {task_id} queued!",
+                                               task_id=task_id)
 
-            # Reset the object state and remove the temporary file once it's been transmitted to the user.
-            self.reset_state()
-            background_tasks.add_task(os.remove, namefile)
-
-            # Return the response (will be a file).
-            return FileResponse(path = namefile, filename = 'results.ttl')
