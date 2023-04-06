@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 
 from core.APIModuleInterface import APIModuleInterface
-from .Enrichment import Enrichment
+from core.modules.Enrichment import Enrichment
 
 
 class API_Enrichment(APIModuleInterface, Enrichment) :

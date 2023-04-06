@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Query, UploadFile, File, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 
 from core.APIModuleInterface import APIModuleInterface
-from .Preprocessing import Preprocessing
+from core.modules.Preprocessing import Preprocessing
 
 
 class API_Preprocessing(APIModuleInterface, Preprocessing) :

@@ -1,7 +1,6 @@
 from dash import Dash
 
-from core.modules import *
-from core.InteractivePipeline import InteractivePipeline
+from core import InteractivePipeline, InteractivePreprocessing, InteractiveSegmentation, InteractiveEnrichment
 
 
 ### MAIN application ###

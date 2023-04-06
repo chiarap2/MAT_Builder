@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI, APIRouter
 
-from core.modules import API_Preprocessing, API_Segmentation, API_Enrichment
+from core import API_Preprocessing, API_Segmentation, API_Enrichment
 
 
 # Setup the API services corresponding to the various semantic enrichment functionalities...

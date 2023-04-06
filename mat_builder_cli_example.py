@@ -1,7 +1,7 @@
 import pandas as pd
 import geopandas as gpd
 
-from core.modules import *
+from core import Preprocessing, Segmentation, Enrichment
 
 
 ### MAIN application ###

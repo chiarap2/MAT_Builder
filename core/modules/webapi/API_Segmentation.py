@@ -9,7 +9,7 @@ from fastapi import APIRouter, UploadFile, File, Query, Depends, BackgroundTasks
 from fastapi.responses import JSONResponse
 
 from core.APIModuleInterface import APIModuleInterface
-from .Segmentation import Segmentation
+from core.modules.Segmentation import Segmentation
 
 
 class API_Segmentation(APIModuleInterface, Segmentation) :

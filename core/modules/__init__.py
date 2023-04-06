@@ -6,6 +6,6 @@ from .InteractivePreprocessing import InteractivePreprocessing
 from .InteractiveSegmentation import InteractiveSegmentation
 from .InteractiveEnrichment import InteractiveEnrichment
 
-from .API_Preprocessing import API_Preprocessing
-from .API_Segmentation import API_Segmentation
-from .API_Enrichment import API_Enrichment
+from .webapi.API_Preprocessing import API_Preprocessing
+from .webapi.API_Segmentation import API_Segmentation
+from .webapi.API_Enrichment import API_Enrichment
