@@ -699,24 +699,10 @@ class Enrichment(ModuleInterface):
         if self._tweet_user :
             print("Enriching users with social media posts!")
             
-            tweets = self._upload_social
-            tweets_RDF = tweets.copy()
-            
-            self._moves['date'] = self._moves['datetime'].dt.date
-            tweets['tweet_created'] = tweets['tweet_created'].astype('datetime64')
-            tweets['tweet_created'] = tweets['tweet_created'].dt.date
-            self._moves['tweet'] = ''
-
-            self._moves.reset_index(inplace=True)
-
-            self._moves.set_index(['date', 'uid'], inplace=True)
-            tweets.set_index(['tweet_created','uid'],inplace=True)      
-            matched_tweets = self._moves.join(tweets, how='inner')
-
-            self._moves.reset_index(inplace=True)
-            matched_tweets.reset_index(inplace=True)
-
-            self._tweets = matched_tweets.copy()
+            self._tweets = self._upload_social.copy()
+            self._tweets['tweet_created'] = pd.to_datetime(self._tweets['tweet_created'])
+            self._tweets['tweet_created'] = self._tweets['tweet_created'].dt.date
+            # print(f"DEBUG: {self._tweets}")
         
         else :
             self._tweets = None

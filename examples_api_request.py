@@ -137,7 +137,7 @@ def test_enrichment_get(task_id: str):
         print(res.json()['message'])
         return None
     else:
-        filename = "reuslts.ttl"
+        filename = "results.ttl"
         if "content-disposition" in res.headers.keys():
             filename = re.findall("filename=\"(.+)\"", res.headers['content-disposition'])[0]
         print(f"Writing received file to: {filename}")
@@ -147,15 +147,16 @@ def test_enrichment_get(task_id: str):
 
 def main() :
 
-    # task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
-    # test_preprocessing_get("8415ad562a324af99af4c35e9addbd24")
+    task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
+    # test_preprocessing_get("7a846ac0fbee46ee9583f3f2d7319bef")
 
     # task_id = test_segmentation_post('./preprocessed_trajectories.parquet')
-    # test_segmentation_get('0fb08ebe68df42e489f9157b30c4c7ba')
+    # test_segmentation_get('ef3f7538df1a4e8b8685896e84f94398')
 
     #test_enrichment_post('./preprocessed_trajectories.parquet', './moves.parquet', './stops.parquet', './datasets/rome/poi/pois.parquet',
     #                     './datasets/rome/tweets/tweets_rome.parquet', './datasets/rome/weather/weather_conditions.parquet')
-    test_enrichment_get("38d07e2f9c49419b8a949da46e026311")
+    # test_enrichment_get("30c1f7bdb5e247038026477fbfef08aa")
+
 
 if __name__ == '__main__':
     main()
