@@ -24,7 +24,7 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
         max_stop_radius: float = Field(Query(..., description="Maximum radius a stop can have (in kilometers)"))
         token: str = Field(Query(..., description="Token sent from the client"))
 
-    class Results(BaseModel):
+    class SegmentationResults(BaseModel):
         stops: dict = Field(description="pandas DataFrame (translated in JSON) containing the stop segments.")
         moves: dict = Field(description="pandas DataFrame (translated in JSON) containing the move segments.")
 
@@ -80,7 +80,7 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
         @router.get("/" + Segmentation.id_class + "/",
                     description="If the task execution ended successfully, the operation returns the pandas DataFrames of the stops" +
                                 " and the moves translated into the JSON format.",
-                    response_model=API_Segmentation.Results,
+                    response_model=API_Segmentation.SegmentationResults,
                     responses=responses_get)
         def segment(background_tasks : BackgroundTasks,
                     task_id : str = Query(description="Task ID associated with a previously done POST request."),

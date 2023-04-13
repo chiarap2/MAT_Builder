@@ -4,7 +4,8 @@ import re
 from typing import Optional
 
 
-url_service = "http://127.0.0.1:8000/semantic/"
+# url_service = "http://127.0.0.1:8000/semantic/"
+url_service = "http://azureuser@semantic.westeurope.cloudapp.azure.com:8000/semantic/"
 
 
 def test_preprocessing_post(pathfile : str) -> Optional[str]:
@@ -147,15 +148,15 @@ def test_enrichment_get(task_id: str):
 
 def main() :
 
-    task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
-    # test_preprocessing_get("7a846ac0fbee46ee9583f3f2d7319bef")
+    # task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
+    # test_preprocessing_get("dcdc83cfd0e245368d2fb4509ccdf5a8")
 
     # task_id = test_segmentation_post('./preprocessed_trajectories.parquet')
-    # test_segmentation_get('ef3f7538df1a4e8b8685896e84f94398')
+    # test_segmentation_get('723d02b33ef5432daad4aff44ad35e42')
 
     #test_enrichment_post('./preprocessed_trajectories.parquet', './moves.parquet', './stops.parquet', './datasets/rome/poi/pois.parquet',
     #                     './datasets/rome/tweets/tweets_rome.parquet', './datasets/rome/weather/weather_conditions.parquet')
-    # test_enrichment_get("30c1f7bdb5e247038026477fbfef08aa")
+    test_enrichment_get("637b867f90a04b74a1b53688ec0ffeaf")
 
 
 if __name__ == '__main__':
