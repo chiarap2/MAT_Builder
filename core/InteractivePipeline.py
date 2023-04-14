@@ -80,13 +80,12 @@ class InteractivePipeline():
 
         self.tab_style = \
         {
-            'borderBottom': '1px solid #ddc738',
+            'borderBottom': '1px solid rgb(0, 0, 0)',
             'borderLeft': '0px',
             'borderRight': '0px',
             'borderTop': '0px',
             'padding': '6px',
-            'fontWeight': 'bold',
-            'backgroundColor': '#131313'
+            'backgroundColor': 'rgb(220, 220, 220)'
         }
 
         self.tab_selected_style = \
@@ -95,9 +94,8 @@ class InteractivePipeline():
             'borderLeft': '1px solid',
             'borderRight': '1px solid',
             'borderBottom': '0px',
-            'borderColor': '#ddc738',
-            'color': '#ddc738',
-            'backgroundColor': '#131313',
+            'fontWeight': 'bold',
+            'backgroundColor': 'rgb(256, 256, 256)',
             'padding': '6px'
         }
 
@@ -108,8 +106,7 @@ class InteractivePipeline():
             'borderRight': '0px',
             'borderTop': '0px',
             'padding': '6px',
-            'fontWeight': 'bold',
-            'backgroundColor': '#131313',
+            'backgroundColor': 'rgb(256, 256, 256)',
             'color': '#5d5d5d'
         }
     
