@@ -4,14 +4,18 @@ import re
 from typing import Optional
 
 
+### Semantic enrichment processor root address ###
 # url_service = "http://127.0.0.1:8000/semantic/"
 url_service = "http://azureuser@semantic.westeurope.cloudapp.azure.com:8000/semantic/"
 
 
 def test_preprocessing_post(pathfile : str) -> Optional[str]:
+    '''
+    This function issues a POST request to the preprocessing endpoint of the semantic enrichment processor web API.
+    '''
 
     url = url_service + "Preprocessing/"
-    parameters = {'max_speed' : 300, 'min_num_samples' : 1500, 'compress_trajectories' : True, 'token' : 'aaa'}
+    parameters = {'max_speed' : 300, 'min_num_samples' : 1500, 'compress_trajectories' : True}
     files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
     res = requests.post(url, params=parameters, files=files)
 
@@ -20,9 +24,12 @@ def test_preprocessing_post(pathfile : str) -> Optional[str]:
 
 
 def test_preprocessing_get(task_id : str):
+    '''
+    This function issues a GET request to the preprocessing endpoint of the semantic enrichment processor web API.
+    '''
 
     url = url_service + "Preprocessing/"
-    parameters = {'task_id' : task_id, 'token' : 'aaa'}
+    parameters = {'task_id' : task_id}
     res = requests.get(url, params=parameters)
 
     print(res)
@@ -42,9 +49,12 @@ def test_preprocessing_get(task_id : str):
 
 
 def test_segmentation_post(pathfile : str) -> Optional[str]:
+    '''
+    This function issues a POST request to the segmentation endpoint of the semantic enrichment processor web API.
+    '''
 
     url = url_service + "Segmentation/"
-    params = {'min_duration_stop': 10, 'max_stop_radius': 0.2, 'token' : 'aaa'}
+    params = {'min_duration_stop': 10, 'max_stop_radius': 0.2}
     files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
 
     res = requests.post(url, params=params, files=files)
@@ -54,9 +64,12 @@ def test_segmentation_post(pathfile : str) -> Optional[str]:
 
 
 def test_segmentation_get(task_id : str) :
+    '''
+    This function issues a GET request to the segmentation endpoint of the semantic enrichment processor web API.
+    '''
 
     url = url_service + "Segmentation/"
-    parameters = {'task_id' : task_id, 'token' : 'aaa'}
+    parameters = {'task_id' : task_id}
 
     res = requests.get(url, params = parameters)
     print(res)
@@ -83,7 +96,7 @@ def test_segmentation_get(task_id : str) :
         def test_segmentation_post(pathfile: str) -> Optional[str]:
 
             url = url_service + "Segmentation/"
-            params = {'min_duration_stop': 10, 'max_stop_radius': 0.2, 'token': 'aaa'}
+            params = {'min_duration_stop': 10, 'max_stop_radius': 0.2}
             files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
 
             res = requests.post(url, params=params, files=files)
@@ -104,6 +117,9 @@ def test_enrichment_post(path_trajs : str,
                          path_pois : str,
                          path_social : str,
                          path_weather : str) -> Optional[str]:
+    '''
+    This function issues a POST request to the enrichment endpoint of the semantic enrichment processor web API.
+    '''
 
     url = url_service + "Enrichment/"
     params = \
@@ -128,9 +144,12 @@ def test_enrichment_post(path_trajs : str,
     print(res.json()['message'])
 
 def test_enrichment_get(task_id: str):
+    '''
+    This function issues a GET request to the enrichment endpoint of the semantic enrichment processor web API.
+    '''
 
     url = url_service + "Enrichment/"
-    parameters = {'task_id': task_id, 'token': 'aaa'}
+    parameters = {'task_id': task_id}
     res = requests.get(url, params=parameters)
 
     print(res)
@@ -147,16 +166,21 @@ def test_enrichment_get(task_id: str):
 
 
 def main() :
+    '''
+    In this main we simulate the chains of reuqests done to the semantic enrichment processor in order to get,
+    starting from a dataset of trajectories, a RDF knowledge graph containing a dataset of semantically enriched
+    trajectories.
+    '''
 
     # task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
-    # test_preprocessing_get("dcdc83cfd0e245368d2fb4509ccdf5a8")
+    # test_preprocessing_get("e818f705ff2746188abc6e7751e61b93")
 
     # task_id = test_segmentation_post('./preprocessed_trajectories.parquet')
-    # test_segmentation_get('723d02b33ef5432daad4aff44ad35e42')
+    # test_segmentation_get('c0770b7cefcd441799cebafcf86d1bbf')
 
-    #test_enrichment_post('./preprocessed_trajectories.parquet', './moves.parquet', './stops.parquet', './datasets/rome/poi/pois.parquet',
-    #                     './datasets/rome/tweets/tweets_rome.parquet', './datasets/rome/weather/weather_conditions.parquet')
-    test_enrichment_get("637b867f90a04b74a1b53688ec0ffeaf")
+    # test_enrichment_post('./preprocessed_trajectories.parquet', './moves.parquet', './stops.parquet', './datasets/rome/poi/pois.parquet',
+    #                      './datasets/rome/tweets/tweets_rome.parquet', './datasets/rome/weather/weather_conditions.parquet')
+    test_enrichment_get("90bf1698cda6432782b4d9a9115bdd00")
 
 
 if __name__ == '__main__':
