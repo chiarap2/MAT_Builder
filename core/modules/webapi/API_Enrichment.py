@@ -75,14 +75,14 @@ class API_Enrichment(APIModuleInterface, Enrichment) :
                                               "of the trajectory dataset being provided in input."}}
 
 
-        # Declare the path function operations associated with the API_Preprocessing class.
+        # Declare the path function operations associated with the API_Enrichment class.
         @router.get("/" + Enrichment.id_class + "/",
                     description="This path operation returns a RDF knowledge graph. The result is returned in a Turtle (ttl) file.",
                     response_class=FileResponse,
                     responses=responses_get)
-        def preprocess(background_tasks: BackgroundTasks,
-                       task_id: str = Query(description="Task ID associated with a previously done POST request."),
-                       token: str = Query(description="Token sent from the client.")):
+        def enrich(background_tasks: BackgroundTasks,
+                   task_id: str = Query(description="Task ID associated with a previously done POST request."),
+                   token: str = Query(description="Token sent from the client.")):
 
             # Now, find out whether the results are ready OR some error occurred OR the task is still being processed...
             # ...OR the task does not exist, and answer accordingly.
@@ -108,10 +108,10 @@ class API_Enrichment(APIModuleInterface, Enrichment) :
                                     content={"message": f"Task {task_id} is still being processed or does not exist!"})
 
         @router.post("/" + Enrichment.id_class + "/",
-                    description="This path operation returns a task id that can be later used to retrieve" +
-                                " a dataset of preprocessed trajectories. The result is returned as a pandas" +
-                                " DataFrame, stored in a Parquet file.",
-                    responses=self.responses_post)
+                     description="This path operation returns a task id that can be later used to retrieve" +
+                                 " a RDF knowledge graph containing the enriched trajectories.  The result is returned as" +
+                                 " Turtle (.ttl) file.",
+                     responses=self.responses_post)
         def enrich(background_tasks : BackgroundTasks,
                    file_trajectories : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the trajectory dataset."),
                    file_moves : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the move segment dataset."),
@@ -123,7 +123,7 @@ class API_Enrichment(APIModuleInterface, Enrichment) :
 
             task_id = str(uuid.uuid4().hex)
 
-            # Here we execute the internal code of the Preprocessing subclass to do the trajectory preprocessing...
+            # Here we execute the internal code of the Enrichment subclass to do the trajectory enrichment...
             params_enrichment = {'task_id': task_id,
                                  'trajectories': pd.read_parquet(file_trajectories.file),
                                  'moves': pd.read_parquet(file_moves.file),
@@ -138,9 +138,9 @@ class API_Enrichment(APIModuleInterface, Enrichment) :
                                  'social_enrichment': pd.read_parquet(file_social.file),
                                  "weather_enrichment": pd.read_parquet(file_weather.file),
                                  'create_rdf': True}
-            print(f"Dictionary passed to the background preprocessing: {params_enrichment}")
+            print(f"Dictionary passed to the background enrichment: {params_enrichment}")
 
-            # Here we set up the call to the preprocessing method to be executed at a later time.
+            # Here we set up the call to the enrichment method to be executed at a later time.
             background_tasks.add_task(self._enrichment_callback, params_enrichment)
 
             # Return the identifier of the task ID associated with the request.
