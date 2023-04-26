@@ -72,7 +72,7 @@ class API_Enrichment(APIModuleInterface, Enrichment) :
                                "description": "Task is currently being processed or does not exist."},
                          500: {"content": {"application/json": {}},
                                "description": "Some error occurred during the semantic enrichment. Check the correctness" +
-                                              "of the trajectory dataset being provided in input."}}
+                                              " of the datasets provided in input."}}
 
 
         # Declare the path function operations associated with the API_Enrichment class.
