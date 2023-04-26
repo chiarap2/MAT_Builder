@@ -19,8 +19,8 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
     ### INNER CLASSES ###
 
     class Params(BaseModel):
-        min_num_samples: int = Field(Query(..., default=1500, description="Minimum number of samples a trajectory must have to be considered."))
-        max_speed: float = Field(Query(..., default=300, description="Maximum speed a sample can have in a trajectory (in km/h)."))
+        min_num_samples: int = Field(Query(default=1500, description="Minimum number of samples a trajectory must have to be considered."))
+        max_speed: float = Field(Query(default=300, description="Maximum speed a sample can have in a trajectory (in km/h)."))
         compress_trajectories: bool = Field(Query(..., description="Boolean value determining whether the trajectories should be compressed. This can likely speed up subsequent enrichment steps."))
 
 

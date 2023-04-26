@@ -20,8 +20,8 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
     ### INNER CLASSES ###
 
     class Params(BaseModel):
-        min_duration_stop: int = Field(Query(..., default=10, description="Minimum duration of a stop (in minutes)."))
-        max_stop_radius: float = Field(Query(..., default=0.2, description="Maximum radius a stop can have (in kilometers)"))
+        min_duration_stop: int = Field(Query(default=10, description="Minimum duration of a stop (in minutes)."))
+        max_stop_radius: float = Field(Query(default=0.2, description="Maximum radius a stop can have (in kilometers)"))
 
     class SegmentationResults(BaseModel):
         stops: dict = Field(description="pandas DataFrame (translated in JSON) containing the stop segments.")
