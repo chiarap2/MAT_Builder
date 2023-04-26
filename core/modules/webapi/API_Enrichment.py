@@ -45,7 +45,9 @@ class API_Enrichment(APIModuleInterface, Enrichment) :
         # 1.1 - Now store to disk the DataFrame containing the results.
         if exe_ok:
             namefile = task_id + ".ttl"
-            self._rdf_graph.serialize_graph(namefile)
+            namefile_tmp = namefile + ".tmp"
+            self._rdf_graph.serialize_graph(namefile_tmp)
+            os.rename(namefile_tmp, namefile)
         else:
             namefile = task_id + ".error"
             io.open(namefile, 'w').close()
