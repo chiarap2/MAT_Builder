@@ -44,7 +44,9 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
         # 1.1 - Now store to disk the DataFrame containing the results.
         if exe_ok :
             namefile = task_id + ".parquet"
-            self._results.to_parquet(namefile)
+            namefile_tmp = namefile + ".tmp"
+            self._results.to_parquet(namefile_tmp)
+            os.rename(namefile_tmp, namefile)
         else :
             namefile = task_id + ".error"
             io.open(namefile, 'w').close()

@@ -46,8 +46,11 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
             # Construct the (dict) response, containing the stops and moves dataframes (will be automatically translated to JSON by FastAPI).
             results = {'stops': self.stops.to_dict(),
                        'moves': self.moves.to_dict()}
-            with open(task_id + '.json', 'w', encoding='utf-8') as out_file:
+            namefile = task_id + ".json"
+            namefile_tmp = namefile + ".tmp"
+            with open(namefile_tmp, 'w', encoding='utf-8') as out_file:
                 json.dump(results, out_file, default=str, ensure_ascii=False)
+            os.rename(namefile_tmp, namefile)
         else :
             namefile = task_id + ".error"
             io.open(namefile, 'w').close()
