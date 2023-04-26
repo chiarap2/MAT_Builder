@@ -21,4 +21,4 @@ app.include_router(prefix_router)
 # Run the uvicorn server (backend).
 if __name__=="__main__":
     # uvicorn.run("__main__:app", reload=True)
-    uvicorn.run("__main__:app", workers=5)
+    uvicorn.run("__main__:app", host="0.0.0.0", workers=5)
