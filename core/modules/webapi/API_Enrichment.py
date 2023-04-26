@@ -21,9 +21,9 @@ class API_Enrichment(APIModuleInterface, Enrichment) :
 
     class Params(BaseModel):
         move_enrichment: bool = Field(Query(..., description="Boolean value specifying if the move segments should be augmented with the estimated transportation means."))
-        max_dist: int = Field(Query(..., description="Maximum distance beyond which a POI won't be associated with a stop segment."))
-        dbscan_epsilon: int = Field(Query(..., description="DBSCAN parameter: used to cluster stop segments (and thus find systematic stops). Determines the distance below which a stop can be included in an existing cluster."))
-        systematic_threshold : int = Field(Query(..., description="DBSCAN parameter: minimum size a cluster of stops must have to be considered a cluster of systematic stops."))
+        max_dist: int = Field(Query(..., default=50, description="Maximum distance (in meters) beyond which a POI won't be associated with a stop segment."))
+        dbscan_epsilon: int = Field(Query(..., default=50, description="DBSCAN parameter: used to cluster stop segments (and thus find systematic stops). It represents the distance (in meters) below which a stop can be included in an existing cluster."))
+        systematic_threshold : int = Field(Query(..., default=5, description="DBSCAN parameter: minimum size a cluster of stops must have to be considered a cluster of systematic stops."))
 
 
 
@@ -81,8 +81,7 @@ class API_Enrichment(APIModuleInterface, Enrichment) :
                     response_class=FileResponse,
                     responses=responses_get)
         def enrich(background_tasks: BackgroundTasks,
-                   task_id: str = Query(description="Task ID associated with a previously done POST request."),
-                   token: str = Query(description="Token sent from the client.")):
+                   task_id: str = Query(description="Task ID associated with a previously done POST request.")):
 
             # Now, find out whether the results are ready OR some error occurred OR the task is still being processed...
             # ...OR the task does not exist, and answer accordingly.

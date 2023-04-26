@@ -19,10 +19,9 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
     ### INNER CLASSES ###
 
     class Params(BaseModel):
-        min_num_samples: int = Field(Query(..., description="Minimum number of samples a trajectory must have to be considered."))
-        max_speed: float = Field(Query(..., description="Maximum speed a sample can have in a trajectory (km/h)."))
+        min_num_samples: int = Field(Query(..., default=1500, description="Minimum number of samples a trajectory must have to be considered."))
+        max_speed: float = Field(Query(..., default=300, description="Maximum speed a sample can have in a trajectory (in km/h)."))
         compress_trajectories: bool = Field(Query(..., description="Boolean value determining whether the trajectories should be compressed. This can likely speed up subsequent enrichment steps."))
-        token: str = Field(Query(..., description="Token sent from the client"))
 
 
 
@@ -80,8 +79,7 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
                     response_class=FileResponse,
                     responses=responses_get)
         def preprocess(background_tasks : BackgroundTasks,
-                       task_id : str = Query(description="Task ID associated with a previously done POST request."),
-                       token : str = Query(description="Token sent from the client.")) :
+                       task_id : str = Query(description="Task ID associated with a previously done POST request.")) :
 
             # Now, find out whether the results are ready OR some error occurred OR the task is still being processed...
             # ...OR the task does not exist, and answer accordingly.

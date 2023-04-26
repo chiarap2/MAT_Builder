@@ -20,9 +20,8 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
     ### INNER CLASSES ###
 
     class Params(BaseModel):
-        min_duration_stop: int = Field(Query(..., description="Minimum duration of a stop (in minutes)."))
-        max_stop_radius: float = Field(Query(..., description="Maximum radius a stop can have (in kilometers)"))
-        token: str = Field(Query(..., description="Token sent from the client"))
+        min_duration_stop: int = Field(Query(..., default=10, description="Minimum duration of a stop (in minutes)."))
+        max_stop_radius: float = Field(Query(..., default=0.2, description="Maximum radius a stop can have (in kilometers)"))
 
     class SegmentationResults(BaseModel):
         stops: dict = Field(description="pandas DataFrame (translated in JSON) containing the stop segments.")
@@ -83,8 +82,7 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
                     response_model=API_Segmentation.SegmentationResults,
                     responses=responses_get)
         def segment(background_tasks : BackgroundTasks,
-                    task_id : str = Query(description="Task ID associated with a previously done POST request."),
-                    token : str = Query(description="Token sent from the client.")) :
+                    task_id : str = Query(description="Task ID associated with a previously done POST request.")) :
 
             # Now, find out whether the results are ready OR some error occurred OR the task is still being processed...
             # ...OR the task does not exist, and answer accordingly.
