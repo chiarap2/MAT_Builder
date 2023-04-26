@@ -7,7 +7,8 @@ from core import API_Preprocessing, API_Segmentation, API_Enrichment
 # Setup the API services corresponding to the various semantic enrichment functionalities...
 app = FastAPI(title="Semantic Enrichment Processor API",
               description="MobiDataLab semantic enrichment API",
-              version='1.0.0')
+              contact={"url": "https://github.com/MobiDataLab/mdl-semantic-enrichment"},
+              version='1.0.1')
 
 prefix_router = APIRouter(prefix="/semantic")
 api_preprocessing = API_Preprocessing(prefix_router)
