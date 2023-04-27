@@ -81,7 +81,7 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
         # Declare the path function operations associated with the API_Preprocessing class.
         @router.get("/" + Segmentation.id_class + "/",
                     description="If the task execution ended successfully, the operation returns the pandas DataFrames of the stops" +
-                                " and the moves translated into the JSON format.",
+                                " and the moves, both translated in JSON format.",
                     response_model=API_Segmentation.SegmentationResults,
                     responses=responses_get)
         def segment(background_tasks : BackgroundTasks,
@@ -112,7 +112,8 @@ class API_Segmentation(APIModuleInterface, Segmentation) :
 
 
         @router.post("/" + Segmentation.id_class + "/",
-                     description="This path operation initiates a task that segments a dataset of trajectories into stop and move segments.",
+                     description="This path operation initiates the segmentation of a dataset of trajectories. It returns a task id" +
+                                 " that can be later used to retrieve the stop and move datasets.",
                      responses=self.responses_post)
         def segment(background_tasks: BackgroundTasks,
                     file_trajectories: UploadFile = File(description="pandas DataFrame, stored in a Parquet file, containing a dataset of trajectories."),

@@ -108,9 +108,8 @@ class API_Preprocessing(APIModuleInterface, Preprocessing) :
 
 
         @router.post("/" + Preprocessing.id_class + "/",
-                     description="This path operation returns a task id that can be later used to retrieve" +
-                                 " a dataset of preprocessed trajectories. The result is returned as a pandas" +
-                                 " DataFrame, stored in a Parquet file.",
+                     description="This path operation initiates the preprocessing of a dataset of trajectories. It returns a task id" +
+                                 " that can be later used to retrieve a dataset of preprocessed trajectories.",
                      responses=self.responses_post)
         def preprocess(background_tasks: BackgroundTasks,
                        file_trajectories: UploadFile = File(description="pandas DataFrame, stored in a Parquet file, containing a dataset of trajectories."),

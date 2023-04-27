@@ -79,7 +79,7 @@ class API_Enrichment(APIModuleInterface, Enrichment) :
 
         # Declare the path function operations associated with the API_Enrichment class.
         @router.get("/" + Enrichment.id_class + "/",
-                    description="This path operation returns a RDF knowledge graph. The result is returned in a Turtle (ttl) file.",
+                    description="This path operation returns a RDF knowledge graph. The result is returned in a Turtle (.ttl) file.",
                     response_class=FileResponse,
                     responses=responses_get)
         def enrich(background_tasks: BackgroundTasks,
@@ -109,9 +109,8 @@ class API_Enrichment(APIModuleInterface, Enrichment) :
                                     content={"message": f"Task {task_id} is still being processed or does not exist!"})
 
         @router.post("/" + Enrichment.id_class + "/",
-                     description="This path operation returns a task id that can be later used to retrieve" +
-                                 " a RDF knowledge graph containing the enriched trajectories.  The result is returned as" +
-                                 " Turtle (.ttl) file.",
+                     description="This path operation initiates the semantic enrichment of a dataset of trajectories. It returns" +
+                                 " a task id that can be later used to retrieve a RDF knowledge graph containing the enriched trajectories.",
                      responses=self.responses_post)
         def enrich(background_tasks : BackgroundTasks,
                    file_trajectories : UploadFile = File(description="pandas DataFrame, stored in Parquet format, containing the trajectory dataset."),
