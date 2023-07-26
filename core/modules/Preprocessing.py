@@ -51,11 +51,15 @@ class Preprocessing(ModuleInterface) :
         tdf = skmob.TrajDataFrame(gdf, latitude = 'lat', longitude = 'lon',
                                   datetime = 'time', user_id = 'user', trajectory_id = 'traj_id')
 
-        print("Filtering out the outliers...")
-        ftdf = filtering.filter(tdf, max_speed_kmh = self._kmh)
+        ftdf = tdf
+        if self._kmh > 0 :
+            print("Filtering out the outliers...")
+            ftdf = filtering.filter(tdf, max_speed_kmh = self._kmh)
 
-        print("Compressing the trajectories...")
-        ctdf = compression.compress(ftdf, spatial_radius_km = 0.2) if self.compress else None
+        ctdf = None
+        if self.compress :
+            print("Compressing the trajectories...")
+            ctdf = compression.compress(ftdf, spatial_radius_km = 0.2)
 
         self._results = ctdf if ctdf is not None else ftdf
         return True

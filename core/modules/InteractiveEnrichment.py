@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import geopandas as gpd
 import os
@@ -353,6 +354,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
         # Dictionary holding the transportation modes mapping.
         transport = {
+            np.NaN: 'NA',
             0: 'walk',
             1: 'bike',
             2: 'bus',
@@ -369,7 +371,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
         ### Preparing the information concerning the moves ###
 
-        # print(f"DEBUG PLOT MOVES: {mats_moves}")
+        print(f"DEBUG PLOT MOVES: {mats_moves}")
         mats_moves['label'] = mats_moves['label'].map(transport) if self.enrich_moves else 'NA'
         fig = px.line_mapbox(mats_moves,
                              lat="lat",
@@ -713,7 +715,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
 
             # Store the RDF KG to disk if the user requested it.
-            if create_rdf : self.results_enrichment['rdf_graph'].serialize_graph('kg.ttl')
+            if create_rdf == 'yes' : self.results_enrichment['rdf_graph'].serialize_graph('kg.ttl')
             
             
             # Initialize the dropdown menu with the list of users to show in output area of the interface.
@@ -738,14 +740,16 @@ class InteractiveEnrichment(InteractiveModuleInterface):
         options = []
         if user is not None:
             trajectories = self._get_trajectories(user)
+            moves = self.results_enrichment['moves']
             systematic = self.results_enrichment['systematic']
             occasional = self.results_enrichment['occasional']
 
             list_traj = []
             for i in trajectories :
-                num_sys = str(len(systematic[systematic['tid']==i]))
-                num_occ = str(len(occasional[occasional['tid']==i]))
-                text = i + ' (systematic: ' + num_sys + ', occasional: ' + num_occ + ')'
+                num_moves = str(len(moves[moves['tid'] == i])) if moves is not None else str(0)
+                num_sys = str(len(systematic[systematic['tid'] == i])) if systematic is not None else str(0)
+                num_occ = str(len(occasional[occasional['tid'] == i])) if occasional is not None else str(0)
+                text = str(i) + ' (moves: ' + num_moves + ', systematic: ' + num_sys + ', occasional: ' + num_occ + ')'
                 list_traj.append({'label': text, 'value': i})
 
             options.extend([html.H6(children='Trajectory plotter (choose one from the dropdown menu):',

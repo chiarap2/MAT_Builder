@@ -132,7 +132,8 @@ class InteractivePreprocessing(InteractiveModuleInterface):
             dic_params = {'trajectories' : pd.read_parquet(path),
                           'speed' : speed,
                           'n_points' : n_points,
-                          'compress' : True if 'yes' else False}
+                          'compress' : True if compress == 'yes' else False}
+
             # Esegui il codice core dell'istanza.
             self.preprocessing.execute(dic_params)
             results = self.preprocessing.get_results()['preprocessed_trajectories']
