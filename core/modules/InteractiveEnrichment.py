@@ -371,7 +371,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
 
         ### Preparing the information concerning the moves ###
 
-        print(f"DEBUG PLOT MOVES: {mats_moves}")
+        # print(f"DEBUG PLOT MOVES: {mats_moves}")
         mats_moves['label'] = mats_moves['label'].map(transport) if self.enrich_moves else 'NA'
         fig = px.line_mapbox(mats_moves,
                              lat="lat",
