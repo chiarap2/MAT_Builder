@@ -16,7 +16,7 @@ dependencies:
   - rdflib
   - jupyterlab
   - scikit-learn=1.2.2
-  - scikit-mobility=1.2.2
+  - scikit-mobility
   - shapely
   - geopy
   - tesspy

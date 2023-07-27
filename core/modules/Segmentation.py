@@ -68,11 +68,11 @@ class Segmentation(ModuleInterface):
 
 
         ### stop detection ###
-        stdf = detection.stops(tdf,
-                               stop_radius_factor = 0.5, 
-                               minutes_for_a_stop = self.duration, 
-                               spatial_radius_km = self.radius, 
-                               leaving_time = True)
+        stdf = detection.stay_locations(tdf,
+                                        stop_radius_factor = 0.5,
+                                        minutes_for_a_stop = self.duration,
+                                        spatial_radius_km = self.radius,
+                                        leaving_time = True)
         self.stops = pd.DataFrame(stdf)
 
 
