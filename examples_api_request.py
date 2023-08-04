@@ -1,42 +1,52 @@
+import time
+
 import requests
 import pandas as pd
 import re
-from typing import Optional
+from typing import Optional, Tuple
 
 
 ### Semantic enrichment processor root address ###
 # url_service = "http://127.0.0.1:8000/semantic/"
-url_service = "http://azureuser@semantic.westeurope.cloudapp.azure.com:8000/semantic/"
+# url_service = "http://azureuser@semantic.westeurope.cloudapp.azure.com:8000/semantic/"
+url_service = 'https://services.mobidatalab.eu:8443/semantic/'
 
 
-def test_preprocessing_post(pathfile : str) -> Optional[str]:
+def test_preprocessing_post(pathfile : str) -> Tuple[int, Optional[str]]:
     '''
     This function issues a POST request to the preprocessing endpoint of the semantic enrichment processor web API.
     '''
 
+    # Here we set up the endpoint, parameters, and binary file to pass in the POST request.
     url = url_service + "Preprocessing/"
     parameters = {'max_speed' : 300, 'min_num_samples' : 1500, 'compress_trajectories' : True}
     files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
     res = requests.post(url, params=parameters, files=files)
 
     print(res)
-    print(res.json()['message'])
+    # print(res.json()['message'])
+
+    # If the request was successful, return the task ID returned by the processor.
+    # If an error occurred, then return None.
+    if res.status_code == 200:
+        return res.status_code, res.json()['message'].split(' ')[1]
+    else:
+        return res.status_code, None
 
 
-def test_preprocessing_get(task_id : str):
+def test_preprocessing_get(task_id : str) -> Tuple[int, Optional[str]]:
     '''
     This function issues a GET request to the preprocessing endpoint of the semantic enrichment processor web API.
     '''
 
+    # Set up the API endpoint, parameters, and path where to save the file received from the server.
     url = url_service + "Preprocessing/"
     parameters = {'task_id' : task_id}
     res = requests.get(url, params=parameters)
 
     print(res)
-    if res.status_code != 200 :
-        print(res.json()['message'])
-        return None
-    else :
+    filename = None
+    if res.status_code == 200 :
         filename = "preprocessed_trajectories.parquet"
         if "content-disposition" in res.headers.keys():
             filename = re.findall("filename=\"(.+)\"", res.headers['content-disposition'])[0]
@@ -44,11 +54,13 @@ def test_preprocessing_get(task_id : str):
         with open(filename, 'wb') as f:
             f.write(res.content)
 
+    return res.status_code, filename
+
         #test_file = pd.read_parquet(filename)
         #print(test_file.info())
 
 
-def test_segmentation_post(pathfile : str) -> Optional[str]:
+def test_segmentation_post(pathfile : str) -> Tuple[int, Optional[str]]:
     '''
     This function issues a POST request to the segmentation endpoint of the semantic enrichment processor web API.
     '''
@@ -60,10 +72,15 @@ def test_segmentation_post(pathfile : str) -> Optional[str]:
     res = requests.post(url, params=params, files=files)
 
     print(res)
-    print(res.json()['message'])
+    # print(res.json()['message'])
+
+    if res.status_code == 200:
+        return res.status_code, res.json()['message'].split(' ')[1]
+    else:
+        return res.status_code, None
 
 
-def test_segmentation_get(task_id : str) :
+def test_segmentation_get(task_id : str) -> Tuple[int, Optional[str], Optional[str]]:
     '''
     This function issues a GET request to the segmentation endpoint of the semantic enrichment processor web API.
     '''
@@ -75,13 +92,9 @@ def test_segmentation_get(task_id : str) :
     print(res)
     print(res.status_code)
 
-
-    if res.status_code != 200 :
-        print(f"HTTP status: {res.status_code}")
-        if res.status_code == 204: print(f"Task {task_id} is still being processed...")
-        else : print(res.json())
-        return None
-    else :
+    stops_path = None
+    moves_path = None
+    if res.status_code == 200 :
         # Translate the received stops and moves from json to dataframes.
         stops = pd.DataFrame.from_dict(res.json()['stops'])
         moves = pd.DataFrame.from_dict(res.json()['moves'])
@@ -90,25 +103,12 @@ def test_segmentation_get(task_id : str) :
         print(moves.info())
 
         # Store the dataframes into parquet files.
-        stops.to_parquet('stops.parquet')
-        moves.to_parquet('moves.parquet')
+        stops_path = './stops.parquet'
+        moves_path = './moves.parquet'
+        stops.to_parquet(stops_path)
+        moves.to_parquet(moves_path)
 
-        def test_segmentation_post(pathfile: str) -> Optional[str]:
-
-            url = url_service + "Segmentation/"
-            params = {'min_duration_stop': 10, 'max_stop_radius': 0.2}
-            files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
-
-            res = requests.post(url, params=params, files=files)
-
-            print(res)
-            if res.status_code != 200:
-                print(f"Some error occurred. Code returned by the server: {res.status_code}")
-                print(res.json()['message'])
-                return None
-            else:
-                print(f"Message from the server: {res.json()['message']}")
-                return res.json()['task_id']
+    return res.status_code, stops_path, moves_path
 
 
 def test_enrichment_post(path_trajs : str,
@@ -116,7 +116,7 @@ def test_enrichment_post(path_trajs : str,
                          path_stops : str,
                          path_pois : str,
                          path_social : str,
-                         path_weather : str) -> Optional[str]:
+                         path_weather : str) -> Tuple[int, Optional[str]]:
     '''
     This function issues a POST request to the enrichment endpoint of the semantic enrichment processor web API.
     '''
@@ -143,7 +143,13 @@ def test_enrichment_post(path_trajs : str,
     print(res)
     print(res.json()['message'])
 
-def test_enrichment_get(task_id: str):
+    if res.status_code == 200:
+        return res.status_code, res.json()['message'].split(' ')[1]
+    else:
+        return res.status_code, None
+
+
+def test_enrichment_get(task_id: str) -> Tuple[int, Optional[str]]:
     '''
     This function issues a GET request to the enrichment endpoint of the semantic enrichment processor web API.
     '''
@@ -153,10 +159,8 @@ def test_enrichment_get(task_id: str):
     res = requests.get(url, params=parameters)
 
     print(res)
-    if res.status_code != 200:
-        print(res.json()['message'])
-        return None
-    else:
+    filename = None
+    if res.status_code == 200:
         filename = "results.ttl"
         if "content-disposition" in res.headers.keys():
             filename = re.findall("filename=\"(.+)\"", res.headers['content-disposition'])[0]
@@ -164,23 +168,97 @@ def test_enrichment_get(task_id: str):
         with open(filename, 'wb') as f:
             f.write(res.content)
 
+    return res.status_code, filename
+
 
 def main() :
     '''
-    In this main we simulate the chains of reuqests done to the semantic enrichment processor in order to get,
-    starting from a dataset of trajectories, a RDF knowledge graph containing a dataset of semantically enriched
+    In this main we simulate the chains of requests done to the semantic enrichment processor in order to,
+    starting from a dataset of trajectories, get an RDF knowledge graph containing a dataset of semantically enriched
     trajectories.
     '''
 
-    # task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
-    # test_preprocessing_get("e818f705ff2746188abc6e7751e61b93")
 
-    # task_id = test_segmentation_post('./preprocessed_trajectories.parquet')
-    # test_segmentation_get('c0770b7cefcd441799cebafcf86d1bbf')
+    ### Step 1 - preprocessing the trajectory dataset. ###
+    req_code, task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
+    if req_code == 200:
+        print(f"Preprocessing POST request successful! Task ID: {task_id}")
+    else:
+        print(f"Preprocessing POST request not successful (code {req_code}), aborting...")
+        return
 
-    # test_enrichment_post('./preprocessed_trajectories.parquet', './moves.parquet', './stops.parquet', './datasets/rome/poi/pois.parquet',
-    #                      './datasets/rome/tweets/tweets_rome.parquet', './datasets/rome/weather/weather_conditions.parquet')
-    test_enrichment_get("90bf1698cda6432782b4d9a9115bdd00")
+
+    waiting = True
+    path_preprocessed = None
+    while waiting :
+        req_code, path_preprocessed = test_preprocessing_get(task_id)
+
+        if req_code == 200:
+            print(f"Preprocessing GET request successful (task {task_id}, file received {path_preprocessed})!")
+            waiting = False
+        elif req_code == 404 :
+            print(f"Server is still processing the preprocessing task {task_id} (code {req_code})")
+            time.sleep(5)
+        else:
+            print(f"Server failed at processing the preprocessing task {task_id} (code {req_code}), aborting...")
+            return
+
+
+
+    ### Step 2 - segmenting the trajectories in the trajectory dataset. ###
+    req_code, task_id = test_segmentation_post(path_preprocessed)
+    if req_code == 200:
+        print(f"Segmentation POST request successful! Task ID: {task_id}")
+    else:
+        print(f"Segmentation POST request not successful (code {req_code}), aborting...")
+        return
+
+
+    waiting = True
+    stops_path = None
+    moves_path = None
+    while waiting :
+        req_code, stops_path, moves_path = test_segmentation_get(task_id)
+
+        if req_code == 200:
+            print(f"Preprocessing GET request successful (task {task_id}, files received: {stops_path}, {moves_path})!")
+            waiting = False
+        elif req_code == 404:
+            print(f"Server is still processing the segmentation task {task_id} (code {req_code})")
+            time.sleep(5)
+        else:
+            print(f"Server failed at processing the segmentation task {task_id} (code {req_code}), aborting...")
+            return
+
+
+    ### Step 3 - Trajectory enrichment. ###
+    req_code, task_id = test_enrichment_post(path_preprocessed,
+                                             moves_path,
+                                             stops_path,
+                                             './datasets/rome/poi/pois.parquet',
+                                             './datasets/rome/tweets/tweets_rome.parquet',
+                                             './datasets/rome/weather/weather_conditions.parquet')
+    if req_code == 200:
+        print(f"Enrichment POST request successful! Task ID: {task_id}")
+    else:
+        print(f"Enrichment POST request not successful (code {req_code}), aborting...")
+        return
+
+
+    waiting = True
+    kg_path = None
+    while waiting:
+        req_code, kg_path = test_enrichment_get(task_id)
+
+        if req_code == 200:
+            print(f"Enrichment GET request successful (task {task_id}, files received: {stops_path}, {moves_path})!")
+            waiting = False
+        elif req_code == 404:
+            print(f"Server is still processing the enrichment task {task_id} (code {req_code})")
+            time.sleep(5)
+        else:
+            print(f"Server failed at processing the enrichment task {task_id} (code {req_code}), aborting...")
+            return
 
 
 if __name__ == '__main__':
