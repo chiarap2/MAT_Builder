@@ -221,7 +221,7 @@ def main() :
         req_code, stops_path, moves_path = test_segmentation_get(task_id)
 
         if req_code == 200:
-            print(f"Preprocessing GET request successful (task {task_id}, files received: {stops_path}, {moves_path})!")
+            print(f"Segmentation GET request successful (task {task_id}, files received: {stops_path}, {moves_path})!")
             waiting = False
         elif req_code == 404:
             print(f"Server is still processing the segmentation task {task_id} (code {req_code})")
