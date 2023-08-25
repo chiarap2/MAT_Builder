@@ -264,7 +264,7 @@ def main() :
         req_code, kg_path = test_enrichment_get(task_id)
 
         if req_code == 200:
-            print(f"Enrichment GET request successful (task {task_id}, files received: {stops_path}, {moves_path})!")
+            print(f"Enrichment GET request successful (task {task_id}, KG file received: {kg_path})!")
             waiting = False
         elif req_code == 404:
             print(f"Server is still processing the enrichment task {task_id} (code {req_code})")
