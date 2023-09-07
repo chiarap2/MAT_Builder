@@ -588,8 +588,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                                                           {"label": "office", "value": "office"},
                                                           {"label": "public_transport", "value": "public_transport"},
                                                           {"label": "shop", "value": "shop"},
-                                                          {"label": "tourism", "value": "tourism"},
-                                                          {"label":"no enrichment","value":"no"}],
+                                                          {"label": "tourism", "value": "tourism"}],
                                                value = ["amenity"],
                                                multi = True,
                                                style = {'color':'#333'}))
@@ -677,7 +676,7 @@ class InteractiveEnrichment(InteractiveModuleInterface):
                 outputs.append(html.H6(children='Error: invalid path to the poi file!'))
                 return None, outputs
             else :
-                poi_df = gpd.read_parquet(path_poi)
+                if path_poi != 'no': poi_df = gpd.read_parquet(path_poi)
 
             social_df = None
             if (social_enrichment != 'no') and (os.path.isfile(social_enrichment) is False) :

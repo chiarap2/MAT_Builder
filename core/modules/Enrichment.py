@@ -109,7 +109,7 @@ class Enrichment(ModuleInterface):
 
                 # downloading POI
                 print(f"Downloading {key} POIs from OSM...")
-                poi = ox.geometries_from_place(place, tags={key: True})
+                poi = ox.features_from_place(place, tags={key: True})
                 print(f"Download completed!")
 
                 # Immediately return the empty dataframe if it doesn't contain any suitable POI...
@@ -119,8 +119,9 @@ class Enrichment(ModuleInterface):
 
                 # Remove the POIs that do not have a name.
                 poi.reset_index(inplace=True)
+                poi.drop(columns='category', inplace = True, errors='ignore') # Delete the column 'category' if it exists.
                 poi.rename(columns={key: 'category'}, inplace=True)
-                poi.drop(poi.columns.difference(list_columns_df_poi), axis=1, inplace=True)
+                poi.drop(columns = poi.columns.difference(list_columns_df_poi), inplace=True)
                 poi = poi.loc[~poi['name'].isna()]
                 poi['category'].replace({'yes': key}, inplace=True)
 
@@ -508,7 +509,7 @@ class Enrichment(ModuleInterface):
         self._stops['leaving_datetime'] = pd.to_datetime(self._stops['leaving_datetime']) # Convert the dates in case they are strings...
         self._poi_place = dic_params['poi_place']
         self._list_pois = [] if dic_params['poi_categories'] is None else dic_params['poi_categories']
-        self._path_poi = dic_params['path_poi']
+        self._df_poi = dic_params['path_poi']
         self._max_distance = dic_params['max_dist']
         self._dbscan_epsilon = dic_params['dbscan_epsilon']
         self._systematic_threshold = dic_params['systematic_threshold']
@@ -569,15 +570,15 @@ class Enrichment(ModuleInterface):
         self._stops.reset_index(inplace=True)
         self._stops.rename(columns={'index': 'stop_id'}, inplace=True)
 
-        # Get a POI dataset, either from OSM or from a file.
+        # Get a POI dataset, either from OSM or from a dataset passed to the Enrichment object.
         df_poi = None
-        if self._path_poi is None:
+        if self._df_poi is None:
             print(
                 f"Downloading POIs from OSM for the location of {self._poi_place}. Selected types of POIs: {self._list_pois}")
             df_poi = self._download_poi_osm(self._list_pois, self._poi_place)
         else:
-            df_poi = self._path_poi
-            print(f"Using a POI file: {df_poi}!")
+            df_poi = self._df_poi
+            print(f"Using already existing POI dataset!!")
         print(f"A few info on the POIs that will be used to enrich the occasional stops: {df_poi.info()}")
 
 
@@ -785,7 +786,7 @@ class Enrichment(ModuleInterface):
         self._upload_social = None
         self._tweet_user = None
         self._max_distance = None
-        self._path_poi = None
+        self._df_poi = None
         self._list_pois = None
         self._poi_place = None
         self._enrich_moves = None
