@@ -122,8 +122,35 @@ For more details, please see the ```README.md``` in the ```datasets``` folder.
 
 If you use MAT-Builder, please cite the following papers:
 
+F. Lettich, C. Pugliese, C. Renso and F. Pinelli, "Semantic Enrichment of Mobility Data: A Comprehensive Methodology and the MAT-BUILDER System," in IEEE Access, vol. 11, pp. 90857-90875, 2023.
+
+```
+@ARTICLE{10227262,
+  author={Lettich, Francesco and Pugliese, Chiara and Renso, Chiara and Pinelli, Fabio},
+  journal={IEEE Access}, 
+  title={Semantic Enrichment of Mobility Data: A Comprehensive Methodology and the MAT-BUILDER System}, 
+  year={2023},
+  volume={11},
+  number={},
+  pages={90857-90875},
+  doi={10.1109/ACCESS.2023.3307824}}
+```
+
+Lettich, F., Pugliese, C., Renso, C. and Pinelli, F., 2023, March. A general methodology for building multiple aspect trajectories. 
+In Proceedings of the 38th ACM/SIGAPP Symposium on Applied Computing (pp. 515-517).
+
+```
+@inproceedings{lettich2023general,
+  title={A general methodology for building multiple aspect trajectories},
+  author={Lettich, Francesco and Pugliese, Chiara and Renso, Chiara and Pinelli, Fabio},
+  booktitle={Proceedings of the 38th ACM/SIGAPP Symposium on Applied Computing},
+  pages={515--517},
+  year={2023}
+}
+```
+
 C. Pugliese, F. Lettich, C. Renso, F. Pinelli, Mat-builder: a system to build semantically
-enriched trajectories, in: The 23rd IEEE International Conference on Mobile Data Management, Cyprus, 2022
+enriched trajectories. In Proceedings of the 23rd IEEE International Conference on Mobile Data Management, Cyprus, 2022
 
 ```
 @inproceedings{Pugliese22,
