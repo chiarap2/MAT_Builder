@@ -91,7 +91,8 @@ The ``InteractiveEnrichment`` module provides a graphical interface to the ```En
   - ```wikidata```: POI WikiData identifier (string)
   - ```geometry```: POI geometry (GeoPandas geometry object)
   - ```category```: POI category (string)
-  For viable examples of POI datasets, please have a look at the datasets in the ```datasets``` folder.
+  For viable examples of POI datasets, please have a look at the datasets in the ```datasets``` folder. See also the ```misc``` folder for a notebook that
+  contains an example on how to generate a POI dataset from OpenStreetMap data for MAT-Builder.
 
 
 - **Move**: trajectories are enriched with the move segments. The segments can also be augmented with the transportation mean probably used.
@@ -102,7 +103,8 @@ The ``InteractiveEnrichment`` module provides a graphical interface to the ```En
   - ```DATE```: date in which the weather observation was recorded (string or datetime64).
   - ```TAVG_C```: average temperature in celsius (float).
   - ```DESCRIPTION```: weather conditions (string).
-  For viable examples of weather conditions datasets, please look at the datasets in the ```datasets``` folder.
+  For viable examples of weather conditions datasets, please look at the datasets in the ```datasets``` folder. See also the ```misc``` folder for a notebook that
+  contains an example on how to generate a weather dataset from Meteostat data for MAT-Builder.
 
 
 - **Social media** : trajectory users are enriched with their social media posts. Social media data must be provided via a pandas DataFrame stored according to 
