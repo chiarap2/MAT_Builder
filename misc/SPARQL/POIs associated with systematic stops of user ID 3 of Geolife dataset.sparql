@@ -1,0 +1,36 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX step: <http://purl.org/net/step_specialized#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX time: <http://www.w3.org/2006/time#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Richiesto per funzioni aggiuntive fornite da GraphDB.
+PREFIX ofn:<http://www.ontotext.com/sparql/functions/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?sys_type ?poi_id (COUNT(?poi_id) as ?frequency) (SAMPLE(?poi_name) as ?poi_name) (AVG(ofn:asHours(?t_end - ?t_start)) AS ?average_duration_hrs) (AVG(?poi_distance) AS ?average_distance)
+WHERE
+{
+	?traj ^step:hasTrajectory / foaf:name "3" ;
+           step:hasID ?traj_id .
+    
+    ?traj step:hasFeature / step:hasEpisode ?ep .
+    ?ep step:hasSemanticDescription ?sys_stop .
+    
+    # Find out the various instances of systematic stops associated with the selected user.
+    ?sys_stop rdf:type ?sys_type .
+    ?sys_type rdfs:subClassOf step:SystematicStop .
+    
+    # Find out the POIs that have been associated with each systematic stop.
+    ?sys_stop step:hasPOI ?poi .
+    ?poi step:hasOSMValue ?poi_id ;
+         step:hasOSMName ?poi_name ;
+         step:hasDistance ?poi_distance .
+    
+    
+    # Get the starting and ending times of each stop.
+    ?ep step:hasExtent / step:hasStartingPoint / step:atTime / time:inXSDDateTime ?t_start ;
+        step:hasExtent / step:hasEndingPoint / step:atTime / time:inXSDDateTime ?t_end .
+}
+GROUP BY ?sys_type ?poi_id
+ORDER BY DESC(?frequency)

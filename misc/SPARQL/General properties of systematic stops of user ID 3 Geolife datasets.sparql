@@ -1,0 +1,32 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX step: <http://purl.org/net/step_specialized#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX time: <http://www.w3.org/2006/time#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Richiesto per funzioni aggiuntive fornite da GraphDB.
+PREFIX ofn:<http://www.ontotext.com/sparql/functions/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?sys_cluster_ID (SAMPLE(?sys_cluster_activity) AS ?cluster_activity) (COUNT(?sys_cluster_ID) AS ?num_stops_cluster) (SAMPLE(?sys_importance) * 100 AS ?cluster_importance) (SAMPLE(?sys_probability) * 100 AS ?correctness_activity) (AVG(ofn:asHours(?t_end - ?t_start)) AS ?average_duration_hrs) (SUM(ofn:asHours(?t_end - ?t_start)) AS ?sum_duration_hrs)
+WHERE
+{
+	?traj ^step:hasTrajectory / foaf:name "3" ;
+           step:hasID ?traj_id ;                                  
+           step:hasFeature / step:hasEpisode ?ep .
+    ?ep step:hasSemanticDescription ?sys_stop .
+    
+    # Find out the various instances of systematic stops associated with the selected user.
+    ?sys_stop rdf:type ?sys_cluster_activity .
+    ?sys_cluster_activity rdfs:subClassOf step:SystematicStop .
+    
+    ?sys_stop step:hasImportance ?sys_importance ;
+              step:hasSysID ?sys_cluster_ID ;
+              step:hasProbability ?sys_probability .
+    
+    # Get the starting and ending times of each stop.
+    ?ep step:hasExtent / step:hasStartingPoint / step:atTime / time:inXSDDateTime ?t_start ;
+        step:hasExtent / step:hasEndingPoint / step:atTime / time:inXSDDateTime ?t_end .
+}
+GROUP BY ?sys_cluster_ID
+ORDER BY DESC(?importance)

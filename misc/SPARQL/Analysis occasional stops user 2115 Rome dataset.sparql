@@ -1,0 +1,32 @@
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX step: <http://purl.org/net/step_specialized#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX time: <http://www.w3.org/2006/time#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+
+# Richiesto per funzioni aggiuntive fornite da GraphDB.
+PREFIX ofn:<http://www.ontotext.com/sparql/functions/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT  ?stop ?poi_name ?poi_category ?poi_distance ?t_start ?t_end (ofn:asMinutes(?t_end - ?t_start) AS ?duration_mins)
+WHERE 
+{
+	?traj ^step:hasTrajectory / foaf:name "2115" ;
+           step:hasID "2652" ;                                  
+           step:hasFeature ?feat .
+    ?feat step:hasEpisode ?ep .
+    
+    ?ep step:hasSemanticDescription ?stop ;
+        step:hasExtent ?ex .
+    ?stop rdf:type step:OccasionalStop .
+    
+    # Find out the POIs that have been associated with each systematic stop.
+    ?stop step:hasPOI ?poi .
+    ?poi step:hasOSMName ?poi_name ;
+         step:hasOSMCategory ?poi_category ;
+         step:hasDistance ?poi_distance .
+    
+    ?ex step:hasStartingPoint / step:atTime / time:inXSDDateTime ?t_start .
+    ?ex step:hasEndingPoint / step:atTime / time:inXSDDateTime ?t_end .
+}
+ORDER BY ?t_start ?poi_distance
