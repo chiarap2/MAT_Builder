@@ -71,6 +71,8 @@ stored in the Parquet format, and have the following columns:
 - ```lon```: longitude of a trajectory sample (float)
 - ```time```: timestamp of a sample (datetime64)
 
+For viable examples of raw trajectory datasets, please see the ```dataset``` folder.
+
 The ``InteractiveSegmentation`` module provides a graphical interface to the ```Segmentation``` module. It takes in input a set of preprocessed trajectories, and segments
 each trajectory into ***stop*** and ***move segments***.
 
@@ -91,6 +93,7 @@ The ``InteractiveEnrichment`` module provides a graphical interface to the ```En
   - ```wikidata```: POI WikiData identifier (string)
   - ```geometry```: POI geometry (GeoPandas geometry object)
   - ```category```: POI category (string)
+    
   For viable examples of POI datasets, please have a look at the datasets in the ```datasets``` folder. See also the ```misc``` folder for a notebook that
   contains an example on how to generate a POI dataset from OpenStreetMap data for MAT-Builder.
 
@@ -103,6 +106,7 @@ The ``InteractiveEnrichment`` module provides a graphical interface to the ```En
   - ```DATE```: date in which the weather observation was recorded (string or datetime64).
   - ```TAVG_C```: average temperature in celsius (float).
   - ```DESCRIPTION```: weather conditions (string).
+    
   For viable examples of weather conditions datasets, please look at the datasets in the ```datasets``` folder. See also the ```misc``` folder for a notebook that
   contains an example on how to generate a weather dataset from Meteostat data for MAT-Builder.
 
@@ -113,6 +117,8 @@ The ``InteractiveEnrichment`` module provides a graphical interface to the ```En
   - ```text```: post text (string)
   - ```tweet_created```: timestamp of the tweet (datetime64)
   - ```uid```: identifier of the user who posted the tweet.
+ 
+  For a viable example of a social media dataset, please look at the datasets in the ```datasets``` folder.
 
 
 
