@@ -192,8 +192,17 @@ def main() :
     '''
 
 
+    # Paths to the files given as input to the various endpoints of the semantic enrichemnt processor.
+    # NOTE: change the paths if you want to try out different datasets.
+    traj_path = './datasets/rome/rome.parquet'
+    pois_path = './datasets/rome/poi/pois.parquet'
+    social_path = './datasets/rome/tweets/tweets_rome.parquet'
+    weather_path = './datasets/rome/weather/weather_conditions.parquet'
+
+
+
     ### Step 1 - preprocessing the trajectory dataset. ###
-    req_code, task_id = test_preprocessing_post('./datasets/rome/rome.parquet')
+    req_code, task_id = test_preprocessing_post(traj_path)
     if req_code == 200:
         print(f"Preprocessing POST request successful! Task ID: {task_id}")
     else:
@@ -209,6 +218,7 @@ def main() :
         if req_code == 200:
             print(f"Preprocessing GET request successful (task {task_id}, file received {path_preprocessed})!")
             waiting = False
+            input("Press Enter to continue...")
         elif req_code == 404 :
             print(f"Server is still processing the preprocessing task {task_id} (code {req_code})")
             time.sleep(5)
@@ -236,6 +246,7 @@ def main() :
         if req_code == 200:
             print(f"Segmentation GET request successful (task {task_id}, files received: {stops_path}, {moves_path})!")
             waiting = False
+            input("Press Enter to continue...")
         elif req_code == 404:
             print(f"Server is still processing the segmentation task {task_id} (code {req_code})")
             time.sleep(5)
@@ -248,9 +259,9 @@ def main() :
     req_code, task_id = test_enrichment_post(path_preprocessed,
                                              moves_path,
                                              stops_path,
-                                             './datasets/rome/poi/pois.parquet',
-                                             './datasets/rome/tweets/tweets_rome.parquet',
-                                             './datasets/rome/weather/weather_conditions.parquet')
+                                             pois_path,
+                                             social_path,
+                                             weather_path)
     if req_code == 200:
         print(f"Enrichment POST request successful! Task ID: {task_id}")
     else:
