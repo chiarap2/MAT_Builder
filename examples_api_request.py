@@ -30,13 +30,15 @@ def test_preprocessing_post(pathfile : str) -> Tuple[int, Optional[str]]:
     This function issues a POST request to the preprocessing endpoint of the semantic enrichment processor web API.
     '''
 
+    print("*** Initiating Preprocessing task! ***")
+
     # Here we set up the endpoint, parameters, and binary file to pass in the POST request.
     url = url_service + "Preprocessing/"
     parameters = {'max_speed' : 300, 'min_num_samples' : 1500, 'compress_trajectories' : True}
     files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
     res = requests.post(url, params=parameters, files=files)
 
-    print(res)
+    # print(res)
     # print(res.json()['message'])
 
     # If the request was successful, return the task ID returned by the processor.
@@ -57,7 +59,8 @@ def test_preprocessing_get(task_id : str) -> Tuple[int, Optional[str]]:
     parameters = {'task_id' : task_id}
     res = requests.get(url, params=parameters)
 
-    print(res)
+    #print(res)
+
     filename = None
     if res.status_code == 200 :
         filename = "preprocessed_trajectories.parquet"
@@ -78,13 +81,15 @@ def test_segmentation_post(pathfile : str) -> Tuple[int, Optional[str]]:
     This function issues a POST request to the segmentation endpoint of the semantic enrichment processor web API.
     '''
 
+    print("*** Initiating Segmentation task! ***")
+
     url = url_service + "Segmentation/"
     params = {'min_duration_stop': 10, 'max_stop_radius': 0.2}
     files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
 
     res = requests.post(url, params=params, files=files)
 
-    print(res)
+    # print(res)
     # print(res.json()['message'])
 
     if res.status_code == 200:
@@ -102,8 +107,8 @@ def test_segmentation_get(task_id : str) -> Tuple[int, Optional[str], Optional[s
     parameters = {'task_id' : task_id}
 
     res = requests.get(url, params = parameters)
-    print(res)
-    print(res.status_code)
+    # print(res)
+    # print(res.status_code)
 
     stops_path = None
     moves_path = None
@@ -112,8 +117,8 @@ def test_segmentation_get(task_id : str) -> Tuple[int, Optional[str], Optional[s
         stops = pd.DataFrame.from_dict(res.json()['stops'])
         moves = pd.DataFrame.from_dict(res.json()['moves'])
 
-        print(stops.info())
-        print(moves.info())
+        #print(stops.info())
+        #print(moves.info())
 
         # Store the dataframes into parquet files.
         stops_path = './stops.parquet'
@@ -134,6 +139,8 @@ def test_enrichment_post(path_trajs : str,
     This function issues a POST request to the enrichment endpoint of the semantic enrichment processor web API.
     '''
 
+    print("*** Initiating Enrichment task! ***")
+
     url = url_service + "Enrichment/"
     params = \
         {
@@ -153,8 +160,8 @@ def test_enrichment_post(path_trajs : str,
         }
     res = requests.post(url, params=params, files=files)
 
-    print(res)
-    print(res.json()['message'])
+    # print(res)
+    # print(res.json()['message'])
 
     if res.status_code == 200:
         return res.status_code, res.json()['message'].split(' ')[1]
@@ -171,7 +178,8 @@ def test_enrichment_get(task_id: str) -> Tuple[int, Optional[str]]:
     parameters = {'task_id': task_id}
     res = requests.get(url, params=parameters)
 
-    print(res)
+    # print(res)
+
     filename = None
     if res.status_code == 200:
         filename = "results.ttl"
@@ -204,9 +212,9 @@ def main() :
     ### Step 1 - preprocessing the trajectory dataset. ###
     req_code, task_id = test_preprocessing_post(traj_path)
     if req_code == 200:
-        print(f"Preprocessing POST request successful! Task ID: {task_id}")
+        print(f"Preprocessing POST request task initiation successful! Task ID: {task_id}")
     else:
-        print(f"Preprocessing POST request not successful (code {req_code}), aborting...")
+        print(f"Preprocessing POST request task initiation not successful (POST return code {req_code}), aborting...")
         return
 
 
@@ -216,14 +224,15 @@ def main() :
         req_code, path_preprocessed = test_preprocessing_get(task_id)
 
         if req_code == 200:
-            print(f"Preprocessing GET request successful (task {task_id}, file received {path_preprocessed})!")
+            print(f"Preprocessing task execution successful (task ID {task_id}, file received {path_preprocessed})!")
             waiting = False
             input("Press Enter to continue...")
+            print("")
         elif req_code == 404 :
-            print(f"Server is still processing the preprocessing task {task_id} (code {req_code})")
+            print(f"Server is still processing the preprocessing task ID {task_id} (GET return code {req_code})")
             time.sleep(5)
         else:
-            print(f"Server failed at processing the preprocessing task {task_id} (code {req_code}), aborting...")
+            print(f"Server failed at processing the preprocessing task ID {task_id} (GET return code {req_code}), aborting...")
             return
 
 
@@ -231,9 +240,9 @@ def main() :
     ### Step 2 - segmenting the trajectories in the trajectory dataset. ###
     req_code, task_id = test_segmentation_post(path_preprocessed)
     if req_code == 200:
-        print(f"Segmentation POST request successful! Task ID: {task_id}")
+        print(f"Segmentation POST request task initiation successful! Task ID: {task_id}")
     else:
-        print(f"Segmentation POST request not successful (code {req_code}), aborting...")
+        print(f"Segmentation POST request task initiation not successful (POST return code {req_code}), aborting...")
         return
 
 
@@ -244,14 +253,15 @@ def main() :
         req_code, stops_path, moves_path = test_segmentation_get(task_id)
 
         if req_code == 200:
-            print(f"Segmentation GET request successful (task {task_id}, files received: {stops_path}, {moves_path})!")
+            print(f"Segmentation task successfully executed (task ID {task_id}, files received: {stops_path}, {moves_path})!")
             waiting = False
             input("Press Enter to continue...")
+            print("")
         elif req_code == 404:
-            print(f"Server is still processing the segmentation task {task_id} (code {req_code})")
+            print(f"Server is still processing the segmentation task ID {task_id} (GET return code {req_code})")
             time.sleep(5)
         else:
-            print(f"Server failed at processing the segmentation task {task_id} (code {req_code}), aborting...")
+            print(f"Server failed at processing the segmentation task ID {task_id} (GET return code {req_code}), aborting...")
             return
 
 
@@ -263,9 +273,9 @@ def main() :
                                              social_path,
                                              weather_path)
     if req_code == 200:
-        print(f"Enrichment POST request successful! Task ID: {task_id}")
+        print(f"Enrichment POST request task initiation successful! Task ID: {task_id}")
     else:
-        print(f"Enrichment POST request not successful (code {req_code}), aborting...")
+        print(f"Enrichment POST request task initiation not successful (POST return code {req_code}), aborting...")
         return
 
 
@@ -275,13 +285,13 @@ def main() :
         req_code, kg_path = test_enrichment_get(task_id)
 
         if req_code == 200:
-            print(f"Enrichment GET request successful (task {task_id}, KG file received: {kg_path})!")
+            print(f"Enrichment task successfully executed (task ID {task_id}, KG file received: {kg_path})!")
             waiting = False
         elif req_code == 404:
-            print(f"Server is still processing the enrichment task {task_id} (code {req_code})")
+            print(f"Server is still processing the enrichment task {task_id} (GET return code {req_code})")
             time.sleep(5)
         else:
-            print(f"Server failed at processing the enrichment task {task_id} (code {req_code}), aborting...")
+            print(f"Server failed at processing the enrichment task {task_id} (GET return code {req_code}), aborting...")
             return
 
 
