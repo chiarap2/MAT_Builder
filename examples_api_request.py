@@ -36,6 +36,7 @@ def test_preprocessing_post(pathfile : str) -> Tuple[int, Optional[str]]:
     url = url_service + "Preprocessing/"
     parameters = {'max_speed' : 300, 'min_num_samples' : 1500, 'compress_trajectories' : True}
     files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
+    print(f"Sending POST request with the following input parameters:\n{parameters}\n{files}")
     res = requests.post(url, params=parameters, files=files)
 
     # print(res)
@@ -86,7 +87,7 @@ def test_segmentation_post(pathfile : str) -> Tuple[int, Optional[str]]:
     url = url_service + "Segmentation/"
     params = {'min_duration_stop': 10, 'max_stop_radius': 0.2}
     files = {'file_trajectories': ('trajectories.parquet', open(pathfile, 'rb'))}
-
+    print(f"Sending POST request with the following input parameters:\n{params}\n{files}")
     res = requests.post(url, params=params, files=files)
 
     # print(res)
@@ -158,6 +159,7 @@ def test_enrichment_post(path_trajs : str,
             'file_social': ('social.parquet', open(path_social, 'rb')),
             'file_weather': ('weather.parquet', open(path_weather, 'rb'))
         }
+    print(f"Sending POST request with the following input parameters:\n{params}\n{files}")
     res = requests.post(url, params=params, files=files)
 
     # print(res)
