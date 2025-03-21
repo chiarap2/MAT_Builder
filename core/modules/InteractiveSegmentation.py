@@ -68,7 +68,13 @@ class InteractiveSegmentation(InteractiveModuleInterface):
     def _get_avg_stop_duration(self, uid):
 
         s = self.stops[self.stops['uid'] == uid].copy()
-        s['duration'] = (s['leaving_datetime'] - s['datetime'])
+        
+        # Convert both columns to datetime
+        s['datetime'] = pd.to_datetime(s['datetime'])
+        s['leaving_datetime'] = pd.to_datetime(s['leaving_datetime'])
+    
+        # Calculate duration
+        s['duration'] = s['leaving_datetime'] - s['datetime']
 
         return round(s['duration'].mean().total_seconds() / 60, 2)
 
