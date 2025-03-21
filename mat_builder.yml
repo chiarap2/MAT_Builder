@@ -22,6 +22,7 @@ dependencies:
   - tesspy
   - fastapi
   - uvicorn
+  - ipython=8.12.0 # Older version required by PTRAIL.
   - python-multipart
   - pip
   - pip:

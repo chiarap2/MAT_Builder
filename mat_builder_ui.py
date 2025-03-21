@@ -24,7 +24,7 @@ def main() :
     pipeline = InteractivePipeline(app, modules_pipeline)
 
 
-    app.run_server(debug=False)
+    app.run(debug=False)
 
 
 
