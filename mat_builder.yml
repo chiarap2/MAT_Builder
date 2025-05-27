@@ -16,7 +16,7 @@ dependencies:
   - jupyterlab
   - scikit-learn=1.2.2
   - scikit-mobility
-  - shapely
+  - shapely=2.0.7 # Version <= 2.0.7 required by scikit-mobility <= 1.3.1.
   - geopy
   - tesspy
   - fastapi

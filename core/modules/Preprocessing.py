@@ -59,7 +59,7 @@ class Preprocessing(ModuleInterface) :
         ctdf = None
         if self.compress :
             print("Compressing the trajectories...")
-            ctdf = compression.compress(ftdf, spatial_radius_km = 0.2)
+            ctdf = compression.compress(ftdf, spatial_radius_km = 0.01)
 
         self._results = ctdf if ctdf is not None else ftdf
         return True
