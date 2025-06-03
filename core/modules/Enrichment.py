@@ -41,8 +41,13 @@ class Enrichment(ModuleInterface):
 
     ### METHODS RELATED TO THE MOVES ENRICHMENT ###
     def _moves_enrichment(self, moves, model) :
+
+        # Modify 'moves' to drop the timezone from the timestamps (if any), while still preserving the correct time for the timezone.
+        moves['datetime'] = pd.to_datetime(moves['datetime']).dt.tz_localize(None)
+
         # add speed, acceleration, distance info using PTRAIL
-        df = PTRAILDataFrame(moves, latitude='lat',
+        df = PTRAILDataFrame(moves,
+                             latitude='lat',
                              longitude='lng',
                              datetime='datetime',
                              traj_id='tid')
@@ -313,14 +318,14 @@ class Enrichment(ModuleInterface):
             # display(freq)
 
 
-            # 1.2 - Qui calcoliamo i contatori delle ore in cui occorrono i sistematic stop
+            # 1.2 - Qui calcoliamo i contatori delle ore in cui occorrono i systematic stop
             # (propedeutico a determinare se si tratta di home/work/other).
             def update_freq(freq, systematic_sp):
                 it = zip(systematic_sp['uid'], systematic_sp['systematic_id'],
                          systematic_sp['datetime'], systematic_sp['leaving_datetime'])
 
                 for uid, location, start, end in it:
-                    time_range = pd.date_range(start.floor('h'), end.floor('h'), freq='H')
+                    time_range = pd.date_range(start.floor('h'), end.floor('h'), freq='h')
                     indexer = (freq['uid'] == uid) & (freq['location'] == location)
                     for t in time_range:
                         if t.weekday() > 4:

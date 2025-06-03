@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from pandas.api.types import is_string_dtype
 
 import skmob
 from skmob.preprocessing import detection
@@ -156,6 +157,11 @@ class Segmentation(ModuleInterface):
         # NOTE: the final moves result set will be a pandas DataFrame built from the skmob dataframe.
         moves.drop(columns = ['start_stop', 'end_stop'], inplace = True)
         moves['move_id'] = moves['move_id'].astype(np.uint32)
+        
+        # Ensure that the trajectory IDs are strings -- this is required by PTrail in the enrichment step when estimating the transportation means
+        # for each move.
+        if not is_string_dtype(moves['tid']): moves['tid'] = moves['tid'].astype(str)
+        
         self.moves = pd.DataFrame(moves)
 
 
