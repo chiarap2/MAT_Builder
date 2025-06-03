@@ -220,7 +220,8 @@ class InteractiveSegmentation(InteractiveModuleInterface):
 
             
             # Manage the output to show in the web interface.
-            outputs.append(html.H6(children=f"Overall number of moves found: {self.moves['move_id'].nunique()}",
+            num_moves = len(self.moves[['uid', 'tid', 'move_id']].drop_duplicates())
+            outputs.append(html.H6(children=f"Overall number of moves found: {num_moves}",
                                    style={'font-weight': 'bold'}))
             outputs.append(html.H6(children=f'Overall number of stops found: {len(self.stops)}',
                                    style={'font-weight': 'bold'}))

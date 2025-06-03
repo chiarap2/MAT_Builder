@@ -385,7 +385,8 @@ class RDFBuilder() :
     def add_moves(self, df_moves, enriched_moves) :
         
         df_moves['datetime'] = pd.to_datetime(df_moves['datetime'], utc = True)
-        print(f"Number of moves that will be added to the RDF graph: {df_moves['move_id'].nunique()}")
+        num_moves = len(df_moves[['uid', 'tid', 'move_id']].drop_duplicates())
+        print(f"Number of moves that will be added to the RDF graph: {num_moves}")
         #print(df_moves)
         #print(df_moves.info())
 
@@ -409,7 +410,7 @@ class RDFBuilder() :
         # print(res_gb)
         
         
-        for uid, tid, move_id, type_move, start_t, end_t in tqdm(iter_res, total=len(res_gb)) :
+        for uid, tid, move_id, type_move, start_t, end_t in tqdm(iter_res, total=num_moves) :
     
             # print(f"{uid} -- {tid} -- {move_id} -- {type_move} -- {start} -- {end}")
 
