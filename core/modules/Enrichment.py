@@ -42,9 +42,6 @@ class Enrichment(ModuleInterface):
     ### METHODS RELATED TO THE MOVES ENRICHMENT ###
     def _moves_enrichment(self, moves, model) :
 
-        # Modify 'moves' to drop the timezone from the timestamps (if any), while still preserving the correct time for the timezone.
-        moves['datetime'] = pd.to_datetime(moves['datetime']).dt.tz_localize(None)
-
         # add speed, acceleration, distance info using PTRAIL
         df = PTRAILDataFrame(moves,
                              latitude='lat',

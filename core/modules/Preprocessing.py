@@ -1,4 +1,5 @@
 import pandas as pd
+from pandas.api.types import is_string_dtype
 
 import skmob
 from skmob.preprocessing import filtering, compression
@@ -44,13 +45,20 @@ class Preprocessing(ModuleInterface) :
         print(f"Filtering trajectories with less than {self._num_point} samples...")
         gdf = gdf[gdf['traj_id'].groupby(gdf['traj_id']).transform('size') >= self._num_point]
 
-        # convert GeoDataFrame into pandas DataFrame
-        # df = pd.DataFrame(gdf)
+        # Drop the timezone from the timestamps (if any), while still preserving the correct time for the timezone.
+        # NOTE: required in the enrichment step, by PTrail and when building the RDF knowledge graph.
+        gdf['time'] = pd.to_datetime(gdf['time']).dt.tz_localize(None)
+
+        # Ensure that the trajectory IDs are strings.
+        # NOTE: this is required by PTrail in the enrichment step when estimating the transportation means used during move segments.
+        if not is_string_dtype(gdf['traj_id']): 
+            gdf['traj_id'] = gdf['traj_id'].astype(str)
+
 
         # now create a TrajDataFrame from the pandas DataFrame
         tdf = skmob.TrajDataFrame(gdf, latitude = 'lat', longitude = 'lon',
                                   datetime = 'time', user_id = 'user', trajectory_id = 'traj_id')
-
+        
         ftdf = tdf
         if self._kmh > 0 :
             print("Filtering out the outliers...")
