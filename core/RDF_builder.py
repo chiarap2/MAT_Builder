@@ -1,5 +1,6 @@
 import pandas as pd
 import itertools
+from tqdm import tqdm
 
 from rdflib import Graph, Namespace
 from rdflib import Literal, URIRef, BNode
@@ -126,7 +127,7 @@ class RDFBuilder() :
         
         
         # *** Build the part of the KG related to the users and their trajectories. *** #
-        for t in list_users_cleaned :
+        for t in tqdm(list_users_cleaned) :
         
             view = df_raw_traj.loc[df_raw_traj['uid'] == t]
             #display(view)
@@ -208,12 +209,12 @@ class RDFBuilder() :
 
 
         gb = view_stop_data.groupby(['stop_id'])
-        for key in gb.groups.keys() :
+        for key in tqdm(gb.groups.keys()) :
             
             cnt = 0
             
             # Retrieve the rows associated with this stop.
-            group = gb.get_group(key)
+            group = gb.get_group((key, ))
 
             # Retrieve the main properties of this stop.
             uid = group['uid'].iloc[0]
@@ -304,7 +305,7 @@ class RDFBuilder() :
         # print(sys_stops)
         # print(sys_stops.columns)
         gb = sys_stops.groupby(['uid', 'tid', 'stop_id'])
-        for (uid, tid, stop_id), df in gb:
+        for (uid, tid, stop_id), df in tqdm(gb) :
 
             sys_id = df["systematic_id"].iloc[0]
             importance = round(df["importance"].iloc[0], 2)
@@ -384,7 +385,6 @@ class RDFBuilder() :
     def add_moves(self, df_moves, enriched_moves) :
         
         df_moves['datetime'] = pd.to_datetime(df_moves['datetime'], utc = True)
-
         print(f"Number of moves that will be added to the RDF graph: {df_moves['move_id'].nunique()}")
         #print(df_moves)
         #print(df_moves.info())
@@ -409,7 +409,7 @@ class RDFBuilder() :
         # print(res_gb)
         
         
-        for uid, tid, move_id, type_move, start_t, end_t in iter_res :
+        for uid, tid, move_id, type_move, start_t, end_t in tqdm(iter_res, total=len(res_gb)) :
     
             # print(f"{uid} -- {tid} -- {move_id} -- {type_move} -- {start} -- {end}")
 
@@ -421,7 +421,7 @@ class RDFBuilder() :
                 self.find_instants_locations_start_end(raw_traj, start_t, end_t)
 
 
-            # *** Now, create all the triples neeed to semantically enrich the trajectory with this move. *** #
+            # *** Now, create all the triples needed to semantically enrich the trajectory with this move. *** #
             # Feature node.
             URI_feat = 'http://example.org/user_' + str(uid) + '/traj_' + str(tid) + '/feature_move/'
             feature = URIRef(URI_feat)
@@ -596,4 +596,5 @@ class RDFBuilder() :
                     
     def serialize_graph(self, path, formato = 'turtle') :
         
+        print(f"Serializing the RDF graph to {path} using the {formato} format...")
         self.g.serialize(destination = path, format = formato)
