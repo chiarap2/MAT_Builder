@@ -122,7 +122,7 @@ class Enrichment(ModuleInterface):
                 # Remove the POIs that do not have a name.
                 poi.reset_index(inplace=True)
                 poi.drop(columns='category', inplace = True, errors='ignore') # Delete the column 'category' if it exists.
-                poi.rename(columns={key: 'category'}, inplace=True)
+                poi.rename(columns={key: 'category', 'id': 'osmid', 'element': 'element_type'}, inplace=True)
                 poi.drop(columns = poi.columns.difference(list_columns_df_poi), inplace=True)
                 poi = poi.loc[~poi['name'].isna()]
                 poi['category'].replace({'yes': key}, inplace=True)
