@@ -221,18 +221,18 @@ class Enrichment(ModuleInterface):
             freq['p_work'] = (freq[['night', 'morning', 'afternoon', 'evening', 'weekend']] * w_work).sum(axis=1)
             freq['home'] = freq['p_home'] / (freq['p_home'] + freq['p_work'])
             freq['work'] = freq['p_work'] / (freq['p_home'] + freq['p_work'])
-            freq.loc[list_exclusion, 'home'] = 0
-            freq.loc[list_exclusion, 'work'] = 0
-            freq['other'] = 0
-            freq.loc[list_exclusion, 'other'] = 1
+            freq.loc[list_exclusion, 'home'] = 0.
+            freq.loc[list_exclusion, 'work'] = 0.
+            freq['other'] = 0.
+            freq.loc[list_exclusion, 'other'] = 1.
             freq.drop(columns=['p_home', 'p_work'], inplace=True)
             # display(freq)
 
             # 7 - Qui, infine, completiamo il dataframe systematic stops con le varie probabilita' calcolate.
             systematic_stops.set_index(['uid', 'pos_hashed'], inplace=True)
-            systematic_stops['home'] = 0
-            systematic_stops['work'] = 0
-            systematic_stops['other'] = 1
+            systematic_stops['home'] = 0.
+            systematic_stops['work'] = 0.
+            systematic_stops['other'] = 1.
             systematic_stops['importance'] = freq['importance']
             systematic_stops.loc[largest_index, 'home'] = freq.loc[largest_index, 'home']
             systematic_stops.loc[largest_index, 'work'] = freq.loc[largest_index, 'work']
@@ -366,19 +366,19 @@ class Enrichment(ModuleInterface):
             freq['p_work'] = (freq[['night', 'morning', 'afternoon', 'evening', 'weekend']] * w_work).sum(axis=1)
             freq['home'] = freq['p_home'] / (freq['p_home'] + freq['p_work'])
             freq['work'] = freq['p_work'] / (freq['p_home'] + freq['p_work'])
-            freq.loc[list_exclusion, 'home'] = 0
-            freq.loc[list_exclusion, 'work'] = 0
-            freq['other'] = 0
-            freq.loc[list_exclusion, 'other'] = 1
+            freq.loc[list_exclusion, 'home'] = 0.
+            freq.loc[list_exclusion, 'work'] = 0.
+            freq['other'] = 0.
+            freq.loc[list_exclusion, 'other'] = 1.
             freq.drop(columns=['p_home', 'p_work'], inplace=True)
             # display(freq)
 
 
             # 1.7 - Qui, infine, completiamo il dataframe systematic stops con le varie probabilita' calcolate.
             systematic_sp.set_index(['uid', 'systematic_id'], inplace=True)
-            systematic_sp['home'] = 0
-            systematic_sp['work'] = 0
-            systematic_sp['other'] = 1
+            systematic_sp['home'] = 0.
+            systematic_sp['work'] = 0.
+            systematic_sp['other'] = 1.
             systematic_sp['importance'] = freq['importance']
             systematic_sp.loc[largest_index, 'home'] = freq.loc[largest_index, 'home']
             systematic_sp.loc[largest_index, 'work'] = freq.loc[largest_index, 'work']
@@ -697,14 +697,14 @@ class Enrichment(ModuleInterface):
         ### ---- SOCIAL MEDIA POST ENRICHMENT ---- ###
         ##############################################
         
-        tweets_RDF = None
         print(f"Valore self.tweet_user: {self._tweet_user}")
         if self._tweet_user :
             print("Enriching users with social media posts!")
             
+            # Copy the social media dataframe to an internal pandas DataFrame.
             self._tweets = self._upload_social.copy()
+            # Ensure that the dates are in the correct format.
             self._tweets['tweet_created'] = pd.to_datetime(self._tweets['tweet_created'])
-            self._tweets['tweet_created'] = self._tweets['tweet_created'].dt.date
             # print(f"DEBUG: {self._tweets}")
         
         else :
@@ -743,11 +743,13 @@ class Enrichment(ModuleInterface):
             
             # Add weather information to the trajectories.
             if df_weather_enrichment is not None :
+                print(f"DEBUG: Adding weather aspect to the RDF graph!")
                 self._rdf_graph.add_weather(df_weather_enrichment)
                 
-            # Add weather information to the trajectories.
-            if tweets_RDF is not None :
-                self._rdf_graph.add_social(tweets_RDF)
+            # Add social information to the trajectories.
+            if self._tweets is not None :
+                print(f"DEBUG: Adding social media aspect to the RDF graph!")
+                self._rdf_graph.add_social(self._tweets)
 
         print("Enrichment complete!")
         return True

@@ -550,12 +550,12 @@ class RDFBuilder() :
         
         social_df = social_info.copy()
         social_df['uid'] = social_df['uid'].astype(str)
-        social_df['tweet_created'] = pd.to_datetime(social_df['tweet_created'], utc = True)
+        social_df['tweet_created'] = pd.to_datetime(social_df['tweet_created'])
         iter_rows = zip(social_df['uid'], social_df['tweet_created'], social_df['text'])
         
         
         id_post = 0
-        for uid, time, text in iter_rows :
+        for uid, time, text in tqdm(iter_rows, total=len(social_df)) :
             
             # Find the Agent node whose foaf:name is equal to the "uid" identifier.
             # NOTE: a user may be missing from those that have at least a trajectory...in such case we skip the tweet.
